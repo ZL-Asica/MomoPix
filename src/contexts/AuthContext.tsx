@@ -1,5 +1,4 @@
 import { createContext, useState } from 'react';
-import type { User } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 import { db } from '@/firebase-config';
@@ -7,7 +6,6 @@ import { useAuthListener } from '@/hooks';
 
 // Define the AuthContext type
 const AuthContext = createContext<{
-  user: User | null;
   userData: UserData | null;
   loading: boolean;
   updateUserData: (updatedData: Partial<UserData>) => Promise<void>;
@@ -47,7 +45,6 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider
       value={{
-        user,
         userData,
         loading,
         updateUserData,

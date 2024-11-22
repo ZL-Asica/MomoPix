@@ -140,7 +140,13 @@ describe('useUpdateUserData', () => {
 
   it('should add photos to an existing album', async () => {
     const newPhotos = [
-      { id: 1, url: 'photo1.jpg', name: 'Photo 1', size: 123, uploadedAt: '' },
+      {
+        id: '1',
+        url: 'photo1.jpg',
+        name: 'Photo 1',
+        size: 123,
+        uploadedAt: '',
+      },
     ];
 
     const TestComponent = () => {
@@ -177,7 +183,13 @@ describe('useUpdateUserData', () => {
 
   it('should add photos to a new album if album does not exist', async () => {
     const newPhotos = [
-      { id: 1, url: 'photo3.jpg', name: 'Photo 3', size: 789, uploadedAt: '' },
+      {
+        id: '1',
+        url: 'photo3.jpg',
+        name: 'Photo 3',
+        size: 789,
+        uploadedAt: '',
+      },
     ];
     const albumName = 'New Album';
 

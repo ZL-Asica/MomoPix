@@ -17,6 +17,7 @@ import {
   MenuItem,
   IconButton,
   Avatar,
+  Skeleton,
 } from '@mui/material';
 import { useClickOutside } from '@zl-asica/react';
 
@@ -25,7 +26,7 @@ import UploadModal from './UploadModal';
 import { useAuthContext, useAuth } from '@/hooks';
 
 const Header = () => {
-  const { userData } = useAuthContext();
+  const { loading, userData } = useAuthContext();
   const { logout } = useAuth();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -124,15 +125,26 @@ const Header = () => {
             onClick={handleMenuOpen}
             sx={{ transition: '0.2s', '&:hover': { color: 'secondary.main' } }}
           >
-            <Avatar
-              src={userData?.photoURL ?? undefined}
-              alt={userData?.displayName || 'U'}
-              sx={{
-                bgcolor: userData?.photoURL ? 'transparent' : 'secondary.main',
-              }}
-            >
-              {userData?.displayName?.charAt(0).toUpperCase() || ''}
-            </Avatar>
+            {loading ? (
+              <Skeleton
+                variant='circular'
+                animation='wave'
+                width={40}
+                height={40}
+              />
+            ) : (
+              <Avatar
+                src={userData?.photoURL ?? undefined}
+                alt={userData?.displayName || 'U'}
+                sx={{
+                  bgcolor: userData?.photoURL
+                    ? 'transparent'
+                    : 'secondary.main',
+                }}
+              >
+                {userData?.displayName?.charAt(0).toUpperCase() || ''}
+              </Avatar>
+            )}
           </IconButton>
         </Box>
 

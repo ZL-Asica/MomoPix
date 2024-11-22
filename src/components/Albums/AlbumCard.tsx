@@ -5,17 +5,15 @@ import {
   CardActions,
   Typography,
   Button,
-  Skeleton,
   Grid2 as Grid,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 interface AlbumCardProperties {
   album: Album;
-  loading: boolean;
 }
 
-const AlbumCard = ({ album, loading }: AlbumCardProperties) => {
+const AlbumCard = ({ album }: AlbumCardProperties) => {
   return (
     <Grid
       component='li'
@@ -33,17 +31,7 @@ const AlbumCard = ({ album, loading }: AlbumCardProperties) => {
       }}
     >
       <Card>
-        {loading ? (
-          <Skeleton
-            variant='rectangular'
-            width='100%'
-            height={140}
-            animation='wave'
-            sx={{
-              borderRadius: '8px 8px 0 0',
-            }}
-          />
-        ) : (
+        <Link to={`/album/${album.name}`}>
           <CardMedia
             component='div'
             sx={{
@@ -59,55 +47,36 @@ const AlbumCard = ({ album, loading }: AlbumCardProperties) => {
               borderRadius: '8px 8px 0 0',
             }}
           />
-        )}
-
+        </Link>
         <CardContent>
-          {loading ? (
-            <>
-              <Skeleton
-                variant='text'
-                width='60%'
-                sx={{ mb: 1 }}
-              />
-              <Skeleton
-                variant='text'
-                width='40%'
-              />
-            </>
-          ) : (
-            <>
-              <Typography
-                variant='h6'
-                gutterBottom
-              >
-                {album.name}
-              </Typography>
-              <Typography
-                variant='body2'
-                color='textSecondary'
-              >
-                照片数量: {album.photos?.length || 0}
-              </Typography>
-              <Typography
-                variant='body2'
-                color='textSecondary'
-              >
-                创建时间: {new Date(album.createdAt).toLocaleDateString()}
-              </Typography>
-            </>
-          )}
+          <Typography
+            variant='h6'
+            gutterBottom
+          >
+            {album.name}
+          </Typography>
+          <Typography
+            variant='body2'
+            color='textSecondary'
+          >
+            照片数量: {album.photos.length || 0}
+          </Typography>
+          <Typography
+            variant='body2'
+            color='textSecondary'
+          >
+            创建时间: {new Date(album.createdAt).toLocaleDateString()}
+          </Typography>
         </CardContent>
         <CardActions>
-          {!loading && (
-            <Button
-              size='small'
-              color='primary'
-              component={Link}
-              to={`/album/${album.name}`}
-            >
-              查看详情
-            </Button>
-          )}
+          <Button
+            size='small'
+            color='primary'
+            component={Link}
+            to={`/album/${album.name}`}
+          >
+            查看详情
+          </Button>
         </CardActions>
       </Card>
     </Grid>

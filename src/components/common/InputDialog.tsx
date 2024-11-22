@@ -1,0 +1,82 @@
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+} from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+
+interface InputDialogProperties {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  inputLabel: string;
+  handleSave: (value: string) => void;
+  defaultValue?: string;
+}
+
+const InputDialog = ({
+  open,
+  onClose,
+  title,
+  inputLabel,
+  handleSave,
+  defaultValue = '',
+}: InputDialogProperties) => {
+  const [inputValue, setInputValue] = useState(defaultValue);
+  const dialogReference = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null);
+
+  // Sync inputValue with defaultValue when the dialog is opened or the defaultValue changes
+  useEffect(() => {
+    if (open) {
+      setInputValue(defaultValue);
+      // Save the currently focused element before opening the dialog
+      previouslyFocusedElement.current = document.activeElement as HTMLElement;
+    } else {
+      // Restore focus to the previously focused element
+      previouslyFocusedElement.current?.focus();
+    }
+  }, [defaultValue, open]);
+
+  const handleSaveClick = () => {
+    if (inputValue.trim()) {
+      handleSave(inputValue.trim()); // Avoid empty or whitespace-only values
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby='input-dialog-title'
+      ref={dialogReference}
+    >
+      <DialogTitle id='input-dialog-title'>{title}</DialogTitle>
+      <DialogContent>
+        <TextField
+          label={inputLabel}
+          value={inputValue}
+          onChange={(event) => setInputValue(event.target.value)}
+          fullWidth
+          margin='normal'
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>取消</Button>
+        <Button
+          onClick={handleSaveClick}
+          color='primary'
+          disabled={!inputValue.trim()} // Disable save button for invalid input
+        >
+          保存
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default InputDialog;

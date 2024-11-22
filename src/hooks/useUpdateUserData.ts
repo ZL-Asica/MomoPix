@@ -4,17 +4,27 @@ import { useAuthContext } from '@/hooks';
  * Hook for updating user data in Firestore
  */
 const useUpdateUserData = () => {
-  const { userData, updateUserData } = useAuthContext();
+  const { loading, userData, updateUserData } = useAuthContext();
 
-  if (!userData) {
-    throw new Error('User is not authenticated');
-  }
+  /**
+   * Ensure that user data is available.
+   * Throws an error if user data is not loaded or authenticated.
+   */
+  const ensureUserData = () => {
+    if (loading) {
+      throw new Error('User data is still loading');
+    }
+    if (!userData) {
+      throw new Error('User data is not available');
+    }
+  };
 
   /**
    * Update the user's basic information.
    * @param updatedFields - Partial user data fields to update
    */
   const updateBasicInfo = async (updatedFields: Partial<UserData>) => {
+    ensureUserData();
     await updateUserData(updatedFields);
   };
 
@@ -23,13 +33,14 @@ const useUpdateUserData = () => {
    * @param albumName - Name of the new album
    */
   const addAlbum = async (albumName: string) => {
+    ensureUserData();
     const newAlbum: Album = {
       name: albumName,
       thumbnail: '',
       createdAt: new Date().toISOString(),
       photos: [],
     };
-    const updatedAlbums = [...(userData.albums || []), newAlbum];
+    const updatedAlbums = [...(userData!.albums || []), newAlbum];
     await updateUserData({ albums: updatedAlbums });
   };
 
@@ -42,7 +53,8 @@ const useUpdateUserData = () => {
     albumName: string = 'default',
     photos: Photo[]
   ) => {
-    const updatedAlbums = (userData.albums || []).map((album) =>
+    ensureUserData();
+    const updatedAlbums = (userData!.albums || []).map((album) =>
       album.name === albumName
         ? {
             ...album,
@@ -63,13 +75,14 @@ const useUpdateUserData = () => {
   /**
    * Update album details (name or thumbnail).
    * @param albumName - The name of the album to update
-   * @param updatedFields - The updated album fields
+   * @param updatedFields - The updated album fields 'name' | 'thumbnail'
    */
   const updateAlbum = async (
     albumName: string,
     updatedFields: Partial<Pick<Album, 'name' | 'thumbnail'>>
   ) => {
-    const updatedAlbums = (userData.albums || []).map((album) =>
+    ensureUserData();
+    const updatedAlbums = (userData!.albums || []).map((album) =>
       album.name === albumName ? { ...album, ...updatedFields } : album
     );
 
@@ -84,10 +97,11 @@ const useUpdateUserData = () => {
    */
   const updatePhotoName = async (
     albumName: string,
-    photoId: number,
+    photoId: string,
     updatedName: string
   ) => {
-    const updatedAlbums = (userData.albums || []).map((album) =>
+    ensureUserData();
+    const updatedAlbums = (userData!.albums || []).map((album) =>
       album.name === albumName
         ? {
             ...album,
@@ -110,9 +124,10 @@ const useUpdateUserData = () => {
   const movePhoto = async (
     originalAlbumName: string,
     newAlbumName: string,
-    photoId: number
+    photoId: string
   ) => {
-    const updatedAlbums = (userData.albums || []).map((album) => {
+    ensureUserData();
+    const updatedAlbums = (userData!.albums || []).map((album) => {
       if (album.name === originalAlbumName) {
         return {
           ...album,
@@ -124,7 +139,7 @@ const useUpdateUserData = () => {
           ...album,
           photos: [
             ...album.photos,
-            userData.albums
+            userData!.albums
               .find((album) => album.name === originalAlbumName)
               ?.photos.find((photo) => photo.id === photoId) as Photo,
           ],

@@ -2,17 +2,21 @@ import { useEffect, useState } from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-export default function NotFoundPage() {
+const NotFoundPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [timer, setTimer] = useState(10);
+  const [hasNavigated, setHasNavigated] = useState(false); // Avoid multiple navigation
 
   useEffect(() => {
     const countdown = setInterval(() => {
       setTimer((previous) => {
         if (previous <= 1) {
           clearInterval(countdown);
-          navigate('/');
+          if (!hasNavigated) {
+            setHasNavigated(true);
+            navigate('/');
+          }
           return 0;
         }
         return previous - 1;
@@ -20,7 +24,7 @@ export default function NotFoundPage() {
     }, 1000);
 
     return () => clearInterval(countdown);
-  }, [navigate]);
+  }, [navigate, hasNavigated]);
 
   return (
     <Box
@@ -37,7 +41,7 @@ export default function NotFoundPage() {
       <Typography
         variant='h1'
         sx={{
-          fontSize: '4rem',
+          fontSize: '3rem',
           mb: 2,
           color: theme.palette.mode === 'dark' ? '#d47a92' : '#ff7597',
         }}
@@ -66,7 +70,12 @@ export default function NotFoundPage() {
       </Typography>
       <Button
         variant='contained'
-        onClick={() => navigate('/')}
+        onClick={() => {
+          if (!hasNavigated) {
+            setHasNavigated(true);
+            navigate('/');
+          }
+        }}
         sx={{
           bgcolor: theme.palette.mode === 'dark' ? '#d47a92' : '#ff7597',
           '&:hover': {
@@ -78,4 +87,6 @@ export default function NotFoundPage() {
       </Button>
     </Box>
   );
-}
+};
+
+export default NotFoundPage;

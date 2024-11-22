@@ -5,27 +5,16 @@ import {
   TextField,
   Button,
   Avatar,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import { useBoolean } from '@zl-asica/react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 import useAuthContext from '@/hooks/useAuthContext';
 import useUpdateUserData from '@/hooks/useUpdateUserData';
 
 const Profile = () => {
-  const { userData, loading } = useAuthContext();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !userData) {
-      toast.error('请先登录');
-      navigate('/login');
-    }
-  }, [loading, userData, navigate]);
-
+  const { userData } = useAuthContext();
   const { updateBasicInfo } = useUpdateUserData();
   const {
     value: editing,
@@ -39,15 +28,9 @@ const Profile = () => {
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userData) {
-      setDisplayName(userData.displayName || '');
-      setPhotoURL(userData.photoURL || '');
-    }
-  }, [userData]);
-
-  useEffect(() => {
     if (updateStatus === 'success') {
-      const timeout = setTimeout(() => setUpdateStatus('idle'), 3000); // 成功状态显示 3 秒
+      toast.success('Profile updated successfully');
+      const timeout = setTimeout(() => setUpdateStatus('idle'), 3000);
       return () => clearTimeout(timeout);
     }
   }, [updateStatus]);
@@ -66,19 +49,6 @@ const Profile = () => {
       setUpdateStatus('idle');
     }
   };
-
-  if (loading) {
-    return (
-      <Box
-        display='flex'
-        justifyContent='center'
-        alignItems='center'
-        minHeight='100vh'
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
     <Box
