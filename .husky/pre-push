@@ -1,2 +1,3 @@
 pnpm lint-staged
+pnpm test run
 pnpm build

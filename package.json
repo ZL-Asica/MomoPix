@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -29,7 +30,10 @@
     "sonner": "^1.7.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.0.1",
     "@types/crypto-js": "^4.2.2",
+    "@types/node": "^22.9.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-router-dom": "^5.3.3",
@@ -37,12 +41,15 @@
     "@zl-asica/prettier-config": "^1.0.8",
     "eslint": "^9.13.0",
     "eslint-config-zl-asica": "^1.0.19",
+    "global-jsdom": "^25.0.0",
     "husky": "^9.1.7",
+    "jsdom": "^25.0.1",
     "lint-staged": "^15.2.10",
     "prettier": "^3.3.3",
     "typescript": "~5.7.2",
     "vite": "^5.4.10",
-    "vite-tsconfig-paths": "^5.1.3"
+    "vite-tsconfig-paths": "^5.1.3",
+    "vitest": "^2.1.5"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
