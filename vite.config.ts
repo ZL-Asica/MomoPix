@@ -13,7 +13,24 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom'],
-          mui: ['@mui/material', '@mui/system'],
+
+          mui: [
+            '@mui/material',
+            '@mui/system',
+            '@mui/icons-material',
+            '@emotion/react',
+            '@emotion/styled',
+          ],
+
+          font: ['@fontsource/roboto'],
+
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+
+          dropzone: ['react-dropzone'],
+
+          notifications: ['sonner'],
+
+          misc: ['crypto-js', '@zl-asica/react'],
         },
       },
     },

@@ -29,10 +29,8 @@ export default function NotFoundPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '100vh',
+        mt: 20,
         textAlign: 'center',
-        bgcolor:
-          theme.palette.mode === 'dark' ? 'background.default' : '#f9f9f9',
         color: theme.palette.mode === 'dark' ? '#f2d3dc' : '#333',
       }}
     >

@@ -88,7 +88,7 @@ const LoginPage = () => {
           align='center'
           sx={{ fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
         >
-          Sign In
+          登录
         </Typography>
         <Box
           component='form'
@@ -97,24 +97,24 @@ const LoginPage = () => {
           sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         >
           <TextField
-            label='Email'
+            label='邮箱'
             fullWidth
             type='email'
             value={email}
             placeholder='your@email.com'
             onChange={(event) => setEmail(event.target.value)}
             error={emailError}
-            helperText={emailError && 'Email is required'}
+            helperText={emailError && '请填写邮箱'}
           />
           <TextField
-            label='Password'
+            label='密码'
             fullWidth
             type='password'
             placeholder='••••••'
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={passwordError}
-            helperText={passwordError && 'Password is required'}
+            helperText={passwordError && '请填写密码'}
           />
           {error && <Typography color='error'>{error}</Typography>}
           <Button
@@ -125,14 +125,20 @@ const LoginPage = () => {
             disabled={loading}
             sx={{ mt: 2 }}
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? '登录中...' : '登录'}
           </Button>
         </Box>
 
-        <Typography sx={{ mt: 2 }} align='center'>
-          Don&apos;t have an account?{' '}
-          <Link href='/signup' underline='hover'>
-            Sign up
+        <Typography
+          sx={{ mt: 2 }}
+          align='center'
+        >
+          没有账号？{' '}
+          <Link
+            href='/signup'
+            underline='hover'
+          >
+            立刻注册
           </Link>
         </Typography>
       </LoginCard>

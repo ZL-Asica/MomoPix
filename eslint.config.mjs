@@ -1,5 +1,3 @@
-import globals from 'globals';
-
 import { zlAsicaTsReactConfig } from 'eslint-config-zl-asica';
 
 export default [
@@ -16,7 +14,6 @@ export default [
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
       parserOptions: {
         project: './tsconfig.app.json',
         projectService: true,

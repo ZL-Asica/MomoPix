@@ -1,4 +1,5 @@
 module.exports = {
   ...require('@zl-asica/prettier-config'),
-  singleAttributePerLine: false,
+  printWidth: 80,
+  singleAttributePerLine: true,
 };

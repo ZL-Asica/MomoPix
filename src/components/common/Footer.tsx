@@ -8,12 +8,14 @@ const Footer = () => {
         py: 2,
         px: 4,
         mt: 'auto',
-        backgroundColor: (theme) => theme.palette.grey[200],
         textAlign: 'center',
       }}
     >
-      <Typography variant='body2' color='textSecondary'>
-        © {new Date().getFullYear()} MomoPix. All rights reserved.
+      <Typography
+        variant='body2'
+        color='textSecondary'
+      >
+        © {new Date().getFullYear()} MomoPix. 版权所有.
       </Typography>
     </Box>
   );

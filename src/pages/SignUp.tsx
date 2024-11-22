@@ -99,7 +99,7 @@ const SignUpPage = () => {
           align='center'
           sx={{ fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
         >
-          Sign Up
+          注册
         </Typography>
         <Box
           component='form'
@@ -108,39 +108,40 @@ const SignUpPage = () => {
           sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         >
           <TextField
-            label='Email'
+            label='邮箱'
             fullWidth
             type='email'
             value={email}
             placeholder='your@email.com'
             onChange={(event) => setEmail(event.target.value)}
             error={emailError}
-            helperText={emailError && 'Email is required'}
+            helperText={emailError && '请填写邮箱'}
           />
           <TextField
-            label='Password'
+            label='密码'
             fullWidth
             type='password'
             placeholder='••••••'
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={passwordError}
-            helperText={
-              passwordError && 'Password must be at least 6 characters'
-            }
+            helperText={passwordError && '密码必须符合要求'}
           />
           <TextField
-            label='Confirm Password'
+            label='确认密码'
             fullWidth
             type='password'
             placeholder='••••••'
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             error={confirmPasswordError}
-            helperText={confirmPasswordError && 'Passwords do not match'}
+            helperText={confirmPasswordError && '两次输入的密码不一致'}
           />
           {error && (
-            <Typography color='error' sx={{ mt: 1 }}>
+            <Typography
+              color='error'
+              sx={{ mt: 1 }}
+            >
               {error}
             </Typography>
           )}
@@ -151,13 +152,17 @@ const SignUpPage = () => {
             color='primary'
             disabled={loading}
           >
-            {loading ? 'Registering...' : 'Sign Up'}
+            {loading ? '注册中...' : '注册'}
           </Button>
         </Box>
         <Typography align='center'>
-          Already have an account?{' '}
-          <Link href='/signin' underline='hover' color='primary'>
-            Sign in
+          已经有账号了？{' '}
+          <Link
+            href='/signin'
+            underline='hover'
+            color='primary'
+          >
+            立刻登录
           </Link>
         </Typography>
       </RegisterCard>

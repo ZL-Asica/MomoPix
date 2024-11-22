@@ -34,7 +34,7 @@ const emailPasswordUtil = (
 
   if (!email.includes('@zla.app')) {
     setEmailError(true);
-    toast.error('仅支持 zla.app 邮箱地址');
+    toast.error('本站禁止注册');
     hasError = true;
   }
 
