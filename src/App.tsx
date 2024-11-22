@@ -3,10 +3,11 @@ import { Route, Routes } from 'react-router-dom';
 
 import AppProviders from '@/AppProviders';
 
-import SignIn from '@/pages/SignIn';
+import SignInPage from '@/pages/SignIn';
 import NotFoundPage from '@/pages/NotFoundPage';
 import SignUpPage from '@/pages/SignUp';
 import Profile from '@/pages/Profile';
+import AlbumsPage from '@/pages/Albums';
 
 import Layout from '@/components/common/Layout';
 
@@ -24,7 +25,7 @@ const App = () => {
           />
           <Route
             path='signin'
-            element={<SignIn />}
+            element={<SignInPage />}
           />
           <Route
             path='signup'
@@ -33,6 +34,14 @@ const App = () => {
           <Route
             path='profile'
             element={<Profile />}
+          />
+          <Route
+            path='/albums'
+            element={<AlbumsPage />}
+          />
+          <Route
+            path='/album/:albumName'
+            element={<Box>Album Detail Page</Box>}
           />
           <Route
             path='*'

@@ -24,6 +24,7 @@ describe('useUpdateUserData', () => {
       albums: [
         {
           name: 'default',
+          thumbnail: '',
           createdAt: '2023-01-01T00:00:00.000Z',
           photos: [],
         },
@@ -68,6 +69,7 @@ describe('useUpdateUserData', () => {
         if (!updatedAlbums.some((album) => album.name === albumName)) {
           updatedAlbums.push({
             name: albumName,
+            thumbnail: '',
             photos: photos.map((photo) => ({
               ...photo,
               uploadedAt: new Date().toISOString(),
@@ -138,7 +140,7 @@ describe('useUpdateUserData', () => {
 
   it('should add photos to an existing album', async () => {
     const newPhotos = [
-      { url: 'photo1.jpg', name: 'Photo 1', size: 123, uploadedAt: '' },
+      { id: 1, url: 'photo1.jpg', name: 'Photo 1', size: 123, uploadedAt: '' },
     ];
 
     const TestComponent = () => {
@@ -163,6 +165,7 @@ describe('useUpdateUserData', () => {
         {
           name: 'default',
           createdAt: '2023-01-01T00:00:00.000Z',
+          thumbnail: '',
           photos: newPhotos.map((photo) => ({
             ...photo,
             uploadedAt: expect.any(String),
@@ -174,7 +177,7 @@ describe('useUpdateUserData', () => {
 
   it('should add photos to a new album if album does not exist', async () => {
     const newPhotos = [
-      { url: 'photo3.jpg', name: 'Photo 3', size: 789, uploadedAt: '' },
+      { id: 1, url: 'photo3.jpg', name: 'Photo 3', size: 789, uploadedAt: '' },
     ];
     const albumName = 'New Album';
 
@@ -200,6 +203,7 @@ describe('useUpdateUserData', () => {
         ...mockUserData.albums,
         {
           name: albumName,
+          thumbnail: '',
           photos: newPhotos.map((photo) => ({
             ...photo,
             uploadedAt: expect.any(String),

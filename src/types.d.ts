@@ -1,6 +1,7 @@
 type UpdateStage = 'idle' | 'updating' | 'success';
 
 interface Photo {
+  id: number;
   url: string;
   size: number;
   uploadedAt: string;
@@ -9,6 +10,7 @@ interface Photo {
 
 interface Album {
   name: string;
+  thumbnail: string;
   createdAt: string;
   photos: Photo[];
 }

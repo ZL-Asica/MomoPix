@@ -38,7 +38,7 @@
     "@types/react-dom": "^18.3.1",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react-swc": "^3.5.0",
-    "@zl-asica/prettier-config": "^1.0.8",
+    "@zl-asica/prettier-config": "^1.0.9",
     "eslint": "^9.13.0",
     "eslint-config-zl-asica": "^1.0.19",
     "global-jsdom": "^25.0.0",

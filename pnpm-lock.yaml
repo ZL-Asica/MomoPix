@@ -76,8 +76,8 @@ importers:
         specifier: ^3.5.0
         version: 3.7.1(vite@5.4.11(@types/node@22.9.1))
       '@zl-asica/prettier-config':
-        specifier: ^1.0.8
-        version: 1.0.8(prettier@3.3.3)
+        specifier: ^1.0.9
+        version: 1.0.9(prettier@3.3.3)
       eslint:
         specifier: ^9.13.0
         version: 9.15.0
@@ -1108,8 +1108,8 @@ packages:
   '@vitest/utils@2.1.5':
     resolution: {integrity: sha512-yfj6Yrp0Vesw2cwJbP+cl04OC+IHFsuQsrsJBL9pyGeQXE56v1UAOQco+SR55Vf1nQzfV0QJg1Qum7AaWUwwYg==}
 
-  '@zl-asica/prettier-config@1.0.8':
-    resolution: {integrity: sha512-c/ILxgapofaF8zOhY1F/8vuwFyVW9SQd0sPYCPDHpFE/r9ey7YO7s04V2nz5plBDJoTb/FdxFFxWbp9EZqXokQ==}
+  '@zl-asica/prettier-config@1.0.9':
+    resolution: {integrity: sha512-ZKo+3D6OEscq1Axd3DAMIZX3jCj7KGmiYWdD6pvtkn5u7ljhtnc94T8RCY8pOM34XxPv9O7KoT1LGSzUZR1p8Q==}
     peerDependencies:
       prettier: ^3.0.0
 
@@ -3949,7 +3949,7 @@ snapshots:
       loupe: 3.1.2
       tinyrainbow: 1.2.0
 
-  '@zl-asica/prettier-config@1.0.8(prettier@3.3.3)':
+  '@zl-asica/prettier-config@1.0.9(prettier@3.3.3)':
     dependencies:
       prettier: 3.3.3
 

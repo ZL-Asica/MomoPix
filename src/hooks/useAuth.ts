@@ -72,6 +72,7 @@ const useAuth = () => {
       const userDocument = doc(db, 'users', user.uid);
       const defaultAlbum: Album = {
         name: 'default',
+        thumbnail: '',
         createdAt: new Date().toISOString(),
         photos: [],
       };
