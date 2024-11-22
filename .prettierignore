@@ -1,0 +1,19 @@
+# Ignore artifacts:
+build
+coverage
+.husky
+.yarn
+.docusaurus
+node_modules
+yarn.lock
+package-lock.json
+*.log.*
+.DS_Store
+.idea
+.pnp.*
+.yarn
+LICENSE
+LICENSE-CC
+pnpm-lock.yaml
+dist
+*.tsbuildinfo

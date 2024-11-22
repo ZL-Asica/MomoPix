@@ -1,0 +1,83 @@
+name: Auto-label PR based on file paths
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: 🛎️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: Label PR based on changes with colors
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prFiles = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            // Label configurations: path to label and color mapping
+            const labelConfig = [
+              { path: 'src/components', label: 'components', color: '1f77b4' },
+              { path: 'src/pages', label: 'pages', color: 'ff7f0e' },
+              { path: 'src/hooks', label: 'hooks', color: '2ca02c' },
+              { path: 'src/utils', label: 'utils', color: '9467bd' },
+              { path: 'src/context', label: 'context', color: 'd62728' },
+              { path: 'src/assets', label: 'assets', color: 'ffdd57' },
+              { path: 'public', label: 'assets', color: 'ffdd57' },
+              { path: 'src/styles', label: 'styles', color: '17becf' },
+              { path: 'src/services', label: 'tests', color: 'bcbd22' },
+            ];
+
+            const labels = new Set();
+
+            // Match file paths to labels
+            prFiles.data.forEach(file => {
+              labelConfig.forEach(({ path, label }) => {
+                if (file.filename.startsWith(path)) {
+                  labels.add(label);
+                }
+              });
+            });
+
+            // Only process defined labels
+            if (labels.size > 0) {
+              for (const label of labels) {
+                const labelConfigItem = labelConfig.find(config => config.label === label);
+                const labelColor = labelConfigItem?.color || 'b0b0b0'; // Default to gray
+
+                try {
+                  // Check if label exists
+                  await github.rest.issues.getLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label,
+                  });
+                } catch (error) {
+                  // Create label if it doesn't exist
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label,
+                    color: labelColor,
+                  });
+                }
+              }
+
+              // Add labels to the PR
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: Array.from(labels),
+              });
+            }
