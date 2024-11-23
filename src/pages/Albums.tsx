@@ -2,31 +2,19 @@ import { Box, Grid2 as Grid, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import { useToggle } from '@zl-asica/react';
-import { toast } from 'sonner';
 
-import { useAuthContext, useUpdateUserData } from '@/hooks';
-import { InputDialog } from '@/components';
+import { useAuthContext } from '@/hooks';
 
-import { AlbumCard } from '@/components/Albums';
+import { AlbumCard, CreateNewAlbumModal } from '@/components/Albums';
 
 const AlbumsPage = () => {
   const { userData } = useAuthContext();
-  const { addAlbum } = useUpdateUserData();
 
   const navigate = useNavigate();
 
   const [dialogOpen, toggleDialogOpen] = useToggle();
 
   const albums = userData?.albums || [];
-
-  const handleAddAlbum = async (albumName: string) => {
-    try {
-      await addAlbum(albumName);
-    } catch (error) {
-      console.error('Failed to create album', error);
-      toast.error('Failed to create album');
-    }
-  };
 
   if (!userData) navigate('/');
 
@@ -82,14 +70,9 @@ const AlbumsPage = () => {
           />
         ))}
       </Grid>
-
-      {/* 新建相册弹窗 */}
-      <InputDialog
-        open={dialogOpen}
-        onClose={toggleDialogOpen}
-        title='新建相册'
-        inputLabel='相册名称'
-        handleSave={handleAddAlbum}
+      <CreateNewAlbumModal
+        dialogOpen={dialogOpen}
+        toggleDialogOpen={toggleDialogOpen}
       />
     </Box>
   );

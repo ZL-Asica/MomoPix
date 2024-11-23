@@ -19,17 +19,16 @@ import {
   Avatar,
   Skeleton,
 } from '@mui/material';
-import { useClickOutside } from '@zl-asica/react';
+import { useClickOutside, useToggle } from '@zl-asica/react';
 
-import UploadModal from './UploadModal';
-
+import { UploadModal } from '@/components';
 import { useAuthContext, useAuth } from '@/hooks';
 
 const Header = () => {
   const { loading, userData } = useAuthContext();
   const { logout } = useAuth();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadModalOpen, toggleUploadModalOpen] = useToggle();
   const menuReference = useRef(null);
   const location = useLocation();
 
@@ -55,12 +54,8 @@ const Header = () => {
   };
 
   const handleUploadModalOpen = () => {
-    setUploadModalOpen(true);
+    toggleUploadModalOpen();
     handleMenuClose();
-  };
-
-  const handleUploadModalClose = () => {
-    setUploadModalOpen(false);
   };
 
   return (
@@ -210,7 +205,7 @@ const Header = () => {
       {/* Upload Modal */}
       <UploadModal
         open={uploadModalOpen}
-        onClose={handleUploadModalClose}
+        onClose={toggleUploadModalOpen}
       />
     </AppBar>
   );
