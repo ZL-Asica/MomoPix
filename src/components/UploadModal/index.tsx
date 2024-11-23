@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Modal, Grid2 as Grid, Box, Button } from '@mui/material';
+import {
+  Modal,
+  Grid2 as Grid,
+  Box,
+  Button,
+  Typography,
+  LinearProgress,
+} from '@mui/material';
 import { toast } from 'sonner';
 
 import ModalHeader from './ModalHeader';
@@ -7,6 +14,9 @@ import Dropzone from './Dropzone';
 import FilePreview from './FilePreview';
 import { ModalContainer } from './styles';
 import { MAX_FILES } from './constants';
+
+import { useAuthContext, useUploadProgress } from '@/hooks';
+import { uploadImages } from '@/utils';
 
 import { SelectAlbumDropdown } from '@/components/Albums';
 
@@ -16,9 +26,13 @@ interface UploadModalProperties {
 }
 
 const UploadModal = ({ open, onClose }: UploadModalProperties) => {
+  const { userData } = useAuthContext();
   const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<string>('default');
+  const { progress, incrementProgress, resetProgress } = useUploadProgress(
+    files.length
+  );
 
   const validateFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -54,15 +68,27 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
     );
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (files.length === 0) {
       toast.error('请至少上传一张图片');
       return;
     }
 
-    console.log('上传的图片:', files, '至相簿:', selectedAlbum);
-    setFiles([]);
-    onClose();
+    try {
+      resetProgress();
+      await uploadImages(
+        userData?.uid || '',
+        files.map((f) => f.file),
+        selectedAlbum,
+        incrementProgress
+      );
+      toast.success('上传完成！');
+      setFiles([]);
+      onClose();
+    } catch (error) {
+      console.error(error);
+      toast.error('上传失败');
+    }
   };
 
   return (
@@ -103,6 +129,34 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
           ))}
         </Grid>
 
+        {/* 上传进度条 */}
+        {progress > 0 && (
+          <Box
+            mt={3}
+            mb={1}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Typography
+              variant='body2'
+              color='textSecondary'
+            >
+              上传进度:
+            </Typography>
+            <LinearProgress
+              variant='determinate'
+              value={(progress / files.length) * 100}
+              sx={{ flex: 1 }}
+            />
+            <Typography variant='body2'>
+              {Math.round((progress / files.length) * 100)}%
+            </Typography>
+          </Box>
+        )}
+
         <Box
           display='flex'
           justifyContent='space-between'
@@ -112,13 +166,14 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
             variant='contained'
             color='primary'
             onClick={handleUpload}
-            disabled={files.length === 0}
+            disabled={files.length === 0 || progress > 0}
           >
-            上传
+            {progress > 0 ? '上传中...' : '上传'}
           </Button>
           <Button
             variant='outlined'
             onClick={onClose}
+            disabled={progress > 0}
           >
             取消
           </Button>

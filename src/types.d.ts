@@ -4,7 +4,8 @@ interface Photo {
   id: string;
   url: string;
   size: number;
-  uploadedAt: string;
+  lastModified: number;
+  uploadedAt: number;
   name: string;
 }
 

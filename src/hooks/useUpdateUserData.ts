@@ -62,7 +62,8 @@ const useUpdateUserData = () => {
               ...album.photos,
               ...photos.map((photo) => ({
                 ...photo,
-                uploadedAt: new Date().toISOString(),
+                lastModified: Date.now(),
+                uploadedAt: Date.now(),
               })),
             ],
           }

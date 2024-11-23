@@ -59,7 +59,8 @@ describe('useUpdateUserData', () => {
                   ...album.photos,
                   ...photos.map((photo) => ({
                     ...photo,
-                    uploadedAt: new Date().toISOString(),
+                    lastModified: Date.now(),
+                    uploadedAt: Date.now(),
                   })),
                 ],
               }
@@ -72,7 +73,8 @@ describe('useUpdateUserData', () => {
             thumbnail: '',
             photos: photos.map((photo) => ({
               ...photo,
-              uploadedAt: new Date().toISOString(),
+              lastModified: Date.now(),
+              uploadedAt: Date.now(),
             })),
             createdAt: new Date().toISOString(),
           });
@@ -145,7 +147,8 @@ describe('useUpdateUserData', () => {
         url: 'photo1.jpg',
         name: 'Photo 1',
         size: 123,
-        uploadedAt: '',
+        lastModified: 123,
+        uploadedAt: 123,
       },
     ];
 
@@ -174,7 +177,8 @@ describe('useUpdateUserData', () => {
           thumbnail: '',
           photos: newPhotos.map((photo) => ({
             ...photo,
-            uploadedAt: expect.any(String),
+            lastModified: expect.any(Number),
+            uploadedAt: expect.any(Number),
           })),
         },
       ],
@@ -188,7 +192,8 @@ describe('useUpdateUserData', () => {
         url: 'photo3.jpg',
         name: 'Photo 3',
         size: 789,
-        uploadedAt: '',
+        lastModified: 123,
+        uploadedAt: 123,
       },
     ];
     const albumName = 'New Album';
@@ -218,7 +223,8 @@ describe('useUpdateUserData', () => {
           thumbnail: '',
           photos: newPhotos.map((photo) => ({
             ...photo,
-            uploadedAt: expect.any(String),
+            lastModified: expect.any(Number),
+            uploadedAt: expect.any(Number),
           })),
           createdAt: expect.any(String),
         },
