@@ -13,8 +13,6 @@ const uploadImages = async (
   const photoData = files.map((file) =>
     generatePhotoData(userData.uid, file.name)
   );
-  console.info('Generated photo data:', photoData);
-  console.info(`User data: ${userData.TOKEN}, ${userData.uid}`);
   const preSignedLinks = await getPreSignedLinks(photoData, userData.TOKEN);
 
   const uploadTasks = files.map((file, index) => {

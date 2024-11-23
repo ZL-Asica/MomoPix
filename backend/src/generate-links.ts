@@ -6,6 +6,11 @@ import type { Bindings } from './types'
 
 const MAX_PHOTO_COUNT = 10
 
+interface PhotoData {
+  id: string
+  url: string
+}
+
 // R2 S3 Client Initialization
 const createS3Client = (bindings: Bindings) =>
   new S3Client({
@@ -18,11 +23,10 @@ const createS3Client = (bindings: Bindings) =>
   })
 
 const generateLinksHandler = async (c: Context) => {
-  try {
-    // Parse photo data from request body
-    const { photoData }: { photoData: { id: string; url: string }[] } =
-      await c.req.json()
+  // Parse photo data from request body
+  const { photoData }: { photoData: PhotoData[] } = await c.req.json()
 
+  try {
     if (
       !Array.isArray(photoData) ||
       photoData.some((item) => !item.id || !item.url)

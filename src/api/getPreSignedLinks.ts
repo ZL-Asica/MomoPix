@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 
 const getPreSignedLinks = async (
-  photoIds: PhotoData[],
+  photoData: PhotoData[],
   TOKEN: string
 ): Promise<PreSignedUrl[]> => {
   if (!TOKEN) {
@@ -16,12 +16,22 @@ const getPreSignedLinks = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${TOKEN}`,
     },
-    body: JSON.stringify({ photoIds }),
+    body: JSON.stringify({ photoData }),
   });
 
   if (!response.ok) {
-    console.error('Failed to generate pre-signed links:', response);
-    throw new Error('Failed to generate pre-signed links');
+    const errorDetails = await response.json().catch(() => null);
+    console.error(
+      'Failed to generate pre-signed links:',
+      response,
+      errorDetails
+    );
+    toast.error(
+      `Failed to generate pre-signed links: ${errorDetails?.error || response.statusText}`
+    );
+    throw new Error(
+      `Failed to generate pre-signed links: ${response.status} ${response.statusText}`
+    );
   }
 
   return await response.json();
