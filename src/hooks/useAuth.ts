@@ -82,6 +82,7 @@ const useAuth = () => {
 
       const newUser: UserData = {
         uid: user.uid,
+        TOKEN: '',
         email: user.email as string,
         displayName: user.displayName || gravatarProfile?.displayName || null,
         photoURL:

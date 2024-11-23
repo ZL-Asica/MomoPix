@@ -58,29 +58,3 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export { AuthProvider, AuthContext };
-
-// import { useAuthContext } from '@/hooks';
-
-// const UpdateProfile = () => {
-//   const { updateUserData, updateStatus, updateError } = useAuthContext();
-
-//   const handleUpdate = async () => {
-//     try {
-//       await updateUserData({ displayName: 'New Name' });
-//       alert('Update successful!');
-//     } catch (error) {
-//       console.error('Update failed:', error);
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <button onClick={handleUpdate} disabled={updateStatus === 'updating'}>
-//         {updateStatus === 'updating' ? 'Updating...' : 'Update Profile'}
-//       </button>
-//       {updateError && <p style={{ color: 'red' }}>Error: {updateError}</p>}
-//     </div>
-//   );
-// };
-
-// export default UpdateProfile;

@@ -29,6 +29,7 @@ interface Album {
 
 interface UserData {
   uid: string;
+  TOKEN: string;
   email: string;
   displayName: string | null;
   photoURL: string | null;

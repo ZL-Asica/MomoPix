@@ -7,14 +7,7 @@ compatibility_flags = [ "nodejs_compat" ]
 
 [vars]
 CORS_ORIGIN = "https://img.zla.app"
-FIREBASE_PROJECT_ID = "momopix-zla"
-PUBLIC_JWK_CACHE_KEY = "firebase-jwk-cache"
-PUBLIC_JWK_CACHE_KV = "FIREBASE_PUBLIC_KEYS"
 R2_BUCKET = "zla-img"
-
-[[kv_namespaces]]
-binding = "FIREBASE_PUBLIC_KEYS"
-id = "7f3cfab4ba0248f88f6ceb4efb61595e"
 
 # wrangler.toml (wrangler v3.88.0^)
 [observability]

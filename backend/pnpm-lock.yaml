@@ -14,9 +14,6 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.699.0
         version: 3.699.0
-      '@hono/firebase-auth':
-        specifier: ^1.4.1
-        version: 1.4.1(hono@4.6.11)
       hono:
         specifier: ^4.6.11
         version: 4.6.11
@@ -439,11 +436,6 @@ packages:
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
     engines: {node: '>=14'}
-
-  '@hono/firebase-auth@1.4.1':
-    resolution: {integrity: sha512-IXwKKsZX5BsdZhWul2dSycUtt/DoBSgFOR3gJfnEsklkjvL+vNbchKCIGE9UF9AGqcm+tdi1eAxDR1FcTtRF7g==}
-    peerDependencies:
-      hono: '*'
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1212,9 +1204,6 @@ packages:
   find-up@5.0.0:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
-
-  firebase-auth-cloudflare-workers@2.0.4:
-    resolution: {integrity: sha512-cIhOLpDbia4I1mZSOiKO52/HRwk/Jopg9W+dx77NavDUeKuiXl//AWZWv7Din2ZXBhE/Xq0XOXJh7V1Z8EvXPg==}
 
   flat-cache@4.0.1:
     resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
@@ -2713,11 +2702,6 @@ snapshots:
 
   '@fastify/busboy@2.1.1': {}
 
-  '@hono/firebase-auth@1.4.1(hono@4.6.11)':
-    dependencies:
-      firebase-auth-cloudflare-workers: 2.0.4
-      hono: 4.6.11
-
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.6':
@@ -3797,8 +3781,6 @@ snapshots:
     dependencies:
       locate-path: 6.0.0
       path-exists: 4.0.0
-
-  firebase-auth-cloudflare-workers@2.0.4: {}
 
   flat-cache@4.0.1:
     dependencies:

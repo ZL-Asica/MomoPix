@@ -1,4 +1,4 @@
-import { TextField, MenuItem } from '@mui/material';
+import { TextField, MenuItem, Box } from '@mui/material';
 import { useToggle } from '@zl-asica/react';
 
 import { useAuthContext } from '@/hooks';
@@ -20,29 +20,38 @@ const SelectAlbumDropdown = ({
 
   return (
     <>
-      <TextField
-        select
-        label='选择相簿'
-        value={selectedAlbum}
-        onChange={(event_) => setSelectedAlbum(event_.target.value)}
-        fullWidth
-        margin='normal'
+      <Box
+        sx={{
+          marginBottom: '1rem',
+          mx: 'auto',
+          width: '50%',
+          minWidth: '200px',
+        }}
       >
-        {albums.map((album) => (
-          <MenuItem
-            key={album.name}
-            value={album.name}
-          >
-            {album.name}
-          </MenuItem>
-        ))}
-        <MenuItem
-          value='create-new'
-          onClick={toggleDialogOpen}
+        <TextField
+          select
+          label='选择相簿'
+          value={selectedAlbum}
+          onChange={(event_) => setSelectedAlbum(event_.target.value)}
+          fullWidth
+          margin='normal'
         >
-          新建相簿
-        </MenuItem>
-      </TextField>
+          {albums.map((album) => (
+            <MenuItem
+              key={album.name}
+              value={album.name}
+            >
+              {album.name}
+            </MenuItem>
+          ))}
+          <MenuItem
+            value='create-new'
+            onClick={toggleDialogOpen}
+          >
+            新建相簿
+          </MenuItem>
+        </TextField>
+      </Box>
 
       {/* 新建相簿弹窗 */}
       <CreateNewAlbumModal

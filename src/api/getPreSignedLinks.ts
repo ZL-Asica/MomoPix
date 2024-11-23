@@ -1,20 +1,20 @@
-import { getAuth } from 'firebase/auth';
+import { toast } from 'sonner';
 
 const getPreSignedLinks = async (
-  photoIds: PhotoData[]
+  photoIds: PhotoData[],
+  TOKEN: string
 ): Promise<PreSignedUrl[]> => {
-  const auth = getAuth();
-  const token = await auth.currentUser?.getIdToken();
-
-  if (!token) {
-    throw new Error('User is not authenticated');
+  if (!TOKEN) {
+    console.error('No token provided');
+    toast.error('No token provided');
+    throw new Error('No token provided');
   }
 
   const response = await fetch(import.meta.env.VITE_API_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`, // Include Firebase ID token
+      Authorization: `Bearer ${TOKEN}`,
     },
     body: JSON.stringify({ photoIds }),
   });

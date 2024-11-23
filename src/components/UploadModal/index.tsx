@@ -15,7 +15,7 @@ import FilePreview from './FilePreview';
 import { ModalContainer } from './styles';
 import { MAX_FILES } from './constants';
 
-import { useAuthContext, useUploadProgress } from '@/hooks';
+import { useAuthContext, useUpdateUserData, useUploadProgress } from '@/hooks';
 import { uploadImages } from '@/utils';
 
 import { SelectAlbumDropdown } from '@/components/Albums';
@@ -27,6 +27,8 @@ interface UploadModalProperties {
 
 const UploadModal = ({ open, onClose }: UploadModalProperties) => {
   const { userData } = useAuthContext();
+  const { addPhotosToAlbum } = useUpdateUserData();
+
   const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<string>('default');
@@ -74,12 +76,18 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
       return;
     }
 
+    if (!userData) {
+      toast.error('用户数据未加载');
+      return;
+    }
+
     try {
       resetProgress();
       await uploadImages(
-        userData?.uid || '',
+        userData,
         files.map((f) => f.file),
         selectedAlbum,
+        addPhotosToAlbum,
         incrementProgress
       );
       toast.success('上传完成！');
@@ -96,6 +104,9 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
       open={open}
       onClose={onClose}
       aria-labelledby='upload-modal-title'
+      sx={{
+        margin: 8,
+      }}
     >
       <ModalContainer>
         <ModalHeader

@@ -10,6 +10,7 @@ export default [
       'prettier.config.cjs',
       'src/**/*.d.ts',
       'vite.config.ts',
+      'setup_firebase.mjs',
       'backend',
     ],
   },

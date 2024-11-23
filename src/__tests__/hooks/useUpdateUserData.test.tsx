@@ -17,6 +17,7 @@ describe('useUpdateUserData', () => {
     mockUpdateUserData = vi.fn();
     mockUserData = {
       uid: '123',
+      TOKEN: '',
       email: 'test@example.com',
       displayName: 'Test User',
       photoURL: 'http://example.com/photo.jpg',
