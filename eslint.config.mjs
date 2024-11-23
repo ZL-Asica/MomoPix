@@ -25,6 +25,7 @@ export default [
     },
     rules: {
       'unicorn/filename-case': 'off',
+      'unicorn/no-array-for-each': 'off',
     },
   },
 ];

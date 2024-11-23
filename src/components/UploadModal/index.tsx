@@ -13,9 +13,13 @@ import ModalHeader from './ModalHeader';
 import Dropzone from './Dropzone';
 import FilePreview from './FilePreview';
 import { ModalContainer } from './styles';
-import { MAX_FILES } from './constants';
 
-import { useAuthContext, useUpdateUserData, useUploadProgress } from '@/hooks';
+import {
+  useAuthContext,
+  useFileUploader,
+  useUpdateUserData,
+  useUploadProgress,
+} from '@/hooks';
 import { uploadImages } from '@/utils';
 
 import { SelectAlbumDropdown } from '@/components/Albums';
@@ -28,47 +32,14 @@ interface UploadModalProperties {
 const UploadModal = ({ open, onClose }: UploadModalProperties) => {
   const { userData } = useAuthContext();
   const { addPhotosToAlbum } = useUpdateUserData();
+  const { files, setFiles, addFiles, deleteFile, renameFile } =
+    useFileUploader();
 
-  const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<string>('default');
   const { progress, incrementProgress, resetProgress } = useUploadProgress(
     files.length
   );
-
-  const validateFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error(`文件 "${file.name}" 类型不支持，仅支持图片格式`);
-      return false;
-    }
-    return true;
-  };
-
-  const onDrop = (acceptedFiles: File[]) => {
-    const validFiles = acceptedFiles.filter((file) => validateFile(file));
-    const newFiles = validFiles.map((file) => ({ file, name: file.name }));
-
-    if (files.length + newFiles.length > MAX_FILES) {
-      toast.error(`一次最多上传 ${MAX_FILES} 张图片`);
-      return;
-    }
-
-    setFiles((previous) => [...previous, ...newFiles]);
-  };
-
-  const handleDelete = (index: number) => {
-    setFiles((previous) => previous.filter((_, index_) => index_ !== index));
-  };
-
-  const handleRename = (index: number, newName: string) => {
-    setFiles((previous) =>
-      previous.map((file, index_) =>
-        index_ === index
-          ? { ...file, name: `${newName}.${file.file.name.split('.').pop()}` }
-          : file
-      )
-    );
-  };
 
   const handleUpload = async () => {
     if (files.length === 0) {
@@ -82,7 +53,7 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
     }
 
     try {
-      resetProgress();
+      resetProgress(); // Reset progress
       await uploadImages(
         userData,
         files.map((f) => f.file),
@@ -91,11 +62,12 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
         incrementProgress
       );
       toast.success('上传完成！');
-      setFiles([]);
+      setFiles([]); // Clear files
       onClose();
     } catch (error) {
-      console.error(error);
-      toast.error('上传失败');
+      console.error('上传失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      toast.error(`上传失败：${errorMessage}`);
     }
   };
 
@@ -118,9 +90,9 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
           setSelectedAlbum={setSelectedAlbum}
         />
 
-        {/* 文件拖拽/上传区域 */}
+        {/* File drag and upload */}
         <Dropzone
-          onDrop={onDrop}
+          onDrop={addFiles}
           isDragging={isDragging}
           setIsDragging={setIsDragging}
         />
@@ -134,8 +106,8 @@ const UploadModal = ({ open, onClose }: UploadModalProperties) => {
               key={index}
               file={file}
               name={name}
-              onDelete={() => handleDelete(index)}
-              onRename={(newName) => handleRename(index, newName)}
+              onDelete={() => deleteFile(index)}
+              onRename={(newName) => renameFile(index, newName)}
             />
           ))}
         </Grid>

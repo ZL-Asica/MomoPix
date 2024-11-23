@@ -1,1 +1,1 @@
-export { default as getPreSignedLinks } from './getPreSignedLinks';
+export { default as upload } from './upload';

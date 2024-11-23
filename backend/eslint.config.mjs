@@ -1,4 +1,4 @@
-import { zlAsicaTsConfig } from 'eslint-config-zl-asica';
+import { zlAsicaTsConfig } from 'eslint-config-zl-asica'
 
 export default [
   ...zlAsicaTsConfig,
@@ -21,6 +21,7 @@ export default [
     },
     rules: {
       'unicorn/filename-case': 'off',
+      'unicorn/no-array-for-each': 'off',
     },
   },
-];
+]

@@ -2,7 +2,8 @@ import { Typography } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 
 import { DropzoneContainer } from './styles';
-import { MAX_FILE_SIZE_MB, MAX_FILES } from './constants';
+
+import { MAX_FILE_SIZE_MB, MAX_FILES } from '@/consts';
 
 interface DropzoneProperties {
   onDrop: (acceptedFiles: File[]) => void;

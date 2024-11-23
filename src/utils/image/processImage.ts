@@ -1,27 +1,30 @@
-const processImageWithWorker = async (file: File): Promise<Blob> => {
+const processImage = async (file: File): Promise<Blob> => {
   const img = document.createElement('img');
   img.src = URL.createObjectURL(file);
 
-  await new Promise((resolve) => {
-    img.addEventListener('load', resolve);
-  });
+  await new Promise((resolve) => img.addEventListener('load', resolve));
 
-  const offscreen = new OffscreenCanvas(img.width, img.height);
-  const context = offscreen.getContext('2d');
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+
+  const context = canvas.getContext('2d');
   if (context) {
     context.drawImage(img, 0, 0);
   } else {
-    throw new Error('Failed to get OffscreenCanvas context');
+    throw new Error('Failed to get canvas context');
   }
 
   return new Promise((resolve) => {
-    offscreen
-      .convertToBlob({
-        type: 'image/avif',
-        quality: 0.7,
-      })
-      .then(resolve);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else throw new Error('Failed to process image');
+      },
+      'image/avif', // Target format
+      0.7 // Compression quality
+    );
   });
 };
 
-export default processImageWithWorker;
+export default processImage;

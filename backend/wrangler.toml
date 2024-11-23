@@ -7,7 +7,6 @@ compatibility_flags = [ "nodejs_compat" ]
 
 [vars]
 CORS_ORIGIN = "https://img.zla.app"
-R2_BUCKET = "zla-img"
 
 # wrangler.toml (wrangler v3.88.0^)
 [observability]
@@ -16,6 +15,4 @@ head_sampling_rate = 1
 
 # Remember to set the following secrets in Workers Secrets
 
-# ACCOUNT_ID: string // R2 Account ID
-# ACCESS_KEY_ID: string // R2 Access Key ID
-# SECRET_ACCESS_KEY: string // R2 Access Key Secret
+# TOKEN = "YOUR PRIVATE TOKEN"

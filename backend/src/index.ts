@@ -3,8 +3,13 @@ import { logger } from 'hono/logger'
 import { bearerAuth } from 'hono/bearer-auth'
 import { cors } from 'hono/cors'
 
-import type { Bindings } from './types'
-import generateLinksHandler from './generate-links'
+import uploadHandler from './upload'
+
+type Bindings = {
+  CORS_ORIGIN: string // CORS origin
+  TOKEN: string // Your private authentication token
+  R2_BUCKET: R2Bucket // R2 bucket
+}
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -15,7 +20,7 @@ app.use('*', async (c, next) => {
     origin: c.env.CORS_ORIGIN
       ? c.env.CORS_ORIGIN.split(',').map((s) => s.trim())
       : '*',
-    allowHeaders: ['Authorization', 'Content-Type'],
+    allowHeaders: ['Authorization'],
     allowMethods: ['POST'],
   })
   return corsMiddlewareHandler(c, next)
@@ -35,8 +40,8 @@ app.use(
   })
 )
 
-// Generate pre-signed URLs for uploading photos
-app.post('/generate-links', generateLinksHandler)
+// uploading photos
+app.post('/upload', uploadHandler)
 
 app.onError((error, c) => {
   console.error('Unhandled error:', error)
