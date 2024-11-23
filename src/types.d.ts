@@ -1,5 +1,16 @@
 type UpdateStage = 'idle' | 'updating' | 'success';
 
+interface PreSignedUrl {
+  id: string;
+  signedUrl: string;
+}
+
+// For uploading images
+interface PhotoData {
+  id: string;
+  url: string;
+}
+
 interface Photo {
   id: string;
   url: string;

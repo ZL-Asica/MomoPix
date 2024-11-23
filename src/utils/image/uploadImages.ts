@@ -1,4 +1,5 @@
-import { processImage, generatePhotoId, generatePhotoUrl } from './index';
+import uploadSinglePhoto from './uploadUtils';
+import generatePhotoData from './generatePhotoUrl';
 
 import { getPreSignedLinks } from '@/api';
 import { useUpdateUserData } from '@/hooks';
@@ -10,38 +11,32 @@ const uploadImages = async (
   incrementProgress: () => void
 ) => {
   const { addPhotosToAlbum } = useUpdateUserData();
-  const photoIds = files.map((file) => generatePhotoId(userId, file.name));
-  const preSignedLinks = await getPreSignedLinks(photoIds);
+  const photoData = files.map((file) => generatePhotoData(userId, file.name));
+  const preSignedLinks = await getPreSignedLinks(photoData);
 
-  const photos: Photo[] = [];
+  const uploadTasks = files.map((file, index) => {
+    const singlePhoto = photoData[index];
+    const preSignedLink = preSignedLinks.find(
+      (link) => link.id === singlePhoto.id
+    );
 
-  for (const [index, file] of files.entries()) {
-    const compressedBlob = await processImage(file);
-    const photoId = photoIds[index];
-    const preSignedUrl = preSignedLinks[index];
-
-    const response = await fetch(preSignedUrl, {
-      method: 'PUT',
-      body: compressedBlob,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload photo: ${file.name}`);
+    if (!preSignedLink) {
+      console.error(
+        `Pre-signed URL not found for singlePhoto: ${singlePhoto.id}`
+      );
+      return null;
     }
 
-    const photo: Photo = {
-      id: photoId,
-      url: generatePhotoUrl(photoId),
-      size: compressedBlob.size,
-      lastModified: Date.now(),
-      uploadedAt: Date.now(),
-      name: file.name,
-    };
+    return uploadSinglePhoto(
+      file,
+      singlePhoto,
+      preSignedLink,
+      incrementProgress
+    );
+  });
 
-    photos.push(photo);
-    incrementProgress();
-  }
-
+  const uploadResults = await Promise.all(uploadTasks);
+  const photos = uploadResults.filter(Boolean) as Photo[];
   await addPhotosToAlbum(albumName, photos);
 };
 

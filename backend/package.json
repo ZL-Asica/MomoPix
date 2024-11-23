@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.699.0",
+    "@aws-sdk/s3-request-presigner": "^3.699.0",
+    "@hono/firebase-auth": "^1.4.1",
+    "hono": "^4.6.11"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241112.0",
+    "eslint": "^9.13.0",
+    "eslint-config-zl-asica": "^1.0.19",
+    "wrangler": "^3.88.0"
+  }
+}

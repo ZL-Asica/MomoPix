@@ -1,24 +1,21 @@
-import { zlAsicaTsReactConfig } from 'eslint-config-zl-asica';
+import { zlAsicaTsConfig } from 'eslint-config-zl-asica';
 
 export default [
-  ...zlAsicaTsReactConfig,
+  ...zlAsicaTsConfig,
   {
     ignores: [
       'dist',
       'src/vite-env.d.ts',
       'eslint.config.mjs',
       'prettier.config.cjs',
-      'src/**/*.d.ts',
-      'vite.config.ts',
-      'backend',
     ],
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts}'],
     languageOptions: {
       ecmaVersion: 2020,
       parserOptions: {
-        project: './tsconfig.app.json',
+        project: './tsconfig.json',
         projectService: true,
       },
     },

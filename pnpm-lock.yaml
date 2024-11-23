@@ -103,7 +103,7 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
       typescript:
-        specifier: ~5.7.2
+        specifier: ^5.7.2
         version: 5.7.2
       vite:
         specifier: ^5.4.10

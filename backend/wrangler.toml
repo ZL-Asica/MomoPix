@@ -1,0 +1,28 @@
+name = "momopix"
+main = "src/index.ts"
+minify = true
+compatibility_date = "2024-11-23"
+
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+CORS_ORIGIN = "https://img.zla.app"
+FIREBASE_PROJECT_ID = "momopix-zla"
+PUBLIC_JWK_CACHE_KEY = "firebase-jwk-cache"
+PUBLIC_JWK_CACHE_KV = "FIREBASE_PUBLIC_KEYS"
+R2_BUCKET = "zla-img"
+
+[[kv_namespaces]]
+binding = "FIREBASE_PUBLIC_KEYS"
+id = "7f3cfab4ba0248f88f6ceb4efb61595e"
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Remember to set the following secrets in Workers Secrets
+
+# ACCOUNT_ID: string // R2 Account ID
+# ACCESS_KEY_ID: string // R2 Access Key ID
+# SECRET_ACCESS_KEY: string // R2 Access Key Secret
