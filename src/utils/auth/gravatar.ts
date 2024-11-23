@@ -1,4 +1,16 @@
-import md5 from 'crypto-js/md5';
+/**
+ * Generate MD5 hash using SubtleCrypto
+ * @param message - The input string to hash
+ * @returns Promise containing the hex-encoded hash
+ */
+const md5Hash = async (message: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('MD5', data);
+  return [...new Uint8Array(hashBuffer)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
 
 /**
  * Generate Gravatar URL from an email
@@ -6,8 +18,11 @@ import md5 from 'crypto-js/md5';
  * @param size - Image size (default: 200)
  * @returns Gravatar URL
  */
-const getGravatarURL = (email: string, size: number = 200): string => {
-  const emailHash = md5(email.trim().toLowerCase());
+const getGravatarURL = async (
+  email: string,
+  size: number = 200
+): Promise<string> => {
+  const emailHash = await md5Hash(email.trim().toLowerCase());
   return `https://www.gravatar.com/avatar/${emailHash}?s=${size}&d=identicon`;
 };
 
@@ -19,7 +34,7 @@ const getGravatarURL = (email: string, size: number = 200): string => {
 const fetchGravatarProfile = async (
   email: string
 ): Promise<{ displayName?: string; photoURL?: string } | null> => {
-  const emailHash = md5(email.trim().toLowerCase()).toString();
+  const emailHash = await md5Hash(email.trim().toLowerCase());
   const profileUrl = `https://www.gravatar.com/${emailHash}.json`;
 
   try {

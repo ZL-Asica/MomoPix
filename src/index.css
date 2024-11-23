@@ -2,6 +2,4 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden; /* 防止额外的滚动条 */
 }

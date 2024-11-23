@@ -78,7 +78,10 @@ const useAuth = () => {
       };
 
       // Fetch Gravatar profile data
-      const gravatarProfile = await fetchGravatarProfile(email);
+      const [gravatarProfile, gravatarURL] = await Promise.all([
+        fetchGravatarProfile(email),
+        getGravatarURL(email),
+      ]);
 
       const newUser: UserData = {
         uid: user.uid,
@@ -86,7 +89,7 @@ const useAuth = () => {
         email: user.email as string,
         displayName: user.displayName || gravatarProfile?.displayName || null,
         photoURL:
-          user.photoURL || gravatarProfile?.photoURL || getGravatarURL(email),
+          user.photoURL || gravatarProfile?.photoURL || gravatarURL || null,
         createdAt: new Date().toISOString(),
         albums: [defaultAlbum],
       };

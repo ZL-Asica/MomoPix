@@ -17,7 +17,7 @@ const generatePhoto = async (userId: string, file: File): Promise<Photo> => {
     size: file.size,
     lastModified: file.lastModified,
     uploadedAt: 0, // Placeholder until the upload is complete
-    name: file.name,
+    name: file.name.replaceAll(/\.[^./]+$/, ''), // Remove file extension
   };
 };
 

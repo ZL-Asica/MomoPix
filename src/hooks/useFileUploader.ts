@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { MAX_FILE_SIZE_MB, MAX_FILES } from '@/consts';
+import { uploadImages } from '@/utils';
 
-const useFileUploader = () => {
+const useFileUploader = (
+  userData: UserData | null,
+  selectedAlbum: string,
+  addPhotosToAlbum: (albumName: string, photos: Photo[]) => Promise<void>,
+  onClose: () => void
+) => {
   const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const validateFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -43,13 +50,44 @@ const useFileUploader = () => {
     setFiles((previous) =>
       previous.map((file, index_) =>
         index_ === index
-          ? { ...file, name: `${newName}.${file.file.name.split('.').pop()}` }
+          ? {
+              ...file,
+              name:
+                newName.replace(/\.[^./]+$/, '') +
+                file.name.match(/\.[^./]+$/)?.[0],
+            }
           : file
       )
     );
   };
 
-  return { files, setFiles, addFiles, deleteFile, renameFile };
+  const handleUpload = async () => {
+    if (files.length === 0) {
+      toast.error('请至少上传一张图片');
+      return;
+    }
+
+    if (!userData) {
+      toast.error('用户数据未加载');
+      return;
+    }
+
+    setIsUploading(true);
+
+    const success = await uploadImages(
+      userData,
+      files.map((f) => f.file),
+      selectedAlbum,
+      addPhotosToAlbum
+    );
+    if (success) {
+      setFiles([]); // Clear files
+      onClose();
+    }
+    setIsUploading(false);
+  };
+
+  return { files, isUploading, addFiles, deleteFile, renameFile, handleUpload };
 };
 
 export default useFileUploader;

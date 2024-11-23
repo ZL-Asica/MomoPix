@@ -1,3 +1,5 @@
+import { toast } from 'sonner';
+
 import generatePhoto from './generatePhoto';
 import processImage from './processImage';
 
@@ -7,9 +9,8 @@ const uploadImages = async (
   userData: UserData,
   files: File[],
   albumName: string,
-  addPhotosToAlbum: (albumName: string, photos: Photo[]) => Promise<void>,
-  incrementProgress: () => void
-) => {
+  addPhotosToAlbum: (albumName: string, photos: Photo[]) => Promise<void>
+): Promise<boolean> => {
   // Step 1: Generate Photo objects for each file
   const photos: Photo[] = await Promise.all(
     files.map((file) => generatePhoto(userData.uid, file))
@@ -51,13 +52,15 @@ const uploadImages = async (
 
   if (failedUploads.length > 0) {
     console.error('Failed to upload some files:', failedUploads);
-    failedUploads.forEach((failure) =>
-      console.error(`File failed: ${failure.key}, Error: ${failure.error}`)
-    );
+    failedUploads.forEach((failure) => {
+      console.error(`File failed: ${failure.key}, Error: ${failure.error}`);
+      toast.error(`上传失败：${failure.key}，错误：${failure.error}`);
+    });
+    return false;
   }
 
-  // Increment progress for each successfully uploaded file
-  successfulUploads.forEach(() => incrementProgress());
+  toast.success('上传完成！');
+  return true;
 };
 
 export default uploadImages;

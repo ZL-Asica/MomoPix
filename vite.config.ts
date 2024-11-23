@@ -13,15 +13,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ['react', 'react-dom'],
+          react: ['react', 'react-dom', 'react-router-dom'],
 
           mui: [
             '@mui/material',
             '@mui/system',
-            '@mui/icons-material',
             '@emotion/react',
             '@emotion/styled',
           ],
+
+          icons: ['@mui/icons-material'],
 
           font: ['@fontsource/roboto'],
 
@@ -31,7 +32,7 @@ export default defineConfig({
 
           notifications: ['sonner'],
 
-          misc: ['crypto-js', '@zl-asica/react'],
+          misc: ['@zl-asica/react'],
         },
       },
     },
