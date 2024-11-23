@@ -1,15 +1,27 @@
-import imageCompression from 'browser-image-compression';
+const processImageWithWorker = async (file: File): Promise<Blob> => {
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
 
-const processImage = async (file: File): Promise<Blob> => {
-  const options = {
-    maxWidthOrHeight: 2560,
-    useWebWorker: true,
-    fileType: 'image/avif',
-    maxIteration: 10,
-    initialQuality: 0.9,
-  };
+  await new Promise((resolve) => {
+    img.addEventListener('load', resolve);
+  });
 
-  return await imageCompression(file, options);
+  const offscreen = new OffscreenCanvas(img.width, img.height);
+  const context = offscreen.getContext('2d');
+  if (context) {
+    context.drawImage(img, 0, 0);
+  } else {
+    throw new Error('Failed to get OffscreenCanvas context');
+  }
+
+  return new Promise((resolve) => {
+    offscreen
+      .convertToBlob({
+        type: 'image/avif',
+        quality: 0.7,
+      })
+      .then(resolve);
+  });
 };
 
-export default processImage;
+export default processImageWithWorker;

@@ -21,7 +21,6 @@
     "@mui/material": "^6.1.8",
     "@mui/system": "^6.1.8",
     "@zl-asica/react": "^0.3.4",
-    "browser-image-compression": "^2.0.2",
     "crypto-js": "^4.2.0",
     "firebase": "^11.0.2",
     "react": "^18.3.1",
