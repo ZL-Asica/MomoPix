@@ -4,7 +4,6 @@ import {
   PhotoLibrary as PhotoLibraryIcon,
   Edit as EditIcon,
 } from '@mui/icons-material';
-import { toast } from 'sonner';
 import { useToggle } from '@zl-asica/react';
 
 import { UploadModal, InputDialog } from '@/components';
@@ -23,14 +22,8 @@ const AlbumHeader = ({ currentAlbum }: AlbumHeaderProperties) => {
   const [uploadModalOpen, toggleUploadModalOpen] = useToggle();
 
   const handleSaveAlbum = async (newName: string) => {
-    try {
-      await updateAlbum(currentAlbum.name, { name: newName });
-      navigate(`/album/${newName}`);
-      toast.success('更新相册名称成功');
-    } catch (error) {
-      console.error('Failed to update album', error);
-      toast.error('更新相册名称失败');
-    }
+    await updateAlbum(currentAlbum.name, { name: newName });
+    navigate(`/album/${newName}`);
   };
 
   return (

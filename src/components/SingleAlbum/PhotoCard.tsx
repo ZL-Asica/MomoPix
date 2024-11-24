@@ -6,6 +6,7 @@ import {
   Menu,
   MenuItem,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -14,7 +15,6 @@ import {
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 import { useUpdateUserData } from '@/hooks';
 
@@ -32,21 +32,15 @@ const PhotoCard = ({
   onSelect,
 }: PhotoCardProperties) => {
   const navigate = useNavigate();
-  const { updateAlbum } = useUpdateUserData();
+  const { updateAlbum, processing } = useUpdateUserData();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const setThumbnail = async () => {
-    try {
-      await updateAlbum(albumName, {
-        thumbnail: photo.url,
-      });
-      toast.success(`已将 ${photo.name} 设置为封面`);
-      handleMenuClose();
-    } catch (error) {
-      console.error('Failed to set thumbnail', error);
-      toast.error('设置封面失败');
-    }
+    await updateAlbum(albumName, {
+      thumbnail: photo.url,
+    });
+    handleMenuClose();
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -77,7 +71,6 @@ const PhotoCard = ({
         },
       }}
     >
-      {/* 图片部分 */}
       <Box
         sx={{
           position: 'relative',
@@ -94,11 +87,13 @@ const PhotoCard = ({
             height: '100%',
             objectFit: 'cover',
             cursor: 'pointer',
+            opacity: processing ? 0.5 : 1,
+            pointerEvents: processing ? 'none' : 'auto',
           }}
           onClick={() => navigate(`/album/${albumName}/${photo.id}`)}
         />
 
-        {/* 复选框 */}
+        {/* Checkbox */}
         <Box
           sx={{
             position: 'absolute',
@@ -119,9 +114,8 @@ const PhotoCard = ({
             onChange={onSelect}
             icon={<CheckBoxOutlineBlank fontSize='small' />}
             checkedIcon={<CheckBox fontSize='small' />}
-            sx={{
-              p: 0, // 去除多余内边距
-            }}
+            sx={{ p: 0 }}
+            disabled={processing}
           />
         </Box>
 
@@ -145,9 +139,8 @@ const PhotoCard = ({
             aria-label='options'
             onClick={handleMenuOpen}
             size='small'
-            sx={{
-              p: 0,
-            }}
+            sx={{ p: 0 }}
+            disabled={processing}
           >
             <MoreVertIcon fontSize='small' />
           </IconButton>
@@ -160,12 +153,24 @@ const PhotoCard = ({
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={setThumbnail}>设置封面</MenuItem>
+        <MenuItem
+          onClick={setThumbnail}
+          disabled={processing}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          设置封面
+          {processing && <CircularProgress size={16} />}
+        </MenuItem>
         <MenuItem
           onClick={() => {
             console.log(`操作：${photo.name}`);
             handleMenuClose();
           }}
+          disabled={processing}
         >
           其他操作
         </MenuItem>

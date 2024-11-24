@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { useUpdateUserData } from '@/hooks';
 import { InputDialog } from '@/components';
 
@@ -16,13 +14,8 @@ const CreateNewAlbumModal = ({
 }: CreateNewAlbumModalProperties) => {
   const { addAlbum } = useUpdateUserData();
   const handleAddAlbum = async (albumName: string) => {
-    try {
-      await addAlbum(albumName);
-      setAlbumName?.(albumName);
-    } catch (error) {
-      console.error('Failed to create album', error);
-      toast.error('Failed to create album');
-    }
+    await addAlbum(albumName);
+    setAlbumName?.(albumName);
   };
   return (
     <InputDialog

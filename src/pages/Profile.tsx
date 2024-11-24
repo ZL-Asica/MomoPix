@@ -1,115 +1,204 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
   TextField,
   Button,
   Avatar,
-  Alert,
+  Grid2 as Grid,
+  Link,
+  Divider,
 } from '@mui/material';
-import { useBoolean } from '@zl-asica/react';
-import { toast } from 'sonner';
 
 import useAuthContext from '@/hooks/useAuthContext';
 import useUpdateUserData from '@/hooks/useUpdateUserData';
 
 const Profile = () => {
   const { userData } = useAuthContext();
-  const { updateBasicInfo } = useUpdateUserData();
-  const {
-    value: editing,
-    setTrue: startEditing,
-    setFalse: stopEditing,
-  } = useBoolean(false);
+  const { updateBasicInfo, processing } = useUpdateUserData();
 
+  const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
-  const [photoURL, setPhotoURL] = useState(userData?.photoURL || '');
-  const [updateStatus, setUpdateStatus] = useState<UpdateStage>('idle');
-  const [updateError, setUpdateError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (updateStatus === 'success') {
-      toast.success('Profile updated successfully');
-      const timeout = setTimeout(() => setUpdateStatus('idle'), 3000);
-      return () => clearTimeout(timeout);
+  // Stats
+  const stats = useMemo(() => {
+    if (!userData)
+      return { albums: 0, photos: 0, totalSize: 0, oldest: null, newest: null };
+
+    const albums = userData.albums.length;
+    const photos = userData.albums.reduce(
+      (count, album) => count + album.photos.length,
+      0
+    );
+    const totalSize = userData.albums.reduce(
+      (size, album) =>
+        size + album.photos.reduce((sum, photo) => sum + photo.size, 0),
+      0
+    );
+
+    const allPhotos = userData.albums.flatMap((album) => album.photos);
+    let oldest = null;
+    let newest = null;
+
+    for (const photo of allPhotos) {
+      if (!oldest || photo.uploadedAt < oldest.uploadedAt) {
+        oldest = photo;
+      }
+      if (!newest || photo.uploadedAt > newest.uploadedAt) {
+        newest = photo;
+      }
     }
-  }, [updateStatus]);
+
+    return { albums, photos, totalSize, oldest, newest };
+  }, [userData]);
 
   const handleSave = async () => {
-    setUpdateError(null);
-    try {
-      setUpdateStatus('updating');
-      await updateBasicInfo({ displayName, photoURL });
-      setUpdateStatus('success');
-      stopEditing();
-    } catch (error) {
-      setUpdateError(
-        error instanceof Error ? error.message : 'Failed to update profile'
-      );
-      setUpdateStatus('idle');
-    }
+    await updateBasicInfo({ displayName });
+    setEditing(false);
   };
 
   return (
     <Box
       maxWidth={600}
-      margin='0 auto'
-      padding={3}
+      mx='auto'
+      px={3}
+      py={5}
+      sx={{
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: (theme) => theme.shadows[3],
+      }}
     >
       <Typography
         variant='h4'
+        align='center'
         gutterBottom
+        sx={{ fontWeight: 700 }}
       >
-        Profile
+        个人资料
       </Typography>
 
-      <Box
-        display='flex'
-        flexDirection='column'
+      <Grid
+        container
+        spacing={3}
         alignItems='center'
-        gap={2}
-        mb={3}
+        justifyContent='center'
       >
-        <Avatar
-          src={photoURL || userData?.photoURL || ''}
-          alt={displayName}
-          sx={{ width: 100, height: 100 }}
-        />
-        {editing ? (
-          <>
+        <Grid
+          component='label'
+          size={{ xs: 12, sm: 4 }}
+        >
+          <Box
+            display='flex'
+            justifyContent='center'
+          >
+            <Avatar
+              src={userData?.photoURL || ''}
+              alt={displayName}
+              sx={{ width: 120, height: 120 }}
+            />
+          </Box>
+        </Grid>
+
+        <Grid
+          component='label'
+          size={{ xs: 12, sm: 8 }}
+        >
+          {editing ? (
             <TextField
-              label='Display Name'
+              label='昵称'
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               fullWidth
+              variant='outlined'
             />
-            <TextField
-              label='Photo URL'
-              value={photoURL}
-              onChange={(event) => setPhotoURL(event.target.value)}
-              fullWidth
-              helperText='Paste a valid image URL'
-            />
-          </>
-        ) : (
-          <>
-            <Typography variant='h6'>
-              {displayName || 'No Display Name'}
-            </Typography>
-            <Typography variant='body2'>{userData?.email}</Typography>
-          </>
-        )}
-      </Box>
+          ) : (
+            <Box
+              display='flex'
+              sx={{
+                flexDirection: 'column',
+                alignItems: { xs: 'center', sm: 'flex-start' },
+              }}
+            >
+              <Typography
+                variant='h6'
+                sx={{ fontWeight: 600 }}
+              >
+                {displayName || '暂未设置昵称'}
+              </Typography>
+              <Typography
+                variant='body2'
+                color='text.secondary'
+              >
+                {userData?.email}
+              </Typography>
+              <Typography
+                variant='body2'
+                color='text.secondary'
+                sx={{ mt: 1 }}
+              >
+                修改头像请前往{' '}
+                <Link
+                  href='https://gravatar.com/'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  underline='hover'
+                  color='primary'
+                  sx={{
+                    fontWeight: 500,
+                  }}
+                >
+                  Gravatar
+                </Link>
+              </Typography>
+            </Box>
+          )}
+        </Grid>
+      </Grid>
 
-      {updateStatus === 'success' && (
-        <Alert severity='success'>Profile updated successfully!</Alert>
-      )}
-      {updateError && <Alert severity='error'>{updateError}</Alert>}
+      <Divider sx={{ my: 3 }} />
+
+      <Box
+        px={5}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+      >
+        <Typography
+          variant='h6'
+          sx={{ mb: 2 }}
+        >
+          数据统计
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Typography variant='body2'>
+            <strong>总相册数：</strong> {stats.albums}
+          </Typography>
+          <Typography variant='body2'>
+            <strong>总照片数：</strong> {stats.photos}
+          </Typography>
+          <Typography variant='body2'>
+            <strong>照片总大小：</strong>{' '}
+            {(stats.totalSize / 1024 / 1024).toFixed(2)} MB
+          </Typography>
+          {stats.oldest && (
+            <Typography variant='body2'>
+              <strong>最早上传时间：</strong>{' '}
+              {new Date(stats.oldest.uploadedAt).toLocaleString()}
+            </Typography>
+          )}
+          {stats.newest && (
+            <Typography variant='body2'>
+              <strong>最近上传时间：</strong>{' '}
+              {new Date(stats.newest.uploadedAt).toLocaleString()}
+            </Typography>
+          )}
+        </Box>
+      </Box>
 
       <Box
         display='flex'
         justifyContent='center'
         gap={2}
+        mt={4}
       >
         {editing ? (
           <>
@@ -117,24 +206,24 @@ const Profile = () => {
               variant='contained'
               color='primary'
               onClick={handleSave}
-              disabled={updateStatus === 'updating'}
+              disabled={processing}
             >
-              {updateStatus === 'updating' ? 'Saving...' : 'Save'}
+              {processing ? '保存中...' : '保存'}
             </Button>
             <Button
               variant='outlined'
               color='secondary'
-              onClick={stopEditing}
+              onClick={() => setEditing(false)}
             >
-              Cancel
+              取消
             </Button>
           </>
         ) : (
           <Button
             variant='outlined'
-            onClick={startEditing}
+            onClick={() => setEditing(true)}
           >
-            Edit Profile
+            编辑个人资料
           </Button>
         )}
       </Box>
