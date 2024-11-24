@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   AccountBox as AccountBoxIcon,
   CloudUpload as CloudUploadIcon,
-  PhotoAlbum as PhotoAlbumIcon,
   Logout as LogoutIcon,
   Login as LoginIcon,
   PersonAdd as PersonAddIcon,
@@ -48,16 +47,6 @@ const Header = () => {
     setAnchorElement(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    handleMenuClose();
-  };
-
-  const handleUploadModalOpen = () => {
-    toggleUploadModalOpen();
-    handleMenuClose();
-  };
-
   return (
     <AppBar
       position='static'
@@ -86,31 +75,17 @@ const Header = () => {
           gap={1.5}
         >
           {userData && (
-            <>
-              <IconButton
-                size='large'
-                color='inherit'
-                component={Link}
-                to='/albums'
-                sx={{
-                  transition: '0.2s',
-                  '&:hover': { color: 'secondary.main' },
-                }}
-              >
-                <PhotoAlbumIcon />
-              </IconButton>
-              <IconButton
-                size='large'
-                color='inherit'
-                onClick={handleUploadModalOpen}
-                sx={{
-                  transition: '0.2s',
-                  '&:hover': { color: 'secondary.main' },
-                }}
-              >
-                <CloudUploadIcon />
-              </IconButton>
-            </>
+            <IconButton
+              size='large'
+              color='inherit'
+              onClick={toggleUploadModalOpen}
+              sx={{
+                transition: '0.2s',
+                '&:hover': { color: 'secondary.main' },
+              }}
+            >
+              <CloudUploadIcon />
+            </IconButton>
           )}
           <IconButton
             size='large'
@@ -158,6 +133,7 @@ const Header = () => {
             horizontal: 'right',
           }}
           open={Boolean(anchorElement)}
+          onClick={handleMenuClose}
           onClose={handleMenuClose}
         >
           {userData
@@ -166,14 +142,13 @@ const Header = () => {
                   key='profile'
                   component={Link}
                   to='/profile'
-                  onClick={handleMenuClose}
                 >
                   <AccountBoxIcon sx={{ mr: 1 }} />
                   个人资料
                 </MenuItem>,
                 <MenuItem
                   key='logout'
-                  onClick={handleLogout}
+                  onClick={logout}
                 >
                   <LogoutIcon sx={{ mr: 1 }} />
                   登出
@@ -184,7 +159,6 @@ const Header = () => {
                   key='signin'
                   component={Link}
                   to='/signin'
-                  onClick={handleMenuClose}
                 >
                   <LoginIcon sx={{ mr: 1 }} />
                   登录
@@ -193,7 +167,6 @@ const Header = () => {
                   key='signup'
                   component={Link}
                   to='/signup'
-                  onClick={handleMenuClose}
                 >
                   <PersonAddIcon sx={{ mr: 1 }} />
                   注册

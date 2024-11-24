@@ -9,7 +9,6 @@ import SignUpPage from '@/pages/SignUp';
 import Profile from '@/pages/Profile';
 import AlbumsPage from '@/pages/Albums';
 import SingleAlbumPage from '@/pages/SingleAlbum';
-import SinglePhotoPage from '@/pages/SinglePhoto';
 
 const App = () => {
   return (
@@ -61,14 +60,6 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <SingleAlbumPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='album/:albumName/:photoId'
-            element={
-              <ProtectedRoute>
-                <SinglePhotoPage />
               </ProtectedRoute>
             }
           />

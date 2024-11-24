@@ -14,7 +14,6 @@ import {
   CheckBox,
 } from '@mui/icons-material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { useUpdateUserData } from '@/hooks';
 
@@ -23,6 +22,7 @@ interface PhotoCardProperties {
   albumName: string;
   selected: boolean;
   onSelect: () => void;
+  onClick: () => void;
 }
 
 const PhotoCard = ({
@@ -30,8 +30,8 @@ const PhotoCard = ({
   albumName,
   selected,
   onSelect,
+  onClick,
 }: PhotoCardProperties) => {
-  const navigate = useNavigate();
   const { updateAlbum, processing } = useUpdateUserData();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -90,7 +90,7 @@ const PhotoCard = ({
             opacity: processing ? 0.5 : 1,
             pointerEvents: processing ? 'none' : 'auto',
           }}
-          onClick={() => navigate(`/album/${albumName}/${photo.id}`)}
+          onClick={onClick}
         />
 
         {/* Checkbox */}

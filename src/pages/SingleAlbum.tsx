@@ -5,6 +5,7 @@ import { Box, Grid2 as Grid } from '@mui/material';
 import { useAuthContext, usePagination } from '@/hooks';
 import { PaginationControls } from '@/components';
 
+import SinglePhotoModal from '@/components/SinglePhoto';
 import {
   AlbumNotFound,
   AlbumHeader,
@@ -36,6 +37,7 @@ const SingleAlbumPage = () => {
   } = usePagination(currentAlbum.photos, 20);
 
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [activePhoto, setActivePhoto] = useState<Photo | null>(null);
 
   // Handle select photo
   const toggleSelectPhoto = (photoId: string) => {
@@ -44,6 +46,15 @@ const SingleAlbumPage = () => {
         ? previous.filter((id) => id !== photoId)
         : [...previous, photoId]
     );
+  };
+
+  // Handle opening and closing modal
+  const openPhotoModal = (photo: Photo) => {
+    setActivePhoto(photo);
+  };
+
+  const closePhotoModal = () => {
+    setActivePhoto(null);
   };
 
   return (
@@ -77,10 +88,17 @@ const SingleAlbumPage = () => {
               albumName={albumName || ''}
               selected={selectedPhotos.includes(photo.id)}
               onSelect={() => toggleSelectPhoto(photo.id)}
+              onClick={() => openPhotoModal(photo)}
             />
           ))}
         </Grid>
       </PaginationControls>
+
+      <SinglePhotoModal
+        albumName={albumName || ''}
+        photo={activePhoto}
+        onClose={closePhotoModal}
+      />
     </Box>
   );
 };

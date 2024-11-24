@@ -1,4 +1,4 @@
-import { Box, TextField, IconButton } from '@mui/material';
+import { Box, TextField, IconButton, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { copyToClipboard } from '@zl-asica/react';
 import { useState } from 'react';
@@ -18,7 +18,23 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
   ];
 
   return (
-    <Box>
+    <Box
+      sx={{
+        maxWidth: '600px',
+        mx: 'auto',
+        width: '100%',
+      }}
+    >
+      <Typography
+        variant='h6'
+        gutterBottom
+        sx={{
+          mb: 4,
+        }}
+      >
+        图片链接
+      </Typography>
+
       {links.map((link) => (
         <Box
           key={link.label}
@@ -35,6 +51,8 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
             slotProps={{
               input: {
                 readOnly: true,
+                onFocus: (event_: React.FocusEvent<HTMLInputElement>) =>
+                  event_.target.select(), // Select the text when focused
               },
             }}
             variant='outlined'
