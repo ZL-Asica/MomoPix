@@ -9,7 +9,6 @@ import { AlbumCard, CreateNewAlbumModal } from '@/components/Albums';
 
 const AlbumsPage = () => {
   const { userData } = useAuthContext();
-
   const navigate = useNavigate();
 
   const [dialogOpen, toggleDialogOpen] = useToggle();
@@ -20,15 +19,22 @@ const AlbumsPage = () => {
 
   return (
     <Box
-      maxWidth={1000}
-      margin='0 auto'
+      maxWidth={1200}
+      mx='auto'
+      px={2}
+      py={4}
     >
+      {/* Page Title */}
       <Typography
         variant='h4'
-        gutterBottom
         align='center'
+        gutterBottom
+        sx={{
+          fontWeight: 'bold',
+          color: (theme) => theme.palette.primary.main,
+        }}
       >
-        我的相册
+        我的相簿
       </Typography>
 
       {/* Create album button */}
@@ -37,29 +43,37 @@ const AlbumsPage = () => {
         justifyContent='space-between'
         alignItems='center'
         marginBottom={3}
+        sx={{
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
       >
         <Typography
           variant='subtitle1'
-          color='textSecondary'
+          color='text.secondary'
         >
-          共 {albums.length} 个相册
+          共 {albums.length} 个相簿
         </Typography>
         <Button
           variant='contained'
           startIcon={<AddIcon />}
           onClick={toggleDialogOpen}
+          sx={{
+            borderRadius: 4,
+            paddingX: 3,
+            textTransform: 'none',
+          }}
         >
-          新建相册
+          新建相簿
         </Button>
       </Box>
 
-      {/* album cards list */}
+      {/* Albums list */}
       <Grid
         container
         spacing={3}
         sx={{
-          justifyContent: 'center',
-          alignItems: 'flex-start',
+          justifyContent: { xs: 'center', md: 'flex-start' },
         }}
       >
         {albums.map((album, index) => (
@@ -69,6 +83,8 @@ const AlbumsPage = () => {
           />
         ))}
       </Grid>
+
+      {/* Create Album Modal */}
       <CreateNewAlbumModal
         dialogOpen={dialogOpen}
         toggleDialogOpen={toggleDialogOpen}

@@ -7,15 +7,14 @@
     "source.addMissingImports.ts": "always"
   },
   "search.exclude": {
+    "**/node_modules": true,
     "**/.yarn": true,
     "**/.pnp.*": true,
-    "**/node_modules": true,
     "pnpm-lock.yaml": true,
-    "yarn.lock": true,
     "package-lock.json": true,
-    ".github": true,
-    "/*.md": true
+    "yarn.lock": true
   },
   "editor.wordWrap": "on",
-  "prettier.requireConfig": true
+  "prettier.requireConfig": true,
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

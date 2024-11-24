@@ -15,18 +15,14 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
 
-          mui: [
-            '@mui/material',
-            '@mui/system',
-            '@emotion/react',
-            '@emotion/styled',
-          ],
+          mui: ['@mui/material', '@emotion/react', '@emotion/styled'],
 
           icons: ['@mui/icons-material'],
 
-          font: ['@fontsource/roboto'],
-
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          firebaseApp: ['firebase/app'],
+          firebaseAuth: ['firebase/auth'],
+          firebaseFirestore: ['firebase/firestore'],
+          firebaseAnalytics: ['firebase/analytics'],
 
           dropzone: ['react-dropzone'],
 

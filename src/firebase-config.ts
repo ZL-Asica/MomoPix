@@ -25,7 +25,7 @@ const database = initializeFirestore(app, {
   localCache: persistentLocalCache(
     /*settings*/ {
       tabManager: persistentMultipleTabManager(),
-      cacheSizeBytes: 10_000_000, // 10 MB cache size
+      cacheSizeBytes: 5_000_000, // 5 MB cache size
     }
   ),
 });
