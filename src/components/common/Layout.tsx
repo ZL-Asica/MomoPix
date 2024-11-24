@@ -23,9 +23,18 @@ const Layout = () => {
           flexGrow: 1,
           py: 4,
           px: 2,
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        <Outlet />
+        <Box
+          sx={{
+            maxWidth: '1200px',
+            width: '100%',
+          }}
+        >
+          <Outlet />
+        </Box>
       </Box>
       <Footer />
     </Box>

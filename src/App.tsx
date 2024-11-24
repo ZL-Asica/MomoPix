@@ -1,4 +1,3 @@
-import { Box } from '@mui/material';
 import { Route, Routes } from 'react-router-dom';
 
 import AppProviders from '@/AppProviders';
@@ -10,6 +9,7 @@ import SignUpPage from '@/pages/SignUp';
 import Profile from '@/pages/Profile';
 import AlbumsPage from '@/pages/Albums';
 import SingleAlbumPage from '@/pages/SingleAlbum';
+import SinglePhotoPage from '@/pages/SinglePhoto';
 
 const App = () => {
   return (
@@ -19,10 +19,17 @@ const App = () => {
           path='/'
           element={<Layout />}
         >
+          {/* Default route */}
           <Route
             index
-            element={<Box>Home Page</Box>}
+            element={
+              <ProtectedRoute>
+                <AlbumsPage />
+              </ProtectedRoute>
+            }
           />
+
+          {/* Auth routes */}
           <Route
             path='signin'
             element={
@@ -39,6 +46,8 @@ const App = () => {
               </GuestRoute>
             }
           />
+
+          {/* Authenticated user routes */}
           <Route
             path='profile'
             element={
@@ -48,15 +57,7 @@ const App = () => {
             }
           />
           <Route
-            path='/albums'
-            element={
-              <ProtectedRoute>
-                <AlbumsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path='/album/:albumName'
+            path='album/:albumName'
             element={
               <ProtectedRoute>
                 <SingleAlbumPage />
@@ -64,13 +65,15 @@ const App = () => {
             }
           />
           <Route
-            path='/album/:albumName/:photoId'
+            path='album/:albumName/:photoId'
             element={
               <ProtectedRoute>
-                <Box> Photo Page </Box>
+                <SinglePhotoPage />
               </ProtectedRoute>
             }
           />
+
+          {/* Not Found */}
           <Route
             path='*'
             element={<NotFoundPage />}

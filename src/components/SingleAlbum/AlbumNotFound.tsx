@@ -31,7 +31,7 @@ const AlbumNotFound = ({ albumName }: AlbumNotFoundProperties) => {
         variant='contained'
         color='primary'
         sx={{ mt: 2 }}
-        onClick={() => navigate('/albums')}
+        onClick={() => navigate('/')}
       >
         返回相册列表
       </Button>

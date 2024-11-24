@@ -22,7 +22,6 @@ const AlbumsPage = () => {
     <Box
       maxWidth={1000}
       margin='0 auto'
-      padding={3}
     >
       <Typography
         variant='h4'

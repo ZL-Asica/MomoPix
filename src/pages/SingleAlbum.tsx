@@ -49,7 +49,6 @@ const SingleAlbumPage = () => {
   return (
     <Box
       sx={{
-        p: 3,
         flexGrow: 1,
         overflowY: 'auto',
         '& .MuiPagination-ul': {

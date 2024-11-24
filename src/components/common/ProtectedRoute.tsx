@@ -18,7 +18,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (!userData) {
     return (
       <Navigate
-        to='/'
+        to='/signin'
         replace
       />
     );
