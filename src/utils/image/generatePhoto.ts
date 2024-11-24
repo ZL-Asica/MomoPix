@@ -8,8 +8,10 @@ const generatePhoto = async (userId: string, file: File): Promise<Photo> => {
   const hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
   const id = hash.slice(0, 8);
-  const date = new Date().toISOString().split('T')[0].replaceAll('-', '/');
-  const url = `${date}/${id}.avif`;
+  // eslint-disable-next-line unicorn/prefer-string-replace-all
+  const date = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+
+  const url = `${date}/${id}`;
 
   return {
     id,
@@ -17,7 +19,9 @@ const generatePhoto = async (userId: string, file: File): Promise<Photo> => {
     size: file.size,
     lastModified: file.lastModified,
     uploadedAt: 0, // Placeholder until the upload is complete
-    name: file.name.replaceAll(/\.[^./]+$/, ''), // Remove file extension
+    name: file.name.includes('.')
+      ? file.name.replace(/\.[^./]+$/, '')
+      : file.name,
   };
 };
 

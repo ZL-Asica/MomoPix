@@ -19,9 +19,18 @@ const uploadImages = async (
   // Step 2: Process files and create UploadData
   const uploadData: UploadData = await Promise.all(
     photos.map(async (photo, index) => {
-      const processedFile = await processImage(files[index]); // Convert file to compressed Blob
+      const processedFile = await processImage(files[index]);
+      if (!processedFile) {
+        toast.error(`处理图片失败：${files[index].name}`);
+        throw new Error(`Failed to process image: ${files[index].name}`);
+      }
+      const fileExtension = processedFile.type.split('/')[1] || 'bin';
+      const key = `${photo.url}.${fileExtension}`;
+      photo.url = key;
+      photo.size = processedFile.size;
+
       return {
-        key: photo.url, // Target path
+        key, // Key for the file in the backend
         file: processedFile, // Processed Blob
       };
     })
@@ -41,8 +50,8 @@ const uploadImages = async (
     const uploadedPhotos = successfulUploads.map((result) => {
       const photo = photos.find((p) => p.url === result.key);
       if (photo) {
-        photo.uploadedAt = Date.now();
         photo.url = `${import.meta.env.VITE_CF_R2}/${result.key}`;
+        photo.uploadedAt = Date.now();
       }
       return photo;
     }) as Photo[];

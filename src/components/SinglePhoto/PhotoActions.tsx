@@ -40,6 +40,11 @@ const PhotoInfoAndActions = ({
     setIsEditing(false);
   };
 
+  const photoSize =
+    photo.size < 1024 * 1024
+      ? `${(photo.size / 1024).toFixed(2)} KB`
+      : `${(photo.size / 1024 / 1024).toFixed(2)} MB`;
+
   return (
     <>
       <Box
@@ -137,7 +142,7 @@ const PhotoInfoAndActions = ({
         color='text.secondary'
         sx={{ mt: 1 }}
       >
-        文件大小：{(photo.size / 1024 / 1024).toFixed(2)} MB
+        文件大小：{photoSize}
       </Typography>
 
       <MovePhotoDialog
