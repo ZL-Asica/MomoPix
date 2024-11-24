@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Box, IconButton, Typography, TextField, Tooltip } from '@mui/material';
+import MoveIcon from '@mui/icons-material/SwapHoriz';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Check';
 import CancelIcon from '@mui/icons-material/Close';
+import { useToggle } from '@zl-asica/react';
 
-import MovePhotoDialog from './MovePhotoDialog';
-
+import { MovePhotoDialog } from '@/components';
 import { useUpdateUserData } from '@/hooks';
 
 interface PhotoInfoAndActionsProperties {
@@ -24,6 +25,7 @@ const PhotoInfoAndActions = ({
   const [photoName, setPhotoName] = useState(photo.name);
   const [isEditing, setIsEditing] = useState(false);
   const [updatedName, setUpdatedName] = useState(photo.name);
+  const [openMoveDialog, toggleMoveDialog] = useToggle();
 
   const handleSaveName = async () => {
     if (updatedName !== photo.name) {
@@ -112,11 +114,14 @@ const PhotoInfoAndActions = ({
           )}
         </Box>
         <Tooltip title='移动照片'>
-          <MovePhotoDialog
-            albumName={albumName}
-            photo={photo}
-            onClose={onClose}
-          />
+          <IconButton
+            size='large'
+            color='primary'
+            onClick={toggleMoveDialog}
+            aria-label='Move photo'
+          >
+            <MoveIcon />
+          </IconButton>
         </Tooltip>
       </Box>
 
@@ -134,6 +139,16 @@ const PhotoInfoAndActions = ({
       >
         文件大小：{(photo.size / 1024 / 1024).toFixed(2)} MB
       </Typography>
+
+      <MovePhotoDialog
+        albumName={albumName}
+        photo={[photo]}
+        open={openMoveDialog}
+        onClose={() => {
+          toggleMoveDialog();
+          onClose();
+        }}
+      />
     </>
   );
 };

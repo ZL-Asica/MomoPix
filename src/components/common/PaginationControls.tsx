@@ -1,4 +1,6 @@
-import { Box, Pagination, MenuItem, Select } from '@mui/material';
+import { Box, Pagination, MenuItem, Select, Typography } from '@mui/material';
+
+import BulkActionMenu from './BulkActionMenu';
 
 import { ITEMS_PER_PAGE_OPTIONS } from '@/consts';
 
@@ -8,6 +10,8 @@ interface PaginationControlsProperties {
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (itemsPerPage: number) => void;
+  albumName?: string;
+  selectedItems?: Photo[];
   children?: React.ReactNode;
 }
 
@@ -17,8 +21,12 @@ const PaginationControls = ({
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
+  albumName,
+  selectedItems,
   children,
 }: PaginationControlsProperties) => {
+  const hasBulkActions = selectedItems && selectedItems.length > 0;
+
   return (
     <Box
       display='flex'
@@ -40,6 +48,27 @@ const PaginationControls = ({
           page={currentPage}
           onChange={(_, page) => onPageChange(page)}
         />
+        <Box
+          display='flex'
+          alignItems='center'
+          gap={2}
+        >
+          {hasBulkActions && (
+            <Box
+              display='flex'
+              alignItems='center'
+              gap={1}
+            >
+              <Typography variant='body2'>
+                已选中 {selectedItems.length} 项
+              </Typography>
+              <BulkActionMenu
+                albumName={albumName || ''}
+                selectedItems={selectedItems}
+              />
+            </Box>
+          )}
+        </Box>
         <Select
           value={itemsPerPage}
           onChange={(event) => onItemsPerPageChange(Number(event.target.value))}

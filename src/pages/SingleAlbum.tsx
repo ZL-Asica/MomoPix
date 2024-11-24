@@ -36,15 +36,15 @@ const SingleAlbumPage = () => {
     totalPages,
   } = usePagination(currentAlbum.photos, 20);
 
-  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([] as Photo[]);
   const [activePhoto, setActivePhoto] = useState<Photo | null>(null);
 
   // Handle select photo
-  const toggleSelectPhoto = (photoId: string) => {
+  const toggleSelectPhoto = (photo: Photo) => {
     setSelectedPhotos((previous) =>
-      previous.includes(photoId)
-        ? previous.filter((id) => id !== photoId)
-        : [...previous, photoId]
+      previous.includes(photo)
+        ? previous.filter((selectedPhoto) => selectedPhoto !== photo)
+        : [...previous, photo]
     );
   };
 
@@ -76,6 +76,8 @@ const SingleAlbumPage = () => {
         itemsPerPage={itemsPerPage}
         onPageChange={setCurrentPage}
         onItemsPerPageChange={setItemsPerPage}
+        selectedItems={selectedPhotos}
+        albumName={albumName}
       >
         <Grid
           container
@@ -86,8 +88,8 @@ const SingleAlbumPage = () => {
               key={photo.id}
               photo={photo}
               albumName={albumName || ''}
-              selected={selectedPhotos.includes(photo.id)}
-              onSelect={() => toggleSelectPhoto(photo.id)}
+              selected={selectedPhotos.includes(photo)}
+              onSelect={() => toggleSelectPhoto(photo)}
               onClick={() => openPhotoModal(photo)}
             />
           ))}
