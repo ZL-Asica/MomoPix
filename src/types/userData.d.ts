@@ -23,3 +23,9 @@ interface UserData {
   createdAt: string;
   albums: Album[];
 }
+
+type ValidationErrors = {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};

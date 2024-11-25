@@ -5,36 +5,54 @@ import {
   sendEmailVerification,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { z } from 'zod';
 
-import { auth, db } from '@/firebase-config';
-import { getGravatarURL, fetchGravatarProfile } from '@/utils';
+import { auth } from '@/firebase-config';
+import { emailSchema, passwordSchema } from '@/schemas';
 
-/**
- * Custom hook for user authentication
- * Provides methods to register, login, and logout with error handling.
- *  @returns {registerWithEmail, loginWithEmail, error, loading}
- */
+const validateInput = (
+  email: string,
+  password: string,
+  confirmPassword?: string
+): ValidationErrors => {
+  const errors: ValidationErrors = {};
+
+  try {
+    emailSchema.parse(email);
+  } catch (error_) {
+    errors.email =
+      error_ instanceof z.ZodError ? error_.errors[0]?.message : '邮箱错误';
+  }
+
+  try {
+    passwordSchema.parse(password);
+  } catch (error_) {
+    errors.password =
+      error_ instanceof z.ZodError ? error_.errors[0]?.message : '密码错误';
+  }
+
+  if (confirmPassword && confirmPassword !== password) {
+    errors.confirmPassword = '两次输入的密码不一致';
+  }
+
+  return errors;
+};
+
 const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Generic error handler
-  const handleError = (error_: unknown, defaultMessage: string) => {
-    setError(error_ instanceof Error ? error_.message : defaultMessage);
-  };
-
-  /**
-   * Login with email and password
-   */
   const loginWithEmail = async (
     email: string,
-    password: string
+    password: string,
+    onValidationErrors: (errors: ValidationErrors) => void
   ): Promise<User | null> => {
-    if (!email.includes('@zla.app')) {
-      setError('You are not allowed');
+    const errors = validateInput(email, password);
+    if (Object.keys(errors).length > 0) {
+      onValidationErrors(errors);
       return null;
     }
+
     try {
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(
@@ -42,23 +60,28 @@ const useAuth = () => {
         email,
         password
       );
-      setError(null); // Clear any previous error
+      setError(null);
       return userCredential.user;
-    } catch (error_) {
-      handleError(error_, 'Email login failed');
+    } catch {
+      setError('登录失败，请检查邮箱和密码');
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Register with email and password
-   */
   const registerWithEmail = async (
     email: string,
-    password: string
+    password: string,
+    confirmPassword: string,
+    onValidationErrors: (errors: ValidationErrors) => void
   ): Promise<User | null> => {
+    const errors = validateInput(email, password, confirmPassword);
+    if (Object.keys(errors).length > 0) {
+      onValidationErrors(errors);
+      return null;
+    }
+
     try {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(
@@ -67,56 +90,23 @@ const useAuth = () => {
         password
       );
       const user = userCredential.user;
-
-      // Create default user data in Firestore
-      const userDocument = doc(db, 'users', user.uid);
-      const defaultAlbum: Album = {
-        name: 'default',
-        thumbnail: '',
-        createdAt: new Date().toISOString(),
-        photos: [],
-      };
-
-      // Fetch Gravatar profile data
-      const [gravatarProfile, gravatarURL] = await Promise.all([
-        fetchGravatarProfile(email),
-        getGravatarURL(email),
-      ]);
-
-      const newUser: UserData = {
-        uid: user.uid,
-        TOKEN: '',
-        email: user.email as string,
-        displayName: user.displayName || gravatarProfile?.displayName || null,
-        photoURL:
-          user.photoURL || gravatarProfile?.photoURL || gravatarURL || null,
-        createdAt: new Date().toISOString(),
-        albums: [defaultAlbum],
-      };
-      await setDoc(userDocument, newUser);
-
-      // Send email verification
       await sendEmailVerification(user);
-
-      setError(null); // Clear any previous error
+      setError(null);
       return user;
-    } catch (error_) {
-      handleError(error_, 'Email registration failed');
+    } catch {
+      setError('注册失败，请稍后再试');
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Logout the current user
-   */
   const logout = async (): Promise<void> => {
     try {
       await auth.signOut();
-      setError(null); // Clear any previous error
-    } catch (error_) {
-      handleError(error_, 'Failed to sign out');
+      setError(null);
+    } catch {
+      setError('登出失败');
     }
   };
 

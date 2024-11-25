@@ -1,16 +1,18 @@
 import { toast } from 'sonner';
+import type { z } from 'zod';
+
+import type { UploadFile } from '@/schemas';
+import { UploadResultsSchema } from '@/schemas';
 
 const upload = async (
-  uploadData: UploadData, // Upload data is an array of { key, file }
+  uploadData: UploadFile[],
   TOKEN: string
-): Promise<UploadResults> => {
+): Promise<z.infer<typeof UploadResultsSchema>> => {
   if (!TOKEN) {
-    console.error('No token provided');
     toast.error('No token provided');
     throw new Error('No token provided');
   }
 
-  // Convert UploadData to FormData
   const formData = new FormData();
   uploadData.forEach(({ key, file }) => {
     formData.append('key', key);
@@ -23,13 +25,11 @@ const upload = async (
       headers: {
         Authorization: `Bearer ${TOKEN}`,
       },
-      body: formData, // FormData as the request body
+      body: formData,
     });
 
-    // Check response status
     if (!response.ok) {
       const errorDetails = await response.json().catch(() => null);
-      console.error('Failed to upload files:', response, errorDetails);
       toast.error(
         `Upload failed: ${errorDetails?.error || response.statusText}`
       );
@@ -38,23 +38,29 @@ const upload = async (
       );
     }
 
-    // Parse successful response
-    const result: UploadResults = await response.json();
+    const jsonResponse = await response.json();
+
+    const parseResult = UploadResultsSchema.safeParse(jsonResponse);
+    if (!parseResult.success) {
+      console.error('Invalid API response structure:', parseResult.error);
+      toast.error('Invalid response format from server');
+      throw new Error('Invalid API response structure');
+    }
+
+    const result = parseResult.data;
+
     if (result.success) {
       toast.success('All files uploaded successfully!');
     } else {
-      console.warn('Partial failure in upload results:', result.failed);
       toast.error(
-        `Some files failed to upload: ${result.failed
-          .map((f) => f.key)
-          .join(', ')}`
+        `Some files failed: ${result.failed.map((f) => f.key).join(', ')}`
       );
     }
 
     return result;
   } catch (error) {
-    console.error('Unexpected error during upload:', error);
     toast.error(`Unexpected error: ${(error as Error).message}`);
+    console.error('Upload error:', error);
     throw error;
   }
 };

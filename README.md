@@ -9,6 +9,7 @@
 [![Vite][vite-badge]][vite-link] |
 [![Hono][hono-badge]][hono-link] |
 [![Cloudflare][cloudflare-badge]][cloudflare-link]
+[![Firebase][firebase-badge]][firebase-link]
 [![pnpm Version][pnpm-badge]][pnpm-link]
 [![Eslint][eslint-badge]][eslint-link]
 [![Prettier][prettier-badge]][prettier-link]
@@ -138,6 +139,8 @@ MomoPix/
 [cloudflare-link]: https://www.cloudflare.com/
 [eslint-badge]: https://img.shields.io/badge/eslint-4B32C3?logo=eslint&logoColor=white
 [eslint-link]: https://www.npmjs.com/package/eslint-config-zl-asica
+[firebase-badge]: https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase&logoColor=black
+[firebase-link]: https://firebase.google.com/
 [hono-badge]: https://img.shields.io/badge/Hono-E36002?logo=hono&logoColor=fff
 [hono-link]: https://hono.dev/
 [license-badge]: https://img.shields.io/github/license/ZL-Asica/MomoPix

@@ -1,87 +1,35 @@
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Link,
-  styled,
-  Card,
-  Stack,
-} from '@mui/material';
+import { Box, Button, TextField, Typography, Link } from '@mui/material';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/hooks';
-import { emailPasswordUtil } from '@/utils';
 
-const SignInContainer = styled(Stack)(({ theme }) => ({
-  padding: theme.spacing(4),
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-  '&::before': {
-    content: '""',
-    display: 'block',
-    position: 'absolute',
-    inset: 0,
-    zIndex: -1,
-  },
-}));
-
-const LoginCard = styled(Card)(({ theme }) => ({
-  padding: theme.spacing(4),
-  maxWidth: 450,
-  width: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(2),
-  boxShadow: `
-    hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, 
-    hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px
-  `,
-  borderRadius: theme.spacing(2),
-  ...theme.applyStyles('dark', {
-    boxShadow: `
-      hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, 
-      hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px
-    `,
-  }),
-}));
+import { SignInUpContainer, SignInUpCard } from '@/components/SignInUp/Styles';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { loginWithEmail, error, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState(false);
-  const [passwordError, setPasswordError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    email: '',
+    password: '',
+  });
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const hasError = emailPasswordUtil(
-      email,
-      password,
-      setEmailError,
-      setPasswordError
-    );
 
-    if (hasError) return;
-
-    try {
-      const user = await loginWithEmail(email, password);
-      if (user) {
-        toast.success('登录成功');
-        navigate('/');
-      }
-    } catch (error_) {
-      console.error(error_);
+    const user = await loginWithEmail(email, password, setValidationErrors);
+    if (user) {
+      toast.success('登录成功');
+      navigate('/');
     }
   };
 
   return (
-    <SignInContainer>
-      <LoginCard>
+    <SignInUpContainer>
+      <SignInUpCard>
         <Typography
           variant='h4'
           component='h1'
@@ -103,8 +51,8 @@ const LoginPage = () => {
             value={email}
             placeholder='your@email.com'
             onChange={(event) => setEmail(event.target.value)}
-            error={emailError}
-            helperText={emailError && '请填写邮箱'}
+            error={Boolean(validationErrors.email)}
+            helperText={validationErrors.email || ' '}
           />
           <TextField
             label='密码'
@@ -113,8 +61,8 @@ const LoginPage = () => {
             placeholder='••••••'
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            error={passwordError}
-            helperText={passwordError && '请填写密码'}
+            error={Boolean(validationErrors.password)}
+            helperText={validationErrors.password || ' '}
           />
           {error && <Typography color='error'>{error}</Typography>}
           <Button
@@ -141,8 +89,8 @@ const LoginPage = () => {
             立刻注册
           </Link>
         </Typography>
-      </LoginCard>
-    </SignInContainer>
+      </SignInUpCard>
+    </SignInUpContainer>
   );
 };
 

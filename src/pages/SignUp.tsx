@@ -1,53 +1,11 @@
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Link,
-  styled,
-  Card,
-  Stack,
-} from '@mui/material';
+import { Box, Button, TextField, Typography, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks';
-import { emailPasswordUtil } from '@/utils';
 
-const SignUpContainer = styled(Stack)(({ theme }) => ({
-  padding: theme.spacing(4),
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-  '&::before': {
-    content: '""',
-    display: 'block',
-    position: 'absolute',
-    inset: 0,
-    zIndex: -1,
-  },
-}));
-
-const RegisterCard = styled(Card)(({ theme }) => ({
-  padding: theme.spacing(4),
-  maxWidth: 450,
-  width: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(2),
-  boxShadow: `
-    hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, 
-    hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px
-  `,
-  borderRadius: theme.spacing(2),
-  ...theme.applyStyles('dark', {
-    boxShadow: `
-      hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, 
-      hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px
-    `,
-  }),
-}));
+import { SignInUpContainer, SignInUpCard } from '@/components/SignInUp/Styles';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -55,44 +13,30 @@ const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [emailError, setEmailError] = useState(false);
-  const [passwordError, setPasswordError] = useState(false);
-  const [confirmPasswordError, setConfirmPasswordError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const hasError = emailPasswordUtil(
+    const user = await registerWithEmail(
       email,
       password,
-      setEmailError,
-      setPasswordError
+      confirmPassword,
+      setValidationErrors
     );
-
-    if (password === confirmPassword) {
-      setConfirmPasswordError(false);
-    } else {
-      setConfirmPasswordError(true);
-      toast.error('两次输入的密码不一致');
-      return;
-    }
-
-    if (hasError || confirmPasswordError) return;
-
-    try {
-      const user = await registerWithEmail(email, password);
-      if (user) {
-        toast.success('注册成功');
-        navigate('/');
-      }
-    } catch (error_) {
-      console.error(error_);
+    if (user) {
+      toast.success('注册成功');
+      navigate('/');
     }
   };
 
   return (
-    <SignUpContainer>
-      <RegisterCard>
+    <SignInUpContainer>
+      <SignInUpCard>
         <Typography
           variant='h4'
           component='h1'
@@ -114,8 +58,8 @@ const SignUpPage = () => {
             value={email}
             placeholder='your@email.com'
             onChange={(event) => setEmail(event.target.value)}
-            error={emailError}
-            helperText={emailError && '请填写邮箱'}
+            error={Boolean(validationErrors.email)}
+            helperText={validationErrors.email || ''}
           />
           <TextField
             label='密码'
@@ -124,8 +68,8 @@ const SignUpPage = () => {
             placeholder='••••••'
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            error={passwordError}
-            helperText={passwordError && '密码必须符合要求'}
+            error={Boolean(validationErrors.password)}
+            helperText={validationErrors.password || ''}
           />
           <TextField
             label='确认密码'
@@ -134,8 +78,8 @@ const SignUpPage = () => {
             placeholder='••••••'
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            error={confirmPasswordError}
-            helperText={confirmPasswordError && '两次输入的密码不一致'}
+            error={Boolean(validationErrors.confirmPassword)}
+            helperText={validationErrors.confirmPassword || ''}
           />
           {error && (
             <Typography
@@ -165,8 +109,8 @@ const SignUpPage = () => {
             立刻登录
           </Link>
         </Typography>
-      </RegisterCard>
-    </SignUpContainer>
+      </SignInUpCard>
+    </SignInUpContainer>
   );
 };
 
