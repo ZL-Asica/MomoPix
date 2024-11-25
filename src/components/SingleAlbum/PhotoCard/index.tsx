@@ -5,7 +5,7 @@ import PhotoDropdownMenu from './PhotoDropdownMenu';
 
 import { useUpdateUserData } from '@/hooks';
 
-import { FloatingIconButton } from '@/components/ui';
+import { FloatingIconButton, LazyImage } from '@/components/ui';
 
 interface PhotoCardProperties {
   id: string;
@@ -60,18 +60,9 @@ const PhotoCard = ({
           overflow: 'hidden',
         }}
       >
-        <Box
-          component='img'
+        <LazyImage
           src={photo.url}
           alt={photo.name}
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            cursor: 'pointer',
-            opacity: processing ? 0.5 : 1,
-            pointerEvents: processing ? 'none' : 'auto',
-          }}
           onClick={onClick}
         />
 

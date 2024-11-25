@@ -164,14 +164,14 @@ const SelectableContainer = <T,>({
         position: 'relative',
         overflow: 'hidden', // Prevent scrollbars during selection
         userSelect: 'none', // Disable text selection
-        touchAction: 'none', // Disable browser touch behaviors like scrolling
+        // touchAction: 'none', // Disable browser touch behaviors like scrolling
       }}
       onMouseDown={handleStart}
       onMouseMove={handleMove}
       onMouseUp={handleEnd}
-      onTouchStart={handleStart}
-      onTouchMove={handleMove}
-      onTouchEnd={handleEnd}
+      // onTouchStart={handleStart}
+      // onTouchMove={handleMove}
+      // onTouchEnd={handleEnd}
       onKeyDown={(event) => handleKeyDown(event)}
     >
       {/* Selection Box */}
