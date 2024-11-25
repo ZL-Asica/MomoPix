@@ -4,7 +4,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useToggle } from '@zl-asica/react';
 
 import { useUpdateUserData } from '@/hooks';
-import { InputDialog, MovePhotoDialog } from '@/components';
+import { InputDialog, MovePhotoDialog, DeletePhotosDialog } from '@/components';
 
 import { FloatingIconButton } from '@/components/ui';
 
@@ -22,6 +22,7 @@ const PhotoDropdownMenu = ({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [renameDialogOpen, toggleRenameDialog] = useToggle();
   const [openMoveDialog, toggleMoveDialog] = useToggle();
+  const [openDeleteDialog, toggleDeleteDialog] = useToggle();
 
   const setThumbnail = async () => {
     await updateAlbum(albumName, {
@@ -80,6 +81,12 @@ const PhotoDropdownMenu = ({
         >
           移动
         </MenuItem>
+        <MenuItem
+          onClick={toggleDeleteDialog}
+          disabled={processing}
+        >
+          删除
+        </MenuItem>
       </Menu>
       <InputDialog
         open={renameDialogOpen}
@@ -97,6 +104,13 @@ const PhotoDropdownMenu = ({
         photo={[photo]}
         open={openMoveDialog}
         onClose={toggleMoveDialog}
+      />
+
+      <DeletePhotosDialog
+        albumName={albumName}
+        photos={[photo]}
+        open={openDeleteDialog}
+        onClose={toggleDeleteDialog}
       />
     </>
   );

@@ -27,6 +27,25 @@ const usePhotoOperations = () => {
     );
   };
 
+  const deletePhotosFromAlbum = async (albumName: string, photos: Photo[]) => {
+    ensureUserData();
+    const updatedAlbums = (userData!.albums || []).map((album) =>
+      album.name === albumName
+        ? {
+            ...album,
+            photos: album.photos.filter(
+              (photo) => !photos.map((p) => p.id).includes(photo.id)
+            ),
+          }
+        : album
+    );
+    await updateUserData(
+      { albums: updatedAlbums },
+      `成功删除 ${photos.length} 张照片`,
+      `删除 ${photos.length} 张照片失败`
+    );
+  };
+
   const updatePhotoName = async (
     albumName: string,
     photoId: string,
@@ -84,7 +103,12 @@ const usePhotoOperations = () => {
     );
   };
 
-  return { addPhotosToAlbum, updatePhotoName, movePhoto };
+  return {
+    addPhotosToAlbum,
+    deletePhotosFromAlbum,
+    updatePhotoName,
+    movePhoto,
+  };
 };
 
 export { usePhotoOperations };

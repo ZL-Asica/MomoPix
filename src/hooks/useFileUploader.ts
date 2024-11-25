@@ -11,7 +11,6 @@ const useFileUploader = (
   onClose: () => void
 ) => {
   const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
 
   const validateFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -77,8 +76,6 @@ const useFileUploader = (
       return;
     }
 
-    setIsUploading(true);
-
     const success = await uploadImages(
       userData,
       files.map((f) => f.file),
@@ -89,10 +86,9 @@ const useFileUploader = (
       setFiles([]); // Clear files
       onClose();
     }
-    setIsUploading(false);
   };
 
-  return { files, isUploading, addFiles, deleteFile, renameFile, handleUpload };
+  return { files, addFiles, deleteFile, renameFile, handleUpload };
 };
 
 export default useFileUploader;

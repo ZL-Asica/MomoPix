@@ -22,12 +22,12 @@ const UploadModal = ({
   targetAlbum = 'default',
 }: UploadModalProperties) => {
   const { userData } = useAuthContext();
-  const { addPhotosToAlbum } = useUpdateUserData();
+  const { addPhotosToAlbum, processing } = useUpdateUserData();
 
   const [isDragging, setIsDragging] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<string>(targetAlbum);
 
-  const { files, isUploading, addFiles, deleteFile, renameFile, handleUpload } =
+  const { files, addFiles, deleteFile, renameFile, handleUpload } =
     useFileUploader(userData, selectedAlbum, addPhotosToAlbum, onClose);
 
   return (
@@ -80,14 +80,14 @@ const UploadModal = ({
             variant='contained'
             color='primary'
             onClick={handleUpload}
-            disabled={files.length === 0 || isUploading}
+            disabled={files.length === 0 || processing}
           >
-            {isUploading ? '上传中...' : '上传'}
+            {processing ? '上传中...' : '上传'}
           </Button>
           <Button
             variant='outlined'
             onClick={onClose}
-            disabled={isUploading}
+            disabled={processing}
           >
             取消
           </Button>

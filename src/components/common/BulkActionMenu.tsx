@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useToggle } from '@zl-asica/react';
 
 import { copyPhotoLinks } from '@/utils';
-import { MovePhotoDialog } from '@/components';
+import { DeletePhotosDialog, MovePhotoDialog } from '@/components';
 
 interface BulkActionMenuProperties {
   albumName: string;
@@ -16,6 +16,7 @@ const BulkActionMenu = ({
   selectedItems,
 }: BulkActionMenuProperties) => {
   const [openMoveDialog, toggleMoveDialog] = useToggle();
+  const [openDeleteDialog, toggleDeleteDialog] = useToggle();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -61,6 +62,7 @@ const BulkActionMenu = ({
         >
           复制 BBCode
         </MenuItem>
+        <MenuItem onClick={toggleDeleteDialog}>一键删除</MenuItem>
       </Menu>
 
       <MovePhotoDialog
@@ -68,6 +70,13 @@ const BulkActionMenu = ({
         photo={selectedItems}
         open={openMoveDialog}
         onClose={toggleMoveDialog}
+      />
+
+      <DeletePhotosDialog
+        albumName={albumName}
+        photos={selectedItems}
+        open={openDeleteDialog}
+        onClose={toggleDeleteDialog}
       />
     </>
   );

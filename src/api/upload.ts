@@ -20,13 +20,16 @@ const upload = async (
   });
 
   try {
-    const response = await fetch(import.meta.env.VITE_API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-      },
-      body: formData,
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_ENDPOINT}/upload`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+        },
+        body: formData,
+      }
+    );
 
     if (!response.ok) {
       const errorDetails = await response.json().catch(() => null);
