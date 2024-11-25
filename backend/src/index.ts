@@ -4,6 +4,7 @@ import { bearerAuth } from 'hono/bearer-auth'
 import { cors } from 'hono/cors'
 
 import uploadHandler from './upload'
+import deleteHandler from './delete'
 
 type Bindings = {
   CORS_ORIGIN: string // CORS origin
@@ -20,7 +21,7 @@ app.use('*', async (c, next) => {
     origin: c.env.CORS_ORIGIN
       ? c.env.CORS_ORIGIN.split(',').map((s) => s.trim())
       : '*',
-    allowHeaders: ['Authorization'],
+    allowHeaders: ['Authorization', 'Content-Type'],
     allowMethods: ['POST'],
   })
   return corsMiddlewareHandler(c, next)
@@ -42,6 +43,9 @@ app.use(
 
 // uploading photos
 app.post('/upload', uploadHandler)
+
+// deleting photos
+app.delete('/delete', deleteHandler)
 
 app.onError((error, c) => {
   console.error('Unhandled error:', error)
