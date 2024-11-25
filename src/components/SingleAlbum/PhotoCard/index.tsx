@@ -8,6 +8,7 @@ import { useUpdateUserData } from '@/hooks';
 import { FloatingIconButton } from '@/components/ui';
 
 interface PhotoCardProperties {
+  id: string;
   photo: Photo;
   albumName: string;
   selected: boolean;
@@ -16,6 +17,7 @@ interface PhotoCardProperties {
 }
 
 const PhotoCard = ({
+  id,
   photo,
   albumName,
   selected,
@@ -26,6 +28,7 @@ const PhotoCard = ({
 
   return (
     <Grid
+      id={id}
       component='li'
       size={{ xs: 6, sm: 4, md: 3, lg: 2 }}
       sx={(theme) => ({

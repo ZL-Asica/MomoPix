@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Grid2 as Grid } from '@mui/material';
+import { Grid2 as Grid } from '@mui/material';
 
 import { useAuthContext, usePagination } from '@/hooks';
 import { PaginationControls } from '@/components';
 
+import { SelectableContainer } from '@/components/ui';
 import SinglePhotoModal from '@/components/SinglePhoto';
 import {
   AlbumNotFound,
@@ -36,6 +37,7 @@ const SingleAlbumPage = () => {
     totalPages,
   } = usePagination(currentAlbum.photos, 20);
 
+  const [isSelecting, setIsSelecting] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([] as Photo[]);
   const [activePhoto, setActivePhoto] = useState<Photo | null>(null);
 
@@ -53,20 +55,27 @@ const SingleAlbumPage = () => {
     setActivePhoto(photo);
   };
 
-  const closePhotoModal = () => {
-    setActivePhoto(null);
+  const handleSelectionChange = (selectedItems: Photo[]) => {
+    setSelectedPhotos((previous) => {
+      const updatedSelections = previous.filter(
+        (item) => !selectedItems.includes(item)
+      );
+      const newSelections = selectedItems.filter(
+        (item) => !previous.includes(item)
+      );
+      return [...updatedSelections, ...newSelections];
+    });
   };
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        overflowY: 'auto',
-        '& .MuiPagination-ul': {
-          justifyContent: 'center',
-          margin: '16px 0',
-        },
-      }}
+    <SelectableContainer<Photo>
+      items={paginatedPhotos}
+      itemSelector={(photo) => document.querySelector(`#photo-${photo.id}`)}
+      isSelecting={isSelecting}
+      setIsSelecting={setIsSelecting}
+      selectedItems={selectedPhotos}
+      onSelectionChange={handleSelectionChange}
+      color='#f6a8b8'
     >
       <AlbumHeader currentAlbum={currentAlbum} />
 
@@ -86,6 +95,7 @@ const SingleAlbumPage = () => {
           {paginatedPhotos.map((photo) => (
             <PhotoCard
               key={photo.id}
+              id={`photo-${photo.id}`}
               photo={photo}
               albumName={albumName || ''}
               selected={selectedPhotos.includes(photo)}
@@ -99,9 +109,9 @@ const SingleAlbumPage = () => {
       <SinglePhotoModal
         albumName={albumName || ''}
         photo={activePhoto}
-        onClose={closePhotoModal}
+        onClose={() => setActivePhoto(null)}
       />
-    </Box>
+    </SelectableContainer>
   );
 };
 

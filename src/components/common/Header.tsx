@@ -17,7 +17,6 @@ import {
   IconButton,
   Avatar,
   Skeleton,
-  useTheme,
 } from '@mui/material';
 import { useClickOutside, useToggle } from '@zl-asica/react';
 
@@ -25,7 +24,6 @@ import { UploadModal } from '@/components';
 import { useAuthContext, useAuth } from '@/hooks';
 
 const Header = () => {
-  const theme = useTheme();
   const { loading, userData } = useAuthContext();
   const { logout } = useAuth();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
