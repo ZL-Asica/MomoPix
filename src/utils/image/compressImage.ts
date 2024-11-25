@@ -12,15 +12,30 @@ const supportedFormats = Object.keys(formatFactor) as Array<
 >;
 
 /**
- * Dynamically calculate compression quality based on resolution, file size, and image complexity.
- * @param width - Image width in pixels
- * @param height - Image height in pixels
- * @param fileSize - Original file size in bytes
- * @param format - Target format ('image/avif', 'image/webp', 'image/jpeg')
- * @param complexity - Estimated image complexity (0.0 - 1.0, where 1.0 is highly complex)
- * @returns A quality value between 0.1 and 1.0
+ * Calculates the compression quality dynamically based on image properties.
+ *
+ * ### Key Factors:
+ * 1. **Resolution**: Larger images reduce quality to balance file size and visual fidelity.
+ * 2. **File Size**: Bigger original files lower the quality to ensure significant compression.
+ * 3. **Complexity**: Detailed or complex images retain more quality to preserve essential details.
+ * 4. **Format Adjustment**: Each format adjusts quality based on its efficiency and behavior:
+ *    - AVIF: Performs well at lower qualities.
+ *    - WebP: Balances compression and quality effectively.
+ *    - JPEG: Requires higher quality to minimize artifacts.
+ *
+ * ### How It Works:
+ * - Combines resolution, file size, and complexity into a formula to determine quality.
+ * - Adjusts the result for the target format.
+ * - Ensures the final quality is between 0.1 (minimum) and 1.0 (maximum).
+ *
+ * @param width - Image width in pixels.
+ * @param height - Image height in pixels.
+ * @param fileSize - Original file size in bytes.
+ * @param format - Target format ('image/avif', 'image/webp', 'image/jpeg').
+ * @param complexity - Estimated image complexity (0.0 = simple, 1.0 = highly complex).
+ * @returns A quality value between 0.1 and 1.0.
  */
-const calculateDynamicQuality = (
+const qualityCalculator = (
   width: number,
   height: number,
   fileSize: number,
@@ -28,31 +43,17 @@ const calculateDynamicQuality = (
   complexity: number
 ): number => {
   const totalPixels = width * height;
+  const resolutionFactor = Math.log10(totalPixels) / 7; // Normalize to [0, 1]
+  const sizeFactor = Math.log10(fileSize) / 6; // Normalize to [0, 1]
 
-  // Base quality based on resolution
-  let baseQuality = 1;
-  if (totalPixels > 8_000_000)
-    baseQuality = 0.6; // High resolution
-  else if (totalPixels > 2_000_000)
-    baseQuality = 0.7; // Medium resolution
-  else if (totalPixels > 500_000)
-    baseQuality = 0.8; // Low resolution
-  else baseQuality = 0.9; // Tiny images
+  // Calculate dynamic quality
+  let quality =
+    1 - 0.3 * resolutionFactor - 0.2 * sizeFactor - 0.2 * complexity;
 
-  // Adjust for file size
-  if (fileSize > 5_000_000)
-    baseQuality *= 0.8; // Very large files
-  else if (fileSize > 1_000_000) baseQuality *= 0.9; // Medium files
+  // Apply format-specific adjustments
+  quality *= formatFactor[format];
 
-  // Adjust for image complexity (higher complexity -> higher quality)
-  const complexityFactor = 1 - 0.2 * complexity; // Reduce quality slightly for high complexity
-  baseQuality *= complexityFactor;
-
-  // Apply format-specific adjustment
-  baseQuality *= formatFactor[format];
-
-  // Clamp to [0.1, 1.0]
-  return Math.max(0.1, Math.min(1, baseQuality));
+  return Math.max(0.1, Math.min(1, quality)); // Clamp to [0.1, 1.0]
 };
 
 /**
@@ -127,7 +128,7 @@ const compressImage = async (
 
   for (const format of supportedFormats) {
     try {
-      const quality = calculateDynamicQuality(
+      const quality = qualityCalculator(
         width,
         height,
         originalSize,
