@@ -17,6 +17,7 @@ import {
   IconButton,
   Avatar,
   Skeleton,
+  useTheme,
 } from '@mui/material';
 import { useClickOutside, useToggle } from '@zl-asica/react';
 
@@ -24,6 +25,7 @@ import { UploadModal } from '@/components';
 import { useAuthContext, useAuth } from '@/hooks';
 
 const Header = () => {
+  const theme = useTheme();
   const { loading, userData } = useAuthContext();
   const { logout } = useAuth();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
@@ -51,14 +53,14 @@ const Header = () => {
     <AppBar
       position='static'
       color='primary'
-      sx={{ mb: 2 }}
+      sx={{ mb: 2, borderRadius: '0 0' }}
     >
       <Toolbar>
         {/* App Title */}
         <Typography
           variant='h6'
           component='div'
-          sx={{ flexGrow: 1 }}
+          sx={{ flexGrow: 1, color: 'white' }}
         >
           <Link
             to='/'

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Menu, MenuItem, IconButton, Box } from '@mui/material';
+import { Menu, MenuItem, IconButton } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useToggle } from '@zl-asica/react';
 
 import { useUpdateUserData } from '@/hooks';
 import { InputDialog, MovePhotoDialog } from '@/components';
+
+import { FloatingIconButton } from '@/components/ui';
 
 interface PhotoDropdownMenuProperties {
   albumName: string;
@@ -37,30 +39,23 @@ const PhotoDropdownMenu = ({
   };
 
   return (
-    <Box
-      sx={{
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        zIndex: 10,
-        background: 'rgba(255, 255, 255, 0.8)',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 32,
-        height: 32,
-      }}
-    >
-      <IconButton
-        aria-label='options'
+    <>
+      <FloatingIconButton
         onClick={handleMenuOpen}
-        size='small'
-        sx={{ p: 0 }}
-        disabled={processing}
+        position={{ top: 8, left: 8 }}
+        size={36}
       >
-        <MoreVertIcon fontSize='small' />
-      </IconButton>
+        <IconButton
+          aria-label='options'
+          onClick={handleMenuOpen}
+          size='small'
+          sx={{ p: 0 }}
+          disabled={processing}
+        >
+          <MoreVertIcon fontSize='small' />
+        </IconButton>
+      </FloatingIconButton>
+
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -103,7 +98,7 @@ const PhotoDropdownMenu = ({
         open={openMoveDialog}
         onClose={toggleMoveDialog}
       />
-    </Box>
+    </>
   );
 };
 

@@ -5,6 +5,8 @@ import PhotoDropdownMenu from './PhotoDropdownMenu';
 
 import { useUpdateUserData } from '@/hooks';
 
+import { FloatingIconButton } from '@/components/ui';
+
 interface PhotoCardProperties {
   photo: Photo;
   albumName: string;
@@ -25,11 +27,12 @@ const PhotoCard = ({
   return (
     <Grid
       component='li'
+      size={{ xs: 6, sm: 4, md: 3, lg: 2 }}
       sx={(theme) => ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         overflow: 'hidden',
         position: 'relative',
         backgroundColor: 'background.paper',
@@ -48,7 +51,7 @@ const PhotoCard = ({
         sx={{
           position: 'relative',
           width: '100%',
-          height: { xs: 120, sm: 160, md: 200 },
+          aspectRatio: '1 / 1',
         }}
       >
         <Box
@@ -67,30 +70,18 @@ const PhotoCard = ({
         />
 
         {/* Checkbox */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 10,
-            background: 'rgba(255, 255, 255, 0.8)',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 32,
-            height: 32,
-          }}
+        <FloatingIconButton
+          onClick={onSelect}
+          disabled={processing}
         >
           <Checkbox
             checked={selected}
-            onChange={onSelect}
             icon={<CheckBoxOutlineBlank fontSize='small' />}
             checkedIcon={<CheckBox fontSize='small' />}
             sx={{ p: 0 }}
             disabled={processing}
           />
-        </Box>
+        </FloatingIconButton>
 
         {/* Dropdown Menu Icon */}
 

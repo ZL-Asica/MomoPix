@@ -29,7 +29,7 @@ const useFileUploader = (
     return true;
   };
 
-  const addFiles = (newFiles: File[]) => {
+  const addFiles = (newFiles: File[]): void => {
     const validFiles = newFiles.filter((file) => validateFile(file));
     if (files.length + validFiles.length > MAX_FILES) {
       toast.error(`一次最多上传 ${MAX_FILES} 张图片`);
@@ -42,22 +42,27 @@ const useFileUploader = (
     ]);
   };
 
-  const deleteFile = (index: number) => {
+  const deleteFile = (index: number): void => {
     setFiles((previous) => previous.filter((_, index_) => index_ !== index));
   };
 
-  const renameFile = (index: number, newName: string) => {
+  const renameFile = (index: number, newName: string): void => {
     setFiles((previous) =>
-      previous.map((file, index_) =>
-        index_ === index
-          ? {
-              ...file,
-              name:
-                newName.replace(/\.[^./]+$/, '') +
-                file.name.match(/\.[^./]+$/)?.[0],
-            }
-          : file
-      )
+      previous.map((fileObject, index_) => {
+        if (index_ === index) {
+          const originalFile = fileObject.file;
+          const extension = originalFile.name.match(/\.[^./]+$/)?.[0] || '';
+          const updatedName = newName.replace(/\.[^./]+$/, '') + extension;
+
+          // Create a new File object with the updated name
+          const renamedFile = new File([originalFile], updatedName, {
+            type: originalFile.type,
+          });
+
+          return { file: renamedFile, name: updatedName };
+        }
+        return fileObject;
+      })
     );
   };
 
