@@ -12,13 +12,11 @@ import { useUpdateUserData } from '@/hooks';
 interface PhotoInfoAndActionsProperties {
   albumName: string;
   photo: Photo;
-  onClose: () => void;
 }
 
 const PhotoInfoAndActions = ({
   albumName,
   photo,
-  onClose,
 }: PhotoInfoAndActionsProperties) => {
   const { updatePhotoName, processing } = useUpdateUserData();
 
@@ -149,10 +147,7 @@ const PhotoInfoAndActions = ({
         albumName={albumName}
         photo={[photo]}
         open={openMoveDialog}
-        onClose={() => {
-          toggleMoveDialog();
-          onClose();
-        }}
+        onClose={toggleMoveDialog}
       />
     </>
   );

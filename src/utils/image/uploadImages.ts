@@ -90,7 +90,6 @@ const uploadImages = async (
       return false;
     }
 
-    toast.success('上传完成！');
     return true;
   } catch (error) {
     console.error('Unexpected error during upload:', error);

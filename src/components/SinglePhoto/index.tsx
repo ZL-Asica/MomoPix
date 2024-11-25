@@ -87,7 +87,6 @@ const SinglePhotoModal = ({
             <PhotoInfoAndActions
               albumName={albumName}
               photo={photo}
-              onClose={onClose}
             />
 
             <Divider sx={{ my: 2 }} />

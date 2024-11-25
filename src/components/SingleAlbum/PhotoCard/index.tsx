@@ -32,10 +32,11 @@ const PhotoCard = ({
       component='li'
       size={{ xs: 6, sm: 4, md: 3, lg: 2 }}
       sx={(theme) => ({
+        aspectRatio: '1 / 1.2',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         overflow: 'hidden',
         position: 'relative',
         backgroundColor: 'background.paper',
@@ -55,6 +56,8 @@ const PhotoCard = ({
           position: 'relative',
           width: '100%',
           aspectRatio: '1 / 1',
+          flexShrink: 0,
+          overflow: 'hidden',
         }}
       >
         <Box

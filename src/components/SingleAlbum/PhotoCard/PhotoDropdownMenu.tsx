@@ -17,7 +17,7 @@ const PhotoDropdownMenu = ({
   albumName,
   photo,
 }: PhotoDropdownMenuProperties) => {
-  const { updateAlbum, processing } = useUpdateUserData();
+  const { updateAlbum, processing, updatePhotoName } = useUpdateUserData();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [renameDialogOpen, toggleRenameDialog] = useToggle();
@@ -28,6 +28,11 @@ const PhotoDropdownMenu = ({
     await updateAlbum(albumName, {
       thumbnail: photo.url,
     });
+    handleMenuClose();
+  };
+
+  const renamePhoto = async (newName: string) => {
+    await updatePhotoName(albumName, photo.id, newName);
     handleMenuClose();
   };
 
@@ -61,7 +66,6 @@ const PhotoDropdownMenu = ({
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
-        onClick={handleMenuClose}
       >
         <MenuItem
           onClick={setThumbnail}
@@ -93,9 +97,7 @@ const PhotoDropdownMenu = ({
         onClose={toggleRenameDialog}
         title='重命名'
         inputLabel='新图片名称'
-        handleSave={(newName: string) => {
-          console.log('newName', newName);
-        }}
+        handleSave={(newName: string) => renamePhoto(newName)}
         defaultValue={photo.name}
       />
 

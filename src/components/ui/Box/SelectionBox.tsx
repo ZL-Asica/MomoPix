@@ -43,7 +43,7 @@ const SelectionBox: React.FC<SelectionBoxProperties> = ({
         backgroundColor: backgroundColor,
         border: `1px solid ${borderColor}`,
         pointerEvents: 'none', // Prevent interaction
-        zIndex: 1000, // Ensure it appears above other content
+        zIndex: 1, // Ensure it appears above other content
       }}
     />
   );

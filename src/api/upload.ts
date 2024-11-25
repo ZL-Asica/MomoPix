@@ -46,19 +46,10 @@ const upload = async (
     const parseResult = UploadResultsSchema.safeParse(jsonResponse);
     if (!parseResult.success) {
       console.error('Invalid API response structure:', parseResult.error);
-      toast.error('Invalid response format from server');
       throw new Error('Invalid API response structure');
     }
 
     const result = parseResult.data;
-
-    if (result.success) {
-      toast.success('All files uploaded successfully!');
-    } else {
-      toast.error(
-        `Some files failed: ${result.failed.map((f) => f.key).join(', ')}`
-      );
-    }
 
     return result;
   } catch (error) {

@@ -29,16 +29,25 @@ const useFileUploader = (
   };
 
   const addFiles = (newFiles: File[]): void => {
-    const validFiles = newFiles.filter((file) => validateFile(file));
-    if (files.length + validFiles.length > MAX_FILES) {
-      toast.error(`一次最多上传 ${MAX_FILES} 张图片`);
-      return;
-    }
+    setFiles((previous) => {
+      const validFiles = newFiles.filter((file) => validateFile(file));
+      const existingFileNames = new Set(previous.map((f) => f.name));
 
-    setFiles((previous) => [
-      ...previous,
-      ...validFiles.map((file) => ({ file, name: file.name })),
-    ]);
+      // Check for duplicate file names
+      const uniqueFiles = validFiles.filter(
+        (file) => !existingFileNames.has(file.name)
+      );
+
+      if (previous.length + validFiles.length > MAX_FILES) {
+        toast.error(`一次最多上传 ${MAX_FILES} 张图片`);
+        return previous;
+      }
+
+      return [
+        ...previous,
+        ...uniqueFiles.map((file) => ({ file, name: file.name })),
+      ];
+    });
   };
 
   const deleteFile = (index: number): void => {
@@ -76,9 +85,13 @@ const useFileUploader = (
       return;
     }
 
+    const sortedFiles = [...files].sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+
     const success = await uploadImages(
       userData,
-      files.map((f) => f.file),
+      sortedFiles.map((f) => f.file),
       selectedAlbum,
       addPhotosToAlbum
     );

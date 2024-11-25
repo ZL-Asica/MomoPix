@@ -105,7 +105,6 @@ const SingleAlbumPage = () => {
           ))}
         </Grid>
       </PaginationControls>
-
       <SinglePhotoModal
         albumName={albumName || ''}
         photo={activePhoto}
