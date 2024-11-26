@@ -21,7 +21,7 @@ const deleteFiles = async (
   try {
     // Get keys to delete
     const keysToDelete = photos.map((photo) =>
-      photo.url.replace(`${import.meta.env.VITE_CF_R2}`, '')
+      photo.url.replace(`${import.meta.env.VITE_CF_R2}/`, '')
     );
 
     // Call API to delete files
@@ -39,21 +39,18 @@ const deleteFiles = async (
 
     if (deletedPhotos.length > 0) {
       // Update the album and inform the user
-      deletePhotosFromAlbum(albumName, deletedPhotos);
-      toast.success(`${deletedPhotos.length} 张图片删除成功！`);
+      await deletePhotosFromAlbum(albumName, deletedPhotos);
     }
 
     if (failedDeletes.length > 0) {
       failedDeletes.forEach((failure) => {
         console.error(`删除失败：${failure.key}，错误：${failure.error}`);
-        toast.error(`删除失败：${failure.key}，错误：${failure.error}`);
       });
     }
 
     return failedDeletes.length === 0;
   } catch (error) {
     console.error('删除过程中发生错误：', error);
-    toast.error(`删除过程中发生错误：${(error as Error).message}`);
     return false;
   }
 };

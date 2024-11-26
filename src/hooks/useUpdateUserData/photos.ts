@@ -27,7 +27,10 @@ const usePhotoOperations = () => {
     );
   };
 
-  const deletePhotosFromAlbum = async (albumName: string, photos: Photo[]) => {
+  const deletePhotosFromAlbum = async (
+    albumName: string,
+    photos: Photo[]
+  ): Promise<void> => {
     ensureUserData();
     const updatedAlbums = (userData!.albums || []).map((album) =>
       album.name === albumName

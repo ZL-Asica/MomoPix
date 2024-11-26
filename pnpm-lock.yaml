@@ -21,8 +21,8 @@ importers:
         specifier: ^6.1.8
         version: 6.1.8(@emotion/react@11.13.5(@types/react@18.3.12)(react@18.3.1))(@emotion/styled@11.13.5(@emotion/react@11.13.5(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react@18.3.1))(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@zl-asica/react':
-        specifier: ^0.3.4
-        version: 0.3.4(react@18.3.1)
+        specifier: ^0.3.6
+        version: 0.3.6(react@18.3.1)
       firebase:
         specifier: ^11.0.2
         version: 11.0.2
@@ -1101,8 +1101,8 @@ packages:
     peerDependencies:
       prettier: ^3.0.0
 
-  '@zl-asica/react@0.3.4':
-    resolution: {integrity: sha512-FPQfMvh92HHtV7kBXx0yQItQeHaQBS1hSdVtWybV02Y2IRdvJwZVofKnlSC6qIP7f5yo+0WXcx5SgTEPpl8Lew==}
+  '@zl-asica/react@0.3.6':
+    resolution: {integrity: sha512-L933a4Ta+YLUG9Zaiv1vbTWLppPlI6vW5hetRY/WMsq2Y/a66Fg+qa5ILCVB+PIRzQHw/IF+ndzkY3jjXiRSGA==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       react: ^17.0.0 || ^18.0.0 || ^19.0
@@ -4132,7 +4132,7 @@ snapshots:
     dependencies:
       prettier: 3.3.3
 
-  '@zl-asica/react@0.3.4(react@18.3.1)':
+  '@zl-asica/react@0.3.6(react@18.3.1)':
     dependencies:
       react: 18.3.1
 
