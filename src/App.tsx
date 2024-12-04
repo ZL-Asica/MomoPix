@@ -1,7 +1,9 @@
 import { Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
 
 import AppProviders from '@/AppProviders';
 import { Layout, ProtectedRoute, GuestRoute } from '@/components';
+import { useAuthStore } from '@/stores';
 
 import SignInPage from '@/pages/SignIn';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -11,6 +13,14 @@ import AlbumsPage from '@/pages/Albums';
 import SingleAlbumPage from '@/pages/SingleAlbum';
 
 const App = () => {
+  const initializeAuthListener = useAuthStore(
+    (state) => state.initializeAuthListener
+  );
+
+  useEffect(() => {
+    initializeAuthListener();
+  }, [initializeAuthListener]);
+
   return (
     <AppProviders>
       <Routes>

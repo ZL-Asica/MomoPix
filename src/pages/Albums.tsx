@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import { useToggle } from '@zl-asica/react';
 
-import { useAuthContext } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 import { AlbumCard, CreateNewAlbumModal } from '@/components/Albums';
 
 const AlbumsPage = () => {
-  const { userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
   const navigate = useNavigate();
 
   const [dialogOpen, toggleDialogOpen] = useToggle();

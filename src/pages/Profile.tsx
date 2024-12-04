@@ -10,11 +10,11 @@ import {
   Divider,
 } from '@mui/material';
 
-import useAuthContext from '@/hooks/useAuthContext';
-import useUpdateUserData from '@/hooks/useUpdateUserData';
+import { useUpdateUserData } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 const Profile = () => {
-  const { userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
   const { updateBasicInfo, processing } = useUpdateUserData();
 
   const [editing, setEditing] = useState(false);

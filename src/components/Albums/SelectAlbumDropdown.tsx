@@ -1,7 +1,7 @@
 import { TextField, MenuItem, Box } from '@mui/material';
 import { useToggle } from '@zl-asica/react';
 
-import { useAuthContext } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 import { CreateNewAlbumModal } from '@/components/Albums';
 
@@ -14,7 +14,7 @@ const SelectAlbumDropdown = ({
   selectedAlbum,
   setSelectedAlbum,
 }: SelectAlbumDropdownProperties) => {
-  const { userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
   const albums = userData?.albums || [];
   const [dialogOpen, toggleDialogOpen] = useToggle();
 

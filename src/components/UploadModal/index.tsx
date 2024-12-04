@@ -6,7 +6,8 @@ import Dropzone from './Dropzone';
 import FilePreview from './FilePreview';
 import { ModalContainer } from './styles';
 
-import { useAuthContext, useFileUploader, useUpdateUserData } from '@/hooks';
+import { useFileUploader, useUpdateUserData } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 import { SelectAlbumDropdown } from '@/components/Albums';
 
@@ -21,7 +22,7 @@ const UploadModal = ({
   onClose,
   targetAlbum = 'default',
 }: UploadModalProperties) => {
-  const { userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
   const { addPhotosToAlbum, processing } = useUpdateUserData();
 
   const [isDragging, setIsDragging] = useState(false);

@@ -21,10 +21,12 @@ import {
 import { useClickOutside, useToggle } from '@zl-asica/react';
 
 import { UploadModal } from '@/components';
-import { useAuthContext, useAuth } from '@/hooks';
+import { useAuth } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 const Header = () => {
-  const { loading, userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
+  const loading = useAuthStore((state) => state.loading);
   const { logout } = useAuth();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [uploadModalOpen, toggleUploadModalOpen] = useToggle();

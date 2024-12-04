@@ -11,7 +11,8 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import { useAuthContext, useUpdateUserData } from '@/hooks';
+import { useUpdateUserData } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 interface MovePhotoDialogProperties {
   albumName: string;
@@ -30,8 +31,7 @@ const MovePhotoDialog = ({
   const [targetAlbum, setTargetAlbum] = useState<string>('');
 
   // Fetch user's album list dynamically (exclude current album)
-  const { userData } = useAuthContext();
-
+  const userData = useAuthStore((state) => state.userData);
   const albums =
     userData?.albums.filter((album: Album) => album.name !== albumName) || [];
 

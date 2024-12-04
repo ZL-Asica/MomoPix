@@ -2,7 +2,6 @@ import { Toaster } from 'sonner';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 
-import { AuthProvider } from '@/contexts/AuthContext';
 import { theme } from '@/utils';
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
@@ -13,7 +12,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
           richColors
           expand={true}
         />
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </ThemeProvider>
     </Router>
   );

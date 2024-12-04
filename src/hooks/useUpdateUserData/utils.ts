@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 
 import { db } from '@/firebase-config';
-import { useAuthContext } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 type CommonUtils = {
   ensureUserData: () => void;
@@ -17,7 +17,8 @@ type CommonUtils = {
 };
 
 const useCommonUtils = (): CommonUtils => {
-  const { loading, userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
+  const loading = useAuthStore((state) => state.loading);
   const [processing, setProcessing] = useState(false);
 
   const ensureUserData = () => {

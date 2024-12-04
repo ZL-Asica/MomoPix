@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Grid2 as Grid } from '@mui/material';
 
-import { useAuthContext, usePagination } from '@/hooks';
+import { usePagination } from '@/hooks';
+import { useAuthStore } from '@/stores';
 import { PaginationControls } from '@/components';
 
 import { SelectableContainer } from '@/components/ui';
@@ -15,8 +16,7 @@ import {
 
 const SingleAlbumPage = () => {
   const params = useParams();
-  const { userData } = useAuthContext();
-
+  const userData = useAuthStore((state) => state.userData);
   // Current album
   const albumName = params.albumName;
   const currentAlbum = userData?.albums.find(

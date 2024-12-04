@@ -7,7 +7,8 @@ import {
   Button,
 } from '@mui/material';
 
-import { useAuthContext, useFileDeleter, useUpdateUserData } from '@/hooks';
+import { useFileDeleter, useUpdateUserData } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 interface DeletePhotosDialogProperties {
   albumName: string;
@@ -22,7 +23,7 @@ const DeletePhotosDialog = ({
   open,
   onClose,
 }: DeletePhotosDialogProperties) => {
-  const { userData } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
   const { deletePhotosFromAlbum } = useUpdateUserData();
 
   return (

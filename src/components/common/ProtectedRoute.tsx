@@ -2,14 +2,15 @@ import { Navigate } from 'react-router-dom';
 
 import LoadingIndicator from './LoadingIndicator';
 
-import { useAuthContext } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 /**
  * Protects routes for authenticated users only.
  * Redirects to /signin if the user is not authenticated.
  */
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { userData, loading } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
+  const loading = useAuthStore((state) => state.loading);
 
   if (loading) {
     return <LoadingIndicator />;
@@ -32,7 +33,8 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
  * Redirects to / if the user is authenticated.
  */
 const GuestRoute = ({ children }: { children: JSX.Element }) => {
-  const { userData, loading } = useAuthContext();
+  const userData = useAuthStore((state) => state.userData);
+  const loading = useAuthStore((state) => state.loading);
 
   if (loading) {
     return <LoadingIndicator />;
