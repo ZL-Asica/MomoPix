@@ -16,5 +16,6 @@
   },
   "editor.wordWrap": "on",
   "prettier.requireConfig": true,
+  "eslint.useFlatConfig": true,
   "typescript.tsdk": "node_modules/typescript/lib"
 }

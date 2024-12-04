@@ -11,43 +11,43 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "preview": "vite preview",
-    "prepare": "husky install",
+    "prepare": "husky",
     "clean": "rm -rf dist ./node_modules/.tmp/tsconfig.app.tsbuildinfo"
   },
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
-    "@mui/icons-material": "^6.1.8",
-    "@mui/material": "^6.1.8",
-    "@zl-asica/react": "^0.3.6",
+    "@mui/icons-material": "^6.1.10",
+    "@mui/material": "^6.1.10",
+    "@zl-asica/react": "^0.3.10",
     "firebase": "^11.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.3.5",
-    "react-router-dom": "^7.0.1",
+    "react-router-dom": "^7.0.2",
     "sonner": "^1.7.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.0.1",
-    "@types/node": "^22.9.3",
-    "@types/react": "^18.3.12",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.13",
     "@types/react-dom": "^18.3.1",
     "@types/react-router-dom": "^5.3.3",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react-swc": "^3.7.2",
     "@zl-asica/prettier-config": "^1.0.9",
-    "eslint": "^9.13.0",
-    "eslint-config-zl-asica": "^1.0.19",
+    "eslint": "^9.16.0",
+    "eslint-config-zl-asica": "^1.0.20",
     "husky": "^9.1.7",
     "jsdom": "^25.0.1",
     "lint-staged": "^15.2.10",
-    "prettier": "^3.3.3",
+    "prettier": "^3.4.2",
     "typescript": "^5.7.2",
-    "vite": "^5.4.10",
+    "vite": "^6.0.2",
     "vite-plugin-checker": "^0.8.0",
     "vite-tsconfig-paths": "^5.1.3",
-    "vitest": "^2.1.5"
+    "vitest": "^2.1.8"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -58,5 +58,5 @@
       "prettier --write"
     ]
   },
-  "packageManager": "pnpm@9.14.2"
+  "packageManager": "pnpm@9.14.4"
 }
