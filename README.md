@@ -1,13 +1,12 @@
 # MomoPix
 
 > **MomoPix** 是一个轻量、易于搭建的个人图床工具，名字取自日语中的“桃 ( もも )”，意为“桃子”。  
-> 基于 Cloudflare R2 作为储存空间，为你提供简洁、优雅的图床体验！🎉
+> 基于 Cloudflare Pages, R2 作为储存空间，为你提供简洁、优雅的图床体验！🎉
 
 [![GitHub License][license-badge]][license-link]
 [![Node.js][node-badge]][node-link] |
 [![React][react-badge]][react-link]
 [![Vite][vite-badge]][vite-link] |
-[![Hono][hono-badge]][hono-link] |
 [![Cloudflare][cloudflare-badge]][cloudflare-link]
 [![Firebase][firebase-badge]][firebase-link]
 [![pnpm Version][pnpm-badge]][pnpm-link]
@@ -15,6 +14,17 @@
 [![Prettier][prettier-badge]][prettier-link]
 
 > 🚧 **本项目仍在开发中，部署文档尚未编写完成，请暂时勿用于生产环境。**
+
+---
+
+## WIP
+
+- [x] 基本功能实现（上传、删除、查看、复制链接、相册管理）
+- [x] 完善前端界面（主题、样式、交互）
+- [x] 完善后端逻辑（上传、删除、查看）
+- [x] 移除单独的后端服务，改为 Cloudflare Pages Functions
+- [ ] 移除 Firebase 依赖，改为 Cloudflare KV 存储
+- [ ] 完善文档，编写部署指南
 
 ---
 
@@ -35,7 +45,6 @@
   - [Vite](https://vite.dev/) ⚡
   - [MUI](https://mui.com/)：懒 🖌️
 - **后端**：
-  - [Hono](https://hono.dev/)：上传图片到 R2 🚀
   - [Cloudflare](https://www.cloudflare.com/)：感谢大善人🙏
 - **开发工具**：
   - [pnpm](https://pnpm.io/) 🚀
@@ -78,10 +87,10 @@ MomoPix/
 │   │   ├── api.d.ts                 # API 类型
 │   │   └── userData.d.ts            # 用户数据类型
 │   └── firebase-config.ts           # Firebase 配置
-├── backend
-│   └── src                          # 后端逻辑
-│       ├── index.ts                 # 后端入口
-│       └── upload.ts                # 图片上传处理
+├── functions                        # Cloudflare Pages Functions
+│   └── api                          # 后端逻辑
+│       ├── upload.ts                # 图片上传处理
+│       └── delete.ts                # 图片删除处理
 ├── public                           # 静态资源
 │   └── favicon.ico                  # 网站图标
 ├── package.json                     # 项目依赖和脚本
@@ -141,8 +150,6 @@ MomoPix/
 [eslint-link]: https://www.npmjs.com/package/eslint-config-zl-asica
 [firebase-badge]: https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase&logoColor=black
 [firebase-link]: https://firebase.google.com/
-[hono-badge]: https://img.shields.io/badge/Hono-E36002?logo=hono&logoColor=fff
-[hono-link]: https://hono.dev/
 [license-badge]: https://img.shields.io/github/license/ZL-Asica/MomoPix
 [license-link]: https://github.com/ZL-Asica/MomoPix/blob/main/LICENSE
 [node-badge]: https://img.shields.io/badge/node%3E=18.18-339933?logo=node.js&logoColor=white

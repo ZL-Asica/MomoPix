@@ -18,17 +18,14 @@ const deleteFiles = async (
   }
 
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_ENDPOINT}/delete`,
-      {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${TOKEN}`,
-        },
-        body: JSON.stringify({ keys }),
-      }
-    );
+    const response = await fetch('/api/delete', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${TOKEN}`,
+      },
+      body: JSON.stringify({ keys }),
+    });
 
     if (!response.ok) {
       const errorDetails = await response.json().catch(() => null);

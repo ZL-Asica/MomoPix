@@ -13,6 +13,7 @@ export default [
       'vitest.config.ts',
       'setup_firebase.mjs',
       'backend',
+      'functions',
     ],
   },
   {

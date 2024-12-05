@@ -1,17 +1,12 @@
-import { zlAsicaTsConfig } from 'eslint-config-zl-asica'
+import { zlAsicaTs } from 'eslint-config-zl-asica';
 
 export default [
-  ...zlAsicaTsConfig,
+  ...zlAsicaTs,
   {
-    ignores: [
-      'dist',
-      'src/vite-env.d.ts',
-      'eslint.config.mjs',
-      'prettier.config.cjs',
-    ],
+    ignores: ['dist'],
   },
   {
-    files: ['src/**/*.{ts}'],
+    files: ['api/**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       parserOptions: {
@@ -24,4 +19,4 @@ export default [
       'unicorn/no-array-for-each': 'off',
     },
   },
-]
+];
