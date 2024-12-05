@@ -34,6 +34,10 @@ const deleteHandler = async (c: Context) => {
     const deleteResults = await Promise.allSettled(
       keysArray.map(async (key: string) => {
         try {
+          const fileExists = await c.env.R2_BUCKET.get(key)
+          if (!fileExists) {
+            throw new Error(`File ${key} does not exist.`)
+          }
           await c.env.R2_BUCKET.delete(key)
           return { key, success: true }
         } catch (error) {

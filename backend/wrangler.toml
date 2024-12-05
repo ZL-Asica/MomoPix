@@ -5,14 +5,15 @@ compatibility_date = "2024-11-23"
 
 compatibility_flags = [ "nodejs_compat" ]
 
-[vars]
-CORS_ORIGIN = "https://img.zla.app"
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = 'zla-img'
+
+# Remember to set the following secrets in Workers Secrets
+
+# TOKEN = "YOUR PRIVATE TOKEN"
 
 # wrangler.toml (wrangler v3.88.0^)
 [observability]
 enabled = true
 head_sampling_rate = 1
-
-# Remember to set the following secrets in Workers Secrets
-
-# TOKEN = "YOUR PRIVATE TOKEN"

@@ -7,7 +7,6 @@ import uploadHandler from './upload'
 import deleteHandler from './delete'
 
 type Bindings = {
-  CORS_ORIGIN: string // CORS origin
   TOKEN: string // Your private authentication token
   R2_BUCKET: R2Bucket // R2 bucket
 }
@@ -18,11 +17,9 @@ app.use(logger())
 
 app.use('*', async (c, next) => {
   const corsMiddlewareHandler = cors({
-    origin: c.env.CORS_ORIGIN
-      ? c.env.CORS_ORIGIN.split(',').map((s) => s.trim())
-      : '*',
+    origin: '*',
     allowHeaders: ['Authorization', 'Content-Type'],
-    allowMethods: ['POST'],
+    allowMethods: ['POST', 'DELETE', 'OPTIONS'],
   })
   return corsMiddlewareHandler(c, next)
 })
