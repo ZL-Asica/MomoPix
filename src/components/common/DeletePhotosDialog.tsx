@@ -9,6 +9,7 @@ import {
 
 import { useFileDeleter, useUpdateUserData } from '@/hooks';
 import { useAuthStore } from '@/stores';
+import { SmallLoadingCircle } from '@/components';
 
 interface DeletePhotosDialogProperties {
   albumName: string;
@@ -24,6 +25,7 @@ const DeletePhotosDialog = ({
   onClose,
 }: DeletePhotosDialogProperties) => {
   const userData = useAuthStore((state) => state.userData);
+  const loading = useAuthStore((state) => state.loading);
   const { deletePhotosFromAlbum } = useUpdateUserData();
 
   return (
@@ -50,6 +52,7 @@ const DeletePhotosDialog = ({
         <Button
           onClick={onClose}
           color='primary'
+          disabled={loading}
         >
           取消
         </Button>
@@ -66,7 +69,7 @@ const DeletePhotosDialog = ({
           color='primary'
           variant='contained'
         >
-          删除
+          {loading ? <SmallLoadingCircle text='删除中...' /> : '删除'}
         </Button>
       </DialogActions>
     </Dialog>

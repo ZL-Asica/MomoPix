@@ -8,9 +8,9 @@ import {
   DialogActions,
   MenuItem,
   Select,
-  CircularProgress,
 } from '@mui/material';
 
+import { SmallLoadingCircle } from '@/components';
 import { useUpdateUserData } from '@/hooks';
 import { useAuthStore } from '@/stores';
 
@@ -95,9 +95,8 @@ const MovePhotoDialog = ({
           onClick={handleMovePhoto}
           color='primary'
           disabled={processing || !targetAlbum}
-          startIcon={processing && <CircularProgress size={16} />}
         >
-          移动
+          {processing ? <SmallLoadingCircle text='移动中...' /> : '移动'}
         </Button>
       </DialogActions>
     </Dialog>

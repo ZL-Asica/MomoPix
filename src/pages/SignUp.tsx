@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/hooks';
+import { SmallLoadingCircle } from '@/components';
 
 import { SignInUpContainer, SignInUpCard } from '@/components/SignInUp/Styles';
 
@@ -96,7 +97,7 @@ const SignUpPage = () => {
             color='primary'
             disabled={loading}
           >
-            {loading ? '注册中...' : '注册'}
+            {loading ? <SmallLoadingCircle text='注册中...' /> : '注册'}
           </Button>
         </Box>
         <Typography align='center'>

@@ -58,8 +58,6 @@ const deleteFiles = async (
             .map((f) => f.key)
             .join(', ')}`
         );
-      } else {
-        toast.success('All files deleted successfully!');
       }
     } else {
       toast.error('Deletion partially or fully failed.');

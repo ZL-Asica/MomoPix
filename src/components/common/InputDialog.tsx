@@ -8,6 +8,8 @@ import {
 } from '@mui/material';
 import { useState, useEffect, useRef } from 'react';
 
+import { SmallLoadingCircle } from '@/components';
+
 interface InputDialogProperties {
   open: boolean;
   onClose: () => void;
@@ -26,6 +28,7 @@ const InputDialog = ({
   defaultValue = '',
 }: InputDialogProperties) => {
   const [inputValue, setInputValue] = useState(defaultValue);
+  const [loading, setLoading] = useState(false);
   const dialogReference = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
@@ -41,9 +44,11 @@ const InputDialog = ({
     }
   }, [defaultValue, open]);
 
-  const handleSaveClick = () => {
+  const handleSaveClick = async () => {
     if (inputValue.trim()) {
-      handleSave(inputValue.trim()); // Avoid empty or whitespace-only values
+      setLoading(true);
+      await handleSave(inputValue.trim()); // Avoid empty or whitespace-only values
+      setLoading(false);
       onClose();
     }
   };
@@ -72,7 +77,7 @@ const InputDialog = ({
           color='primary'
           disabled={!inputValue.trim()} // Disable save button for invalid input
         >
-          保存
+          {loading ? <SmallLoadingCircle /> : '保存'}
         </Button>
       </DialogActions>
     </Dialog>
