@@ -1,27 +1,38 @@
+import { produce } from 'immer';
+
 import { useCommonUtils } from './utils';
 
 const usePhotoOperations = () => {
   const { ensureUserData, updateUserData, userData } = useCommonUtils();
 
-  const addPhotosToAlbum = async (albumName: string, photos: Photo[]) => {
+  const modifyAlbum = async (
+    modifyCallback: (draftAlbums: Album[]) => void,
+    successMessage: string,
+    errorMessage: string
+  ) => {
     ensureUserData();
-    const updatedAlbums = (userData!.albums || []).map((album) =>
-      album.name === albumName
-        ? {
-            ...album,
-            photos: [
-              ...album.photos,
-              ...photos.map((photo) => ({
-                ...photo,
-                lastModified: Date.now(),
-                uploadedAt: Date.now(),
-              })),
-            ],
-          }
-        : album
-    );
+    const updatedAlbums = produce(userData!.albums || [], modifyCallback);
     await updateUserData(
       { albums: updatedAlbums },
+      successMessage,
+      errorMessage
+    );
+  };
+
+  const addPhotosToAlbum = async (albumName: string, photos: Photo[]) => {
+    await modifyAlbum(
+      (draftAlbums) => {
+        const album = draftAlbums.find((album) => album.name === albumName);
+        if (album) {
+          album.photos.push(
+            ...photos.map((photo) => ({
+              ...photo,
+              lastModified: Date.now(),
+              uploadedAt: Date.now(),
+            }))
+          );
+        }
+      },
       `成功添加 ${photos.length} 张照片到相册 ${albumName}`,
       `添加 ${photos.length} 张照片到相册 ${albumName} 失败`
     );
@@ -31,19 +42,15 @@ const usePhotoOperations = () => {
     albumName: string,
     photos: Photo[]
   ): Promise<void> => {
-    ensureUserData();
-    const updatedAlbums = (userData!.albums || []).map((album) =>
-      album.name === albumName
-        ? {
-            ...album,
-            photos: album.photos.filter(
-              (photo) => !photos.map((p) => p.id).includes(photo.id)
-            ),
-          }
-        : album
-    );
-    await updateUserData(
-      { albums: updatedAlbums },
+    await modifyAlbum(
+      (draftAlbums) => {
+        const album = draftAlbums.find((album) => album.name === albumName);
+        if (album) {
+          album.photos = album.photos.filter(
+            (photo) => !photos.map((photo) => photo.id).includes(photo.id)
+          );
+        }
+      },
       `成功删除 ${photos.length} 张照片`,
       `删除 ${photos.length} 张照片失败`
     );
@@ -54,19 +61,16 @@ const usePhotoOperations = () => {
     photoId: string,
     updatedName: string
   ) => {
-    ensureUserData();
-    const updatedAlbums = (userData!.albums || []).map((album) =>
-      album.name === albumName
-        ? {
-            ...album,
-            photos: album.photos.map((photo) =>
-              photo.id === photoId ? { ...photo, name: updatedName } : photo
-            ),
+    await modifyAlbum(
+      (draftAlbums) => {
+        const album = draftAlbums.find((album) => album.name === albumName);
+        if (album) {
+          const photo = album.photos.find((photo) => photo.id === photoId);
+          if (photo) {
+            photo.name = updatedName;
           }
-        : album
-    );
-    await updateUserData(
-      { albums: updatedAlbums },
+        }
+      },
       `已重命名为 ${updatedName}`,
       `重命名为 ${updatedName} 失败`
     );
@@ -77,30 +81,26 @@ const usePhotoOperations = () => {
     newAlbumName: string,
     photoId: string
   ) => {
-    ensureUserData();
-    const updatedAlbums = (userData!.albums || []).map((album) => {
-      if (album.name === originalAlbumName) {
-        return {
-          ...album,
-          photos: album.photos.filter((photo) => photo.id !== photoId),
-        };
-      }
-      if (album.name === newAlbumName) {
-        return {
-          ...album,
-          photos: [
-            ...album.photos,
-            userData!.albums
-              .find((album) => album.name === originalAlbumName)
-              ?.photos.find((photo) => photo.id === photoId) as Photo,
-          ],
-        };
-      }
-      return album;
-    });
-
-    await updateUserData(
-      { albums: updatedAlbums },
+    await modifyAlbum(
+      (draftAlbums) => {
+        const originalAlbum = draftAlbums.find(
+          (album) => album.name === originalAlbumName
+        );
+        const newAlbum = draftAlbums.find(
+          (album) => album.name === newAlbumName
+        );
+        if (originalAlbum && newAlbum) {
+          const photo = originalAlbum.photos.find(
+            (photo) => photo.id === photoId
+          );
+          if (photo) {
+            originalAlbum.photos = originalAlbum.photos.filter(
+              (photo) => photo.id !== photoId
+            );
+            newAlbum.photos.push(photo);
+          }
+        }
+      },
       `已移动到相册 ${newAlbumName}`,
       `移动到相册 ${newAlbumName} 失败`
     );

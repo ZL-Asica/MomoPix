@@ -1,3 +1,5 @@
+import { produce } from 'immer';
+
 import { useCommonUtils } from './utils';
 
 type AlbumOperations = {
@@ -20,7 +22,11 @@ const useAlbumOperations = (): AlbumOperations => {
     };
 
     ensureUserData();
-    const updatedAlbums = [...(userData!.albums || []), newAlbum];
+
+    const updatedAlbums = produce(userData!.albums || [], (draft) => {
+      draft.push(newAlbum);
+    });
+
     await updateUserData(
       { albums: updatedAlbums },
       `新增相册 ${albumName} 成功`,
@@ -33,9 +39,12 @@ const useAlbumOperations = (): AlbumOperations => {
     updatedFields: Partial<Pick<Album, 'name' | 'thumbnail'>>
   ) => {
     ensureUserData();
-    const updatedAlbums = (userData!.albums || []).map((album) =>
-      album.name === albumName ? { ...album, ...updatedFields } : album
-    );
+    const updatedAlbums = produce(userData!.albums || [], (draft) => {
+      const album = draft.find((album) => album.name === albumName);
+      if (album) {
+        Object.assign(album, updatedFields);
+      }
+    });
 
     const successMessage =
       'name' in updatedFields

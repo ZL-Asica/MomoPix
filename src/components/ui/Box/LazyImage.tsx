@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import Skeleton from './Skeleton';
+
 interface LazyImageProperties {
   src: string;
   alt?: string;
@@ -15,6 +17,12 @@ const LazyImage = ({
 }: LazyImageProperties) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  const handleLoad = () => {
+    setLoaded(true);
+    setTimeout(() => setShowSkeleton(false), 300);
+  };
 
   return (
     <div
@@ -34,17 +42,11 @@ const LazyImage = ({
       }}
     >
       {/* Skeleton Placeholder */}
-      {!loaded && !error && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#e0e0e0',
-            animation: 'wave 1.6s infinite',
-          }}
+      {showSkeleton && (
+        <Skeleton
+          variant='rectangular'
+          width='100%'
+          height='100%'
         />
       )}
 
@@ -52,10 +54,10 @@ const LazyImage = ({
       <img
         src={src}
         alt={alt}
-        onLoad={() => setLoaded(true)}
+        onLoad={handleLoad}
         onError={() => {
           setError(true);
-          setLoaded(true);
+          setShowSkeleton(false);
         }}
         style={{
           display: loaded && !error ? 'block' : 'none',
@@ -63,6 +65,9 @@ const LazyImage = ({
           height: '100%',
           objectFit: 'cover',
           cursor: 'pointer',
+          position: 'absolute',
+          top: 0,
+          left: 0,
         }}
       />
 
@@ -70,6 +75,9 @@ const LazyImage = ({
       {error && (
         <div
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%',
             height: '100%',
             display: 'flex',
@@ -83,30 +91,6 @@ const LazyImage = ({
           {errorPlaceholder}
         </div>
       )}
-
-      {/* CSS for Skeleton Animation */}
-      <style>
-        {`
-          @keyframes wave {
-            0% {
-              background-position: -200px 0;
-            }
-            100% {
-              background-position: calc(200px + 100%) 0;
-            }
-          }
-
-          div[style*="animation: wave"] {
-            background: linear-gradient(
-              90deg,
-              #e0e0e0 25%,
-              #f0f0f0 50%,
-              #e0e0e0 75%
-            );
-            background-size: 200px 100%;
-          }
-        `}
-      </style>
     </div>
   );
 };
