@@ -1,5 +1,0 @@
-name = "momopix"
-pages_build_output_dir = "./dist"
-
-[dev]
-port = 5173
