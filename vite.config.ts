@@ -19,11 +19,6 @@ export default defineConfig({
 
           icons: ['@mui/icons-material'],
 
-          firebaseApp: ['firebase/app'],
-          firebaseAuth: ['firebase/auth'],
-          firebaseFirestore: ['firebase/firestore'],
-          firebaseAnalytics: ['firebase/analytics'],
-
           dropzone: ['react-dropzone'],
 
           notifications: ['sonner'],

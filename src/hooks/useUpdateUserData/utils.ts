@@ -1,9 +1,8 @@
-import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
-import { db } from '@/firebase-config';
 import { useAuthStore } from '@/stores';
+import { usersPut } from '@/api';
 
 type CommonUtils = {
   ensureUserData: () => void;
@@ -19,6 +18,7 @@ type CommonUtils = {
 const useCommonUtils = (): CommonUtils => {
   const userData = useAuthStore((state) => state.userData);
   const loading = useAuthStore((state) => state.loading);
+  const setAuthState = useAuthStore((state) => state.setAuthState);
   const [processing, setProcessing] = useState(false);
 
   const ensureUserData = () => {
@@ -36,14 +36,15 @@ const useCommonUtils = (): CommonUtils => {
     errorMessage?: string
   ) => {
     ensureUserData();
-    const userDocumentReference = doc(db, 'users', userData!.uid);
-
     setProcessing(true);
     try {
-      await setDoc(userDocumentReference, updatedData, { merge: true });
+      const response = await usersPut(updatedData);
+      if (!response) return;
+
+      setAuthState(response);
       toast.success(successMessage);
-    } catch (error) {
-      console.error(`Failed to update user data: ${error}`);
+    } catch (error_) {
+      console.error((error_ as Error).message || '登录失败，服务器错误');
       toast.error(errorMessage || 'Failed to update user data');
     } finally {
       setProcessing(false);

@@ -13,13 +13,11 @@ import AlbumsPage from '@/pages/Albums';
 import SingleAlbumPage from '@/pages/SingleAlbum';
 
 const App = () => {
-  const initializeAuthListener = useAuthStore(
-    (state) => state.initializeAuthListener
-  );
+  const initialFetch = useAuthStore((state) => state.initialFetch);
 
   useEffect(() => {
-    initializeAuthListener();
-  }, [initializeAuthListener]);
+    initialFetch();
+  }, [initialFetch]);
 
   return (
     <AppProviders>

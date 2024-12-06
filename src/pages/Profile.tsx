@@ -12,6 +12,7 @@ import {
 
 import { useUpdateUserData } from '@/hooks';
 import { useAuthStore } from '@/stores';
+import { SmallLoadingCircle } from '@/components';
 
 const Profile = () => {
   const userData = useAuthStore((state) => state.userData);
@@ -19,6 +20,7 @@ const Profile = () => {
 
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
+  const [email, setEmail] = useState(userData?.email || '');
 
   // Stats
   const stats = useMemo(() => {
@@ -53,7 +55,7 @@ const Profile = () => {
   }, [userData]);
 
   const handleSave = async () => {
-    await updateBasicInfo({ displayName });
+    await updateBasicInfo({ displayName, email });
     setEditing(false);
   };
 
@@ -105,13 +107,28 @@ const Profile = () => {
           size={{ xs: 12, sm: 8 }}
         >
           {editing ? (
-            <TextField
-              label='昵称'
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              fullWidth
-              variant='outlined'
-            />
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+              }}
+            >
+              <TextField
+                label='昵称'
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                fullWidth
+                variant='outlined'
+              />
+              <TextField
+                label='邮箱'
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                fullWidth
+                variant='outlined'
+              />
+            </Box>
           ) : (
             <Box
               display='flex'
@@ -130,7 +147,7 @@ const Profile = () => {
                 variant='body2'
                 color='text.secondary'
               >
-                {userData?.email}
+                {userData?.email || '暂未设置邮箱'}
               </Typography>
               <Typography
                 variant='body2'
@@ -208,12 +225,13 @@ const Profile = () => {
               onClick={handleSave}
               disabled={processing}
             >
-              {processing ? '保存中...' : '保存'}
+              {processing ? <SmallLoadingCircle text='保存中...' /> : '保存'}
             </Button>
             <Button
               variant='outlined'
               color='secondary'
               onClick={() => setEditing(false)}
+              disabled={processing}
             >
               取消
             </Button>

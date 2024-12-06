@@ -10,19 +10,19 @@ import { SignInUpContainer, SignInUpCard } from '@/components/SignInUp/Styles';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { loginWithEmail, error, loading } = useAuth();
-  const [email, setEmail] = useState('');
+  const { loginHandler, error, loading } = useAuth();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
-    email: '',
+    username: '',
     password: '',
   });
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const user = await loginWithEmail(email, password, setValidationErrors);
-    if (user) {
+    const success = await loginHandler(username, password, setValidationErrors);
+    if (success) {
       toast.success('登录成功');
       navigate('/');
     }
@@ -46,14 +46,14 @@ const LoginPage = () => {
           sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         >
           <TextField
-            label='邮箱'
+            label='用户名'
             fullWidth
-            type='email'
-            value={email}
-            placeholder='your@email.com'
-            onChange={(event) => setEmail(event.target.value)}
-            error={Boolean(validationErrors.email)}
-            helperText={validationErrors.email || ' '}
+            type='text'
+            value={username}
+            placeholder='peterAnteater'
+            onChange={(event) => setUsername(event.target.value)}
+            error={Boolean(validationErrors.username)}
+            helperText={validationErrors.username || ' '}
           />
           <TextField
             label='密码'

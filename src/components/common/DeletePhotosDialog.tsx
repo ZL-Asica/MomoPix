@@ -24,7 +24,6 @@ const DeletePhotosDialog = ({
   open,
   onClose,
 }: DeletePhotosDialogProperties) => {
-  const userData = useAuthStore((state) => state.userData);
   const loading = useAuthStore((state) => state.loading);
   const { deletePhotosFromAlbum } = useUpdateUserData();
 
@@ -58,12 +57,7 @@ const DeletePhotosDialog = ({
         </Button>
         <Button
           onClick={async () => {
-            await useFileDeleter(
-              userData as UserData,
-              albumName,
-              photos,
-              deletePhotosFromAlbum
-            );
+            await useFileDeleter(albumName, photos, deletePhotosFromAlbum);
             onClose();
           }}
           color='primary'

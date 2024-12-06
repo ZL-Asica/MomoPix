@@ -1,16 +1,4 @@
-/**
- * Generate MD5 hash using SubtleCrypto
- * @param message - The input string to hash
- * @returns Promise containing the hex-encoded hash
- */
-const md5Hash = async (message: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest('MD5', data);
-  return [...new Uint8Array(hashBuffer)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-};
+import SparkMD5 from 'spark-md5';
 
 /**
  * Generate Gravatar URL from an email
@@ -22,7 +10,7 @@ const getGravatarURL = async (
   email: string,
   size: number = 200
 ): Promise<string> => {
-  const emailHash = await md5Hash(email.trim().toLowerCase());
+  const emailHash = await SparkMD5.hash(email.trim().toLowerCase());
   return `https://www.gravatar.com/avatar/${emailHash}?s=${size}&d=identicon`;
 };
 
@@ -34,7 +22,7 @@ const getGravatarURL = async (
 const fetchGravatarProfile = async (
   email: string
 ): Promise<{ displayName?: string; photoURL?: string } | null> => {
-  const emailHash = await md5Hash(email.trim().toLowerCase());
+  const emailHash = await SparkMD5.hash(email.trim().toLowerCase());
   const profileUrl = `https://www.gravatar.com/${emailHash}.json`;
 
   try {
@@ -47,8 +35,8 @@ const fetchGravatarProfile = async (
       displayName: profile.displayName || null,
       photoURL: profile.thumbnailUrl || null,
     };
-  } catch (error) {
-    console.error('Failed to fetch Gravatar profile:', error);
+  } catch (error_) {
+    console.error('Failed to fetch Gravatar profile:', error_);
     return null;
   }
 };

@@ -20,16 +20,16 @@ import {
 } from '@mui/material';
 import { useClickOutside, useToggle } from '@zl-asica/react';
 
-import { UploadModal } from '@/components';
-import { useAuth } from '@/hooks';
+import { SmallLoadingCircle, UploadModal } from '@/components';
 import { useAuthStore } from '@/stores';
 
 const Header = () => {
   const userData = useAuthStore((state) => state.userData);
   const loading = useAuthStore((state) => state.loading);
-  const { logout } = useAuth();
+  const logout = useAuthStore((state) => state.logout);
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
   const [uploadModalOpen, toggleUploadModalOpen] = useToggle();
+  const [logoutIng, toggleLogoutIng] = useToggle();
   const menuReference = useRef(null);
   const location = useLocation();
 
@@ -150,10 +150,14 @@ const Header = () => {
                 </MenuItem>,
                 <MenuItem
                   key='logout'
-                  onClick={logout}
+                  onClick={async () => {
+                    toggleLogoutIng();
+                    await logout();
+                    toggleLogoutIng();
+                  }}
                 >
                   <LogoutIcon sx={{ mr: 1 }} />
-                  登出
+                  {logoutIng ? <SmallLoadingCircle text='登出中...' /> : '登出'}
                 </MenuItem>,
               ]
             : [

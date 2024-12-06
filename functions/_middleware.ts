@@ -1,6 +1,6 @@
-interface Env {
-  TOKEN: string;
-}
+import { verifyJwt, generateJwtWithCookie } from './utils/jwt';
+import createSuccessResponse from './helpers/createSuccessResponse';
+import createErrorResponse from './helpers/createErrorResponse';
 
 const corsHandler: PagesFunction = async (context) => {
   const response = await context.next();
@@ -18,53 +18,71 @@ const errorHandling: PagesFunction = async (context) => {
   try {
     return await context.next();
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: 'Internal Server Error', details: err.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('Error:', err);
+    return createErrorResponse(500, 'Internal Server Error');
   }
 };
 
 const authentication: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
-  if (!url.pathname.startsWith('/api')) {
+  if (
+    !url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/api/register') ||
+    url.pathname.startsWith('/api/login')
+  ) {
     return await context.next();
   }
 
-  const authHeader = context.request.headers.get('Authorization');
+  const cookieHeader = context.request.headers.get('Cookie');
 
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ error: 'Authorization header is required' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
+  if (!cookieHeader) {
+    return createErrorResponse(401, 'Unauthorized');
+  }
+
+  const token = cookieHeader
+    .split(';')
+    .find((c) => c.trim().startsWith('momo_pix_auth_token='))
+    ?.split('=')[1];
+
+  if (!token) {
+    return createErrorResponse(401, 'Unauthorized');
+  }
+
+  const { valid, payload } = await verifyJwt(token, context.env.JWT_SECRET);
+
+  if (!valid || !payload) {
+    return createErrorResponse(401, 'Invalid token');
+  }
+
+  // Refresh within 2 weeks of expiration
+  if (payload.exp < Math.floor(Date.now() / 1000) + 3600 * 24 * 14) {
+    const jwtCookieHeaders = await generateJwtWithCookie(
+      payload,
+      context.env.JWT_SECRET
     );
+
+    const setCookieHeader = jwtCookieHeaders.get('Set-Cookie');
+    if (setCookieHeader) {
+      context.request.headers.set('Cookie', setCookieHeader);
+    }
   }
 
-  const token = authHeader.split(' ')[1]; // 提取 Bearer Token
-
-  if (!token || token !== context.env.TOKEN) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  context.data.user = payload;
 
   return await context.next();
 };
 
 export const onRequestOptions: PagesFunction = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Max-Age': '86400',
-    },
+  const headers = new Headers({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Max-Age': '86400',
   });
+  return createSuccessResponse(204, null, headers);
 };
 
-export const onRequest: PagesFunction[] = [
+export const onRequest: PagesFunction<Env>[] = [
   corsHandler,
   errorHandling,
   authentication,

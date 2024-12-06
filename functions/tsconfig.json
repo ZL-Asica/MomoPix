@@ -4,6 +4,10 @@
     "module": "esnext",
     "strict": true,
     "lib": ["esnext"],
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   }
 }

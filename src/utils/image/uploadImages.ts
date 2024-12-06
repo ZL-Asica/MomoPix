@@ -44,7 +44,7 @@ const uploadImages = async (
     );
 
     // Step 3: Upload files to the backend
-    const rawResults = await upload(uploadData, userData.TOKEN);
+    const rawResults = await upload(uploadData, '');
 
     // Validate results using Zod
     const parsedResults = UploadResultsSchema.safeParse(rawResults);

@@ -1,10 +1,6 @@
 const MAX_COUNT = 10;
 const MAX_SIZE_MB = 5;
 
-interface Env {
-  R2: R2Bucket;
-}
-
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     const formData = await context.request.formData();

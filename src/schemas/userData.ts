@@ -26,10 +26,18 @@ const UserDataSchema = z.object({
   albums: z.array(AlbumSchema),
 });
 
-const emailSchema = z
+const weakUsernames = new Set(['admin', 'user']);
+
+const usernameSchema = z
   .string()
-  .email('邮箱格式不正确')
-  .refine((email) => email.includes('@zla.app'), { message: '本站禁止注册' });
+  .min(3, { message: '用户名至少需要 3 个字符' })
+  .max(64, { message: '用户名最多不超过 64 个字符' })
+  .regex(/^[\w\u4E00-\u9FA5-]+$/, {
+    message: '用户名仅允许字母、数字、下划线、横杠和中文',
+  })
+  .refine((user) => !weakUsernames.has(user), {
+    message: '不要使用简易用户名',
+  });
 
 const passwordSchema = z
   .string()
@@ -43,4 +51,4 @@ const passwordSchema = z
     message: '密码必须包含小写字母',
   });
 
-export { UserDataSchema, emailSchema, passwordSchema };
+export { UserDataSchema, usernameSchema, passwordSchema };

@@ -3,16 +3,10 @@ import { toast } from 'sonner';
 import { deleteFilesAPI } from '@/api';
 
 const deleteFiles = async (
-  userData: UserData,
   albumName: string,
   photos: Photo[],
   deletePhotosFromAlbum: (albumName: string, photos: Photo[]) => void
 ): Promise<boolean> => {
-  if (!userData.TOKEN) {
-    toast.error('用户未登录或TOKEN无效');
-    return false;
-  }
-
   if (photos.length === 0) {
     toast.error('未选择任何图片删除');
     return false;
@@ -25,7 +19,7 @@ const deleteFiles = async (
     );
 
     // Call API to delete files
-    const result = await deleteFilesAPI(keysToDelete, userData.TOKEN);
+    const result = await deleteFilesAPI(keysToDelete, '');
 
     // Handle the result
     const successfulDeletes = new Set(result.deleted.map((d) => d.key));

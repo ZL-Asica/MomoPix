@@ -1,7 +1,3 @@
-interface Env {
-  R2: R2Bucket;
-}
-
 interface DeleteBody {
   keys: string[];
 }

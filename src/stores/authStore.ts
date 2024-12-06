@@ -1,15 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
 
-import { db } from '@/firebase-config';
+import { fetchAPI } from '@/utils';
 
 interface AuthState {
   userData: UserData | null;
   loading: boolean;
   setAuthState: (userData: UserData | null) => void;
-  initializeAuthListener: () => void;
+  initialFetch: () => void;
+  logout: () => void;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -22,38 +21,37 @@ const useAuthStore = create<AuthState>()(
         set({ userData });
       },
 
-      initializeAuthListener: () => {
-        const auth = getAuth();
+      initialFetch: async () => {
+        set({ loading: true });
 
-        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-          if (currentUser) {
-            const userDocumentReference = doc(db, 'users', currentUser.uid);
+        try {
+          const response = await fetchAPI<UserData>('/api/users');
 
-            const unsubscribeData = onSnapshot(
-              userDocumentReference,
-              (snapshot) => {
-                if (snapshot.exists()) {
-                  set({
-                    userData: snapshot.data() as UserData,
-                    loading: false,
-                  });
-                } else {
-                  set({ userData: null, loading: false });
-                }
-              },
-              (error) => {
-                console.error(error);
-                set({ userData: null, loading: false });
-              }
-            );
-
-            return () => unsubscribeData();
+          set({ loading: false, userData: response.data });
+        } catch (error_) {
+          // Only log the error if is not 401
+          if (error_ instanceof Error) {
+            if (error_.message.includes('401')) {
+              console.warn('Unauthorized: Invalid or expired JWT.');
+            } else {
+              console.error('Error fetching user data:', error_);
+            }
           } else {
-            set({ userData: null, loading: false });
+            console.error('Unknown error:', error_);
           }
-        });
+          set({ loading: false, userData: null });
+        }
+      },
 
-        return () => unsubscribeAuth();
+      logout: async () => {
+        try {
+          await fetchAPI('/api/logout', {
+            method: 'POST',
+          });
+          set({ userData: null });
+        } catch (error_) {
+          console.error('Error logging out:', error_);
+        }
       },
     }),
     {

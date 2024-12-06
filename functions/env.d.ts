@@ -1,3 +1,10 @@
+interface Env {
+  PUBLIC?: string;
+  JWT_SECRET: string;
+  R2: R2Bucket;
+  KV: KVNamespace;
+}
+
 interface Photo {
   id: string;
   url: string;
@@ -24,8 +31,16 @@ interface UserData {
   albums: Album[];
 }
 
-type ValidationErrors = {
-  username?: string;
-  password?: string;
-  confirmPassword?: string;
-};
+interface UserKVData extends UserData {
+  password: string;
+}
+
+interface JWTPayload {
+  uid: string;
+  type: string;
+}
+
+interface JWTPayloadWithIatExp extends JWTPayload {
+  iat: number;
+  exp: number;
+}

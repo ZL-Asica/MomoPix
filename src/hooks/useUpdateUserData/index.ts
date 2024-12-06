@@ -2,6 +2,15 @@ import { useAlbumOperations } from './albums';
 import { usePhotoOperations } from './photos';
 import { useCommonUtils } from './utils';
 
+import { getGravatarURL, fetchGravatarProfile } from '@/utils';
+
+const getPhotoURLFromGravatarBasedOnEmail = async (email: string) => {
+  const gravatarProfile = await fetchGravatarProfile(email);
+  const avatarURL = await getGravatarURL(email);
+  const photoURL = gravatarProfile?.photoURL || avatarURL;
+  return { photoURL };
+};
+
 const useUpdateUserData = () => {
   const albumOps = useAlbumOperations();
   const photoOps = usePhotoOperations();
@@ -18,6 +27,12 @@ const useUpdateUserData = () => {
     successMessage = '个人资料更新成功',
     errorMessage = '个人资料更新失败'
   ) => {
+    if (updatedFields.email && !updatedFields.photoURL) {
+      const photoURL = await getPhotoURLFromGravatarBasedOnEmail(
+        updatedFields.email
+      );
+      updatedFields = { ...updatedFields, ...photoURL };
+    }
     await updateUserData(updatedFields, successMessage, errorMessage);
   };
 

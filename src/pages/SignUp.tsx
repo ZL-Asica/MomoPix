@@ -10,12 +10,12 @@ import { SignInUpContainer, SignInUpCard } from '@/components/SignInUp/Styles';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
-  const { registerWithEmail, error, loading } = useAuth();
-  const [email, setEmail] = useState('');
+  const { registerHandler, error, loading } = useAuth();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
-    email: '',
+    username: '',
     password: '',
     confirmPassword: '',
   });
@@ -23,13 +23,13 @@ const SignUpPage = () => {
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const user = await registerWithEmail(
-      email,
+    const success = await registerHandler(
+      username,
       password,
       confirmPassword,
       setValidationErrors
     );
-    if (user) {
+    if (success) {
       toast.success('注册成功');
       navigate('/');
     }
@@ -53,14 +53,14 @@ const SignUpPage = () => {
           sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
         >
           <TextField
-            label='邮箱'
+            label='用户名'
             fullWidth
-            type='email'
-            value={email}
-            placeholder='your@email.com'
-            onChange={(event) => setEmail(event.target.value)}
-            error={Boolean(validationErrors.email)}
-            helperText={validationErrors.email || ''}
+            type='text'
+            value={username}
+            placeholder='perterAnteater'
+            onChange={(event) => setUsername(event.target.value)}
+            error={Boolean(validationErrors.username)}
+            helperText={validationErrors.username || ''}
           />
           <TextField
             label='密码'

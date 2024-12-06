@@ -8,7 +8,6 @@
 [![React][react-badge]][react-link]
 [![Vite][vite-badge]][vite-link] |
 [![Cloudflare][cloudflare-badge]][cloudflare-link]
-[![Firebase][firebase-badge]][firebase-link]
 [![pnpm Version][pnpm-badge]][pnpm-link]
 [![Eslint][eslint-badge]][eslint-link]
 [![Prettier][prettier-badge]][prettier-link]
@@ -23,7 +22,7 @@
 - [x] 完善前端界面（主题、样式、交互）
 - [x] 完善后端逻辑（上传、删除、查看）
 - [x] 移除单独的后端服务，改为 Cloudflare Pages Functions
-- [ ] 移除 Firebase 依赖，改为 Cloudflare KV 存储
+- [x] 移除 Firebase 依赖，改为 Cloudflare KV 存储
 - [ ] 完善文档，编写部署指南
 
 ---
@@ -32,7 +31,7 @@
 
 - **📂 快速上传**：支持拖拽上传，简洁明了的操作界面。
 - **🌐 多种格式链接**：一键复制直链、HTML、Markdown 或 BBCode 格式链接。
-- **🔒 安全**：基于 Cloudflare 的存储与 Hono 框架，轻松部署，安全可靠。
+- **🔒 安全**：基于 Cloudflare 的存储与 Cloudflare Pages Functions 框架，轻松部署，安全可靠。
 - **📸 相簿管理**：分类管理你的图片，自定义相簿名称与封面。
 - **🎨 自定义外观**：灵活的样式与主题支持，打造专属体验。
 
@@ -83,10 +82,8 @@ MomoPix/
 │   │   ├── image                    # 图片相关工具
 │   │   └── theme.ts                 # 主题配置
 │   ├── consts.ts                    # 常量定义
-│   ├── types                        # 全局类型定义
-│   │   ├── api.d.ts                 # API 类型
-│   │   └── userData.d.ts            # 用户数据类型
-│   └── firebase-config.ts           # Firebase 配置
+│   └── types                        # 全局类型定义
+│       └── userData.d.ts            # 用户数据类型
 ├── functions                        # Cloudflare Pages Functions
 │   └── api                          # 后端逻辑
 │       ├── upload.ts                # 图片上传处理
@@ -148,8 +145,6 @@ MomoPix/
 [cloudflare-link]: https://www.cloudflare.com/
 [eslint-badge]: https://img.shields.io/badge/eslint-4B32C3?logo=eslint&logoColor=white
 [eslint-link]: https://www.npmjs.com/package/eslint-config-zl-asica
-[firebase-badge]: https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase&logoColor=black
-[firebase-link]: https://firebase.google.com/
 [license-badge]: https://img.shields.io/github/license/ZL-Asica/MomoPix
 [license-link]: https://github.com/ZL-Asica/MomoPix/blob/main/LICENSE
 [node-badge]: https://img.shields.io/badge/node%3E=18.18-339933?logo=node.js&logoColor=white

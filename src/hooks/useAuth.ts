@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import type { User } from 'firebase/auth';
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
 import { z } from 'zod';
 
-import { auth } from '@/firebase-config';
-import { emailSchema, passwordSchema } from '@/schemas';
+import { register, login } from '@/api';
+import { usernameSchema, passwordSchema } from '@/schemas';
+import { useAuthStore } from '@/stores';
 
 const validateInput = (
   email: string,
@@ -18,10 +13,12 @@ const validateInput = (
   const errors: ValidationErrors = {};
 
   try {
-    emailSchema.parse(email);
+    usernameSchema.parse(email);
   } catch (error_) {
-    errors.email =
-      error_ instanceof z.ZodError ? error_.errors[0]?.message : '邮箱错误';
+    errors.username =
+      error_ instanceof z.ZodError
+        ? error_.errors[0]?.message
+        : '用户名格式错误';
   }
 
   try {
@@ -41,76 +38,62 @@ const validateInput = (
 const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const setAuthState = useAuthStore((state) => state.setAuthState);
 
-  const loginWithEmail = async (
-    email: string,
+  const loginHandler = async (
+    username: string,
     password: string,
     onValidationErrors: (errors: ValidationErrors) => void
-  ): Promise<User | null> => {
-    const errors = validateInput(email, password);
+  ): Promise<boolean> => {
+    const errors = validateInput(username, password);
     if (Object.keys(errors).length > 0) {
       onValidationErrors(errors);
-      return null;
+      return false;
     }
 
     try {
       setLoading(true);
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const loginResponse = await login({ username, password });
+
       setError(null);
-      return userCredential.user;
-    } catch {
-      setError('登录失败，请检查邮箱和密码');
-      return null;
+      setAuthState(loginResponse);
+      return true;
+    } catch (error_) {
+      setError((error_ as Error).message || '登录失败，服务器错误');
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const registerWithEmail = async (
-    email: string,
+  const registerHandler = async (
+    username: string,
     password: string,
     confirmPassword: string,
     onValidationErrors: (errors: ValidationErrors) => void
-  ): Promise<User | null> => {
-    const errors = validateInput(email, password, confirmPassword);
+  ): Promise<boolean> => {
+    const errors = validateInput(username, password, confirmPassword);
     if (Object.keys(errors).length > 0) {
       onValidationErrors(errors);
-      return null;
+      return false;
     }
 
     try {
       setLoading(true);
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      await sendEmailVerification(user);
+      const registerResponse = await register({ username, password });
+
       setError(null);
-      return user;
-    } catch {
-      setError('注册失败，请稍后再试');
-      return null;
+      setAuthState(registerResponse);
+      return true;
+    } catch (error_) {
+      setError((error_ as Error).message || '登录失败，服务器错误');
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = async (): Promise<void> => {
-    try {
-      await auth.signOut();
-      setError(null);
-    } catch {
-      setError('登出失败');
-    }
-  };
-
-  return { registerWithEmail, loginWithEmail, logout, error, loading };
+  return { loginHandler, registerHandler, error, loading };
 };
 
 export default useAuth;
