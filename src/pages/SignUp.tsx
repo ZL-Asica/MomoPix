@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Button, TextField, Typography, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -6,14 +6,22 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks';
 import { SmallLoadingCircle } from '@/components';
 
-import { SignInUpContainer, SignInUpCard } from '@/components/SignInUp/Styles';
+import {
+  SignInUpContainer,
+  SignInUpCard,
+  TurnstileClient,
+} from '@/components/SignInUp';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
-  const { registerHandler, error, loading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { registerHandler, loading } = useAuth(setError);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [turnstileStatus, setTurnstileStatus] =
+    useState<TurnstileStatus>('loading');
+
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
     username: '',
     password: '',
@@ -35,6 +43,10 @@ const SignUpPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
   return (
     <SignInUpContainer>
       <SignInUpCard>
@@ -50,7 +62,12 @@ const SignUpPage = () => {
           component='form'
           onSubmit={handleSignUp}
           noValidate
-          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            alignItems: 'center',
+          }}
         >
           <TextField
             label='用户名'
@@ -82,20 +99,16 @@ const SignUpPage = () => {
             error={Boolean(validationErrors.confirmPassword)}
             helperText={validationErrors.confirmPassword || ''}
           />
-          {error && (
-            <Typography
-              color='error'
-              sx={{ mt: 1 }}
-            >
-              {error}
-            </Typography>
-          )}
+          <TurnstileClient
+            setTurnstileStatus={setTurnstileStatus}
+            setError={setError}
+          />
           <Button
             type='submit'
             fullWidth
             variant='contained'
             color='primary'
-            disabled={loading}
+            disabled={loading || turnstileStatus !== 'success'}
           >
             {loading ? <SmallLoadingCircle text='注册中...' /> : '注册'}
           </Button>

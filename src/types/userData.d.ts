@@ -29,3 +29,5 @@ type ValidationErrors = {
   password?: string;
   confirmPassword?: string;
 };
+
+type TurnstileStatus = 'success' | 'error' | 'expired' | 'loading';

@@ -35,8 +35,7 @@ const validateInput = (
   return errors;
 };
 
-const useAuth = () => {
-  const [error, setError] = useState<string | null>(null);
+const useAuth = (setError: (error_: string | null) => void) => {
   const [loading, setLoading] = useState(false);
   const setAuthState = useAuthStore((state) => state.setAuthState);
 
@@ -93,7 +92,7 @@ const useAuth = () => {
     }
   };
 
-  return { loginHandler, registerHandler, error, loading };
+  return { loginHandler, registerHandler, loading };
 };
 
 export default useAuth;
