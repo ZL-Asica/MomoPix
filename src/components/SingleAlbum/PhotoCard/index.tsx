@@ -1,4 +1,10 @@
-import { Box, Checkbox, Grid2 as Grid, Typography } from '@mui/material';
+import {
+  Card,
+  CardMedia,
+  CardContent,
+  Typography,
+  Checkbox,
+} from '@mui/material';
 import { CheckBoxOutlineBlank, CheckBox } from '@mui/icons-material';
 
 import PhotoDropdownMenu from './PhotoDropdownMenu';
@@ -8,7 +14,6 @@ import { useAuthStore } from '@/stores';
 import { FloatingIconButton, LazyImage } from '@/components/ui';
 
 interface PhotoCardProperties {
-  id: string;
   photo: Photo;
   albumName: string;
   selected: boolean;
@@ -17,7 +22,6 @@ interface PhotoCardProperties {
 }
 
 const PhotoCard = ({
-  id,
   photo,
   albumName,
   selected,
@@ -27,36 +31,25 @@ const PhotoCard = ({
   const localLoading = useAuthStore((state) => state.localLoading);
 
   return (
-    <Grid
-      id={id}
-      component='li'
-      size={{ xs: 6, sm: 4, md: 3, lg: 2 }}
-      sx={(theme) => ({
-        aspectRatio: '1 / 1.2',
+    <Card
+      sx={{
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        overflow: 'hidden',
-        position: 'relative',
-        backgroundColor: 'background.paper',
         borderRadius: 2,
-        boxShadow: theme.shadows[2],
-        transition: 'box-shadow 0.2s, transform 0.2s',
-        [theme.breakpoints.up('md')]: {
-          '&:hover': {
-            transform: 'translateY(-3px)',
-            boxShadow: theme.shadows[6],
-          },
+        boxShadow: (theme) => theme.shadows[2],
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: (theme) => theme.shadows[4],
         },
-      })}
+        width: '100%',
+      }}
     >
-      <Box
+      <CardMedia
+        component='div'
         sx={{
           position: 'relative',
-          width: '100%',
-          paddingTop: '100%', // 1:1 Aspect Ratio. Some browsers don't support aspect-ratio yet.
-          flexShrink: 0,
+          height: { xs: 160, sm: 180 },
           overflow: 'hidden',
         }}
       >
@@ -66,7 +59,6 @@ const PhotoCard = ({
           onClick={onClick}
         />
 
-        {/* Checkbox */}
         <FloatingIconButton
           onClick={onSelect}
           disabled={localLoading['photoActions']}
@@ -80,27 +72,32 @@ const PhotoCard = ({
           />
         </FloatingIconButton>
 
-        {/* Dropdown Menu Icon */}
-
         <PhotoDropdownMenu
           albumName={albumName}
           photo={photo}
         />
-      </Box>
+      </CardMedia>
 
-      {/* Picture Name */}
-      <Typography
-        variant='body2'
+      <CardContent
         sx={{
-          p: 1,
-          textAlign: 'center',
-          wordBreak: 'break-word',
-          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          flexGrow: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {photo.name}
-      </Typography>
-    </Grid>
+        <Typography
+          variant='body2'
+          sx={{
+            textAlign: 'center',
+            wordBreak: 'break-word',
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          }}
+        >
+          {photo.name}
+        </Typography>
+      </CardContent>
+    </Card>
   );
 };
 

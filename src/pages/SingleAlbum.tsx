@@ -93,15 +93,26 @@ const SingleAlbumPage = () => {
           spacing={2}
         >
           {paginatedPhotos.map((photo) => (
-            <PhotoCard
-              key={photo.id}
+            <Grid
               id={`photo-${photo.id}`}
-              photo={photo}
-              albumName={albumName || ''}
-              selected={selectedPhotos.includes(photo)}
-              onSelect={() => toggleSelectPhoto(photo)}
-              onClick={() => openPhotoModal(photo)}
-            />
+              key={photo.id}
+              component='li'
+              size={{
+                xs: 6,
+                sm: 4,
+                md: 3,
+                lg: 2,
+              }}
+            >
+              <PhotoCard
+                key={photo.id}
+                photo={photo}
+                albumName={albumName || ''}
+                selected={selectedPhotos.includes(photo)}
+                onSelect={() => toggleSelectPhoto(photo)}
+                onClick={() => openPhotoModal(photo)}
+              />
+            </Grid>
           ))}
         </Grid>
       </PaginationControls>

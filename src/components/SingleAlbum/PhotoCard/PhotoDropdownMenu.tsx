@@ -52,6 +52,7 @@ const PhotoDropdownMenu = ({
         onClick={handleMenuOpen}
         position={{ top: 8, left: 8 }}
         size={36}
+        sx={{ position: 'absolute' }}
       >
         <IconButton
           aria-label='options'

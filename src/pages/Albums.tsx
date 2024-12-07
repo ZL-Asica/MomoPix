@@ -19,7 +19,6 @@ const AlbumsPage = () => {
 
   return (
     <Box
-      maxWidth={1200}
       mx='auto'
       px={2}
       py={4}

@@ -88,11 +88,9 @@ const PaginationControls = ({
       {/* Custom Content */}
       {children && (
         <Box
-          display='flex'
-          justifyContent='center'
-          alignItems='center'
           sx={{
             mt: 2,
+            width: '100%',
           }}
         >
           {children}
