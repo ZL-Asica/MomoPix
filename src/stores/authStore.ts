@@ -1,63 +1,77 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 import { fetchAPI } from '@/utils';
 
 interface AuthState {
   userData: UserData | null;
-  loading: boolean;
-  setAuthState: (userData: UserData | null) => void;
+  globalLoading: boolean;
+  localLoading: { [key: string]: boolean };
+  setGlobalLoading: (loading?: boolean) => void;
+  setLocalLoading: (key: string, loading?: boolean) => void;
+  setUserData: (userData: UserData | null) => void;
   initialFetch: () => void;
   logout: () => void;
 }
 
-const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      userData: null, // initial null
-      loading: true, // Avoid user see wrong data
+const useAuthStore = create<AuthState>()((set) => ({
+  userData: null, // initial null
+  globalLoading: true,
+  localLoading: {},
 
-      setAuthState: (userData) => {
-        set({ userData });
+  setGlobalLoading: (loading: boolean = true) => {
+    set({ globalLoading: loading });
+  },
+
+  setLocalLoading: (key: string, loading: boolean = true) => {
+    set((state) => ({
+      localLoading: {
+        ...state.localLoading,
+        [key]: loading,
       },
+    }));
+  },
 
-      initialFetch: async () => {
-        set({ loading: true });
+  setUserData: (userData) => {
+    set({ userData });
+  },
 
-        try {
-          const response = await fetchAPI<UserData>('/api/users');
+  initialFetch: async () => {
+    set({ globalLoading: true });
 
-          set({ loading: false, userData: response.data });
-        } catch (error_) {
-          // Only log the error if is not 401
-          if (error_ instanceof Error) {
-            if (error_.message.includes('401')) {
-              console.warn('Unauthorized: Invalid or expired JWT.');
-            } else {
-              console.error('Error fetching user data:', error_);
-            }
-          } else {
-            console.error('Unknown error:', error_);
-          }
-          set({ loading: false, userData: null });
+    try {
+      const response = await fetchAPI<UserData>('/api/users');
+
+      set({ userData: response.data });
+    } catch (error_) {
+      // Only log the error if is not 401
+      if (error_ instanceof Error) {
+        if (!error_.message.includes('401')) {
+          console.error('Error fetching user data:', error_);
         }
-      },
-
-      logout: async () => {
-        try {
-          await fetchAPI('/api/logout', {
-            method: 'POST',
-          });
-          set({ userData: null });
-        } catch (error_) {
-          console.error('Error logging out:', error_);
-        }
-      },
-    }),
-    {
-      name: 'momoPix-store',
+      } else {
+        console.error('Unknown error:', error_);
+      }
+      set({ userData: null });
+    } finally {
+      set({ globalLoading: false });
     }
-  )
-);
+  },
+
+  logout: async () => {
+    const setLocalLoading = useAuthStore.getState().setLocalLoading;
+    setLocalLoading('logout', true);
+
+    try {
+      await fetchAPI('/api/logout', {
+        method: 'POST',
+      });
+      set({ userData: null });
+    } catch (error_) {
+      console.error('Error logging out:', error_);
+    } finally {
+      setLocalLoading('logout', false);
+    }
+  },
+}));
 
 export default useAuthStore;

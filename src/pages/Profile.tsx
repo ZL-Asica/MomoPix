@@ -16,7 +16,8 @@ import { SmallLoadingCircle } from '@/components';
 
 const Profile = () => {
   const userData = useAuthStore((state) => state.userData);
-  const { updateBasicInfo, processing } = useUpdateUserData();
+  const localLoading = useAuthStore((state) => state.localLoading);
+  const { updateBasicInfo } = useUpdateUserData();
 
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
@@ -223,15 +224,19 @@ const Profile = () => {
               variant='contained'
               color='primary'
               onClick={handleSave}
-              disabled={processing}
+              disabled={localLoading['userData']}
             >
-              {processing ? <SmallLoadingCircle text='保存中...' /> : '保存'}
+              {localLoading['userData'] ? (
+                <SmallLoadingCircle text='保存中...' />
+              ) : (
+                '保存'
+              )}
             </Button>
             <Button
               variant='outlined'
               color='secondary'
               onClick={() => setEditing(false)}
-              disabled={processing}
+              disabled={localLoading['userData']}
             >
               取消
             </Button>

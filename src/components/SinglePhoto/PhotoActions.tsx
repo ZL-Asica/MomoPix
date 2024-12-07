@@ -7,8 +7,8 @@ import CancelIcon from '@mui/icons-material/Close';
 import { useToggle } from '@zl-asica/react';
 
 import { MovePhotoDialog } from '@/components';
-import { updateImages } from '@/utils';
 import { useAuthStore } from '@/stores';
+import { useFileUpdater } from '@/hooks';
 
 interface PhotoInfoAndActionsProperties {
   albumName: string;
@@ -19,25 +19,16 @@ const PhotoInfoAndActions = ({
   albumName,
   photo,
 }: PhotoInfoAndActionsProperties) => {
-  const setAuthState = useAuthStore((state) => state.setAuthState);
+  const localLoading = useAuthStore((state) => state.localLoading);
   const [photoName, setPhotoName] = useState(photo.name);
   const [isEditing, setIsEditing] = useState(false);
   const [updatedName, setUpdatedName] = useState(photo.name);
   const [openMoveDialog, toggleMoveDialog] = useToggle();
-  const [loading, setLoading] = useState<boolean>(false);
+  const renamePhoto = useFileUpdater().renamePhoto;
 
   const handleSaveName = async () => {
     if (updatedName !== photo.name) {
-      const response_ = await updateImages(
-        albumName,
-        photo.id,
-        updatedName,
-        setLoading
-      );
-      if (response_) {
-        setAuthState(response_);
-      }
-
+      await renamePhoto(albumName, photo.id, updatedName);
       setIsEditing(false);
       setPhotoName(updatedName);
     }
@@ -88,7 +79,7 @@ const PhotoInfoAndActions = ({
                   size='small'
                   color='primary'
                   onClick={handleSaveName}
-                  disabled={loading}
+                  disabled={localLoading['photoActions']}
                 >
                   <SaveIcon fontSize='small' />
                 </IconButton>
@@ -98,7 +89,7 @@ const PhotoInfoAndActions = ({
                   size='small'
                   color='secondary'
                   onClick={handleCancelEdit}
-                  disabled={loading}
+                  disabled={localLoading['photoActions']}
                 >
                   <CancelIcon fontSize='small' />
                 </IconButton>

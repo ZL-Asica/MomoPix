@@ -3,7 +3,7 @@ import { CheckBoxOutlineBlank, CheckBox } from '@mui/icons-material';
 
 import PhotoDropdownMenu from './PhotoDropdownMenu';
 
-import { useUpdateUserData } from '@/hooks';
+import { useAuthStore } from '@/stores';
 
 import { FloatingIconButton, LazyImage } from '@/components/ui';
 
@@ -24,7 +24,7 @@ const PhotoCard = ({
   onSelect,
   onClick,
 }: PhotoCardProperties) => {
-  const { processing } = useUpdateUserData();
+  const localLoading = useAuthStore((state) => state.localLoading);
 
   return (
     <Grid
@@ -55,7 +55,7 @@ const PhotoCard = ({
         sx={{
           position: 'relative',
           width: '100%',
-          aspectRatio: '1 / 1',
+          paddingTop: '100%', // 1:1 Aspect Ratio. Some browsers don't support aspect-ratio yet.
           flexShrink: 0,
           overflow: 'hidden',
         }}
@@ -69,14 +69,14 @@ const PhotoCard = ({
         {/* Checkbox */}
         <FloatingIconButton
           onClick={onSelect}
-          disabled={processing}
+          disabled={localLoading['photoActions']}
         >
           <Checkbox
             checked={selected}
             icon={<CheckBoxOutlineBlank fontSize='small' />}
             checkedIcon={<CheckBox fontSize='small' />}
             sx={{ p: 0 }}
-            disabled={processing}
+            disabled={localLoading['photoActions']}
           />
         </FloatingIconButton>
 

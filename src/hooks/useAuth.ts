@@ -37,7 +37,7 @@ const validateInput = (
 
 const useAuth = (setError: (error_: string | null) => void) => {
   const [loading, setLoading] = useState(false);
-  const setAuthState = useAuthStore((state) => state.setAuthState);
+  const setUserData = useAuthStore((state) => state.setUserData);
 
   const loginHandler = async (
     username: string,
@@ -55,7 +55,7 @@ const useAuth = (setError: (error_: string | null) => void) => {
       const loginResponse = await login({ username, password });
 
       setError(null);
-      setAuthState(loginResponse);
+      setUserData(loginResponse);
       return true;
     } catch (error_) {
       setError((error_ as Error).message || '登录失败，服务器错误');
@@ -82,7 +82,7 @@ const useAuth = (setError: (error_: string | null) => void) => {
       const registerResponse = await register({ username, password });
 
       setError(null);
-      setAuthState(registerResponse);
+      setUserData(registerResponse);
       return true;
     } catch (error_) {
       setError((error_ as Error).message || '登录失败，服务器错误');

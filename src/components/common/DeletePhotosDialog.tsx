@@ -24,8 +24,9 @@ const DeletePhotosDialog = ({
   open,
   onClose,
 }: DeletePhotosDialogProperties) => {
-  const loading = useAuthStore((state) => state.loading);
-  const setAuthState = useAuthStore((state) => state.setAuthState);
+  const localLoading = useAuthStore((state) => state.localLoading);
+  const setUserData = useAuthStore((state) => state.setUserData);
+  const setLocalLoading = useAuthStore((state) => state.setLocalLoading);
 
   return (
     <Dialog
@@ -51,22 +52,28 @@ const DeletePhotosDialog = ({
         <Button
           onClick={onClose}
           color='primary'
-          disabled={loading}
+          disabled={localLoading['photoActions']}
         >
           取消
         </Button>
         <Button
           onClick={async () => {
+            setLocalLoading('photoActions', true);
             const response_ = await useFileDeleter(albumName, photos);
             if (response_) {
-              setAuthState(response_);
+              setUserData(response_);
+              onClose();
             }
-            onClose();
+            setLocalLoading('photoActions', false);
           }}
           color='primary'
           variant='contained'
         >
-          {loading ? <SmallLoadingCircle text='删除中...' /> : '删除'}
+          {localLoading['photoActions'] ? (
+            <SmallLoadingCircle text='删除中...' />
+          ) : (
+            '删除'
+          )}
         </Button>
       </DialogActions>
     </Dialog>

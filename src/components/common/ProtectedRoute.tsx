@@ -11,9 +11,9 @@ import { useAuthStore } from '@/stores';
  */
 const ProtectedRoute = ({ children }: { children: ReactElement }) => {
   const userData = useAuthStore((state) => state.userData);
-  const loading = useAuthStore((state) => state.loading);
+  const globalLoading = useAuthStore((state) => state.globalLoading);
 
-  if (loading) {
+  if (globalLoading) {
     return <LoadingIndicator />;
   }
 
@@ -35,9 +35,9 @@ const ProtectedRoute = ({ children }: { children: ReactElement }) => {
  */
 const GuestRoute = ({ children }: { children: ReactElement }) => {
   const userData = useAuthStore((state) => state.userData);
-  const loading = useAuthStore((state) => state.loading);
+  const globalLoading = useAuthStore((state) => state.globalLoading);
 
-  if (loading) {
+  if (globalLoading) {
     return <LoadingIndicator />;
   }
 

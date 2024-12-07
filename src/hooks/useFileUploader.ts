@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import type { UploadFile, UploadRequest } from '@/schemas';
 import { MAX_FILE_SIZE_MB, MAX_FILES } from '@/consts';
-import { uploadImages } from '@/utils';
 import { useAuthStore } from '@/stores';
+import { UploadFiles } from '@/api';
+import { generateUploadData } from '@/utils';
 
-const useFileUploader = (
-  userData: UserData | null,
-  selectedAlbum: string,
-  onClose: () => void
-) => {
-  const setAuthState = useAuthStore((state) => state.setAuthState);
-  const [loading, setLoading] = useState<boolean>(false);
+const useFileUploader = (selectedAlbum: string, onClose: () => void) => {
+  const userData = useAuthStore((state) => state.userData);
+  const setLocalLoading = useAuthStore((state) => state.setLocalLoading);
+  const setUserData = useAuthStore((state) => state.setUserData);
   const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
 
   const validateFile = (file: File) => {
@@ -87,26 +86,40 @@ const useFileUploader = (
       return;
     }
 
+    setLocalLoading('upload', true);
+
     const sortedFiles = [...files].sort((a, b) => {
       return a.name.localeCompare(b.name);
     });
 
-    setLoading(true);
+    try {
+      const uploadData: UploadFile[] = await generateUploadData(
+        userData.uid,
+        sortedFiles.map((f) => f.file)
+      );
 
-    const response_ = await uploadImages(
-      userData,
-      sortedFiles.map((f) => f.file),
-      selectedAlbum
-    );
-    setLoading(false);
-    if (response_) {
-      setFiles([]); // Clear files
-      setAuthState(response_);
+      const response_ = await UploadFiles({
+        albumName: selectedAlbum,
+        files: uploadData,
+      } as UploadRequest);
+
+      toast.success(`成功添加 ${files.length} 张照片到相册 ${selectedAlbum}`);
+
+      setUserData(response_);
+      setFiles([]);
       onClose();
+    } catch (error) {
+      console.error(
+        `Unexpected error during upload: ${(error as Error).message}`
+      );
+      toast.error(`添加 ${files.length} 张照片到相册 ${selectedAlbum} 失败`);
+      return null;
+    } finally {
+      setLocalLoading('upload', false);
     }
   };
 
-  return { files, loading, addFiles, deleteFile, renameFile, handleUpload };
+  return { files, addFiles, deleteFile, renameFile, handleUpload };
 };
 
 export default useFileUploader;

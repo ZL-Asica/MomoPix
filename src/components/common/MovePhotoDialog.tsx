@@ -27,8 +27,9 @@ const MovePhotoDialog = ({
   open,
   onClose,
 }: MovePhotoDialogProperties) => {
-  const { movePhoto, processing } = useUpdateUserData();
+  const { movePhoto } = useUpdateUserData();
   const [targetAlbum, setTargetAlbum] = useState<string>('');
+  const localLoading = useAuthStore((state) => state.localLoading);
 
   // Fetch user's album list dynamically (exclude current album)
   const userData = useAuthStore((state) => state.userData);
@@ -36,11 +37,14 @@ const MovePhotoDialog = ({
     userData?.albums.filter((album: Album) => album.name !== albumName) || [];
 
   const handleMovePhoto = async () => {
+    const setLocalLoading = useAuthStore((state) => state.setLocalLoading);
     // Prevent moving if no album is selected
     if (!targetAlbum) return;
+    setLocalLoading('photoActions', true);
     await Promise.all(
       photo.map((photo) => movePhoto(albumName, targetAlbum, photo.id))
     );
+    setLocalLoading('photoActions', false);
     onClose();
   };
 
@@ -87,16 +91,20 @@ const MovePhotoDialog = ({
         <Button
           onClick={onClose}
           color='secondary'
-          disabled={processing}
+          disabled={localLoading['photoActions']}
         >
           取消
         </Button>
         <Button
           onClick={handleMovePhoto}
           color='primary'
-          disabled={processing || !targetAlbum}
+          disabled={localLoading['photoActions'] || !targetAlbum}
         >
-          {processing ? <SmallLoadingCircle text='移动中...' /> : '移动'}
+          {localLoading['photoActions'] ? (
+            <SmallLoadingCircle text='移动中...' />
+          ) : (
+            '移动'
+          )}
         </Button>
       </DialogActions>
     </Dialog>

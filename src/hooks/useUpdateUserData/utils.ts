@@ -1,5 +1,4 @@
 import { toast } from 'sonner';
-import { useState } from 'react';
 
 import { useAuthStore } from '@/stores';
 import { usersPut } from '@/api';
@@ -12,17 +11,16 @@ type CommonUtils = {
     errorMessage?: string
   ) => Promise<void>;
   userData: UserData | null;
-  processing: boolean;
 };
 
 const useCommonUtils = (): CommonUtils => {
   const userData = useAuthStore((state) => state.userData);
-  const loading = useAuthStore((state) => state.loading);
-  const setAuthState = useAuthStore((state) => state.setAuthState);
-  const [processing, setProcessing] = useState(false);
+  const globalLoading = useAuthStore((state) => state.globalLoading);
+  const setLocalLoading = useAuthStore((state) => state.setLocalLoading);
+  const setUserData = useAuthStore((state) => state.setUserData);
 
   const ensureUserData = () => {
-    if (loading) {
+    if (globalLoading) {
       throw new Error('User data is still loading');
     }
     if (!userData) {
@@ -36,22 +34,22 @@ const useCommonUtils = (): CommonUtils => {
     errorMessage?: string
   ) => {
     ensureUserData();
-    setProcessing(true);
+    setLocalLoading('userData', true);
     try {
       const response = await usersPut(updatedData);
       if (!response) return;
 
-      setAuthState(response);
+      setUserData(response);
       toast.success(successMessage);
     } catch (error_) {
       console.error((error_ as Error).message || '登录失败，服务器错误');
       toast.error(errorMessage || 'Failed to update user data');
     } finally {
-      setProcessing(false);
+      setLocalLoading('userData', false);
     }
   };
 
-  return { ensureUserData, updateUserData, userData, processing };
+  return { ensureUserData, updateUserData, userData };
 };
 
 export { useCommonUtils };

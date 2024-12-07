@@ -14,7 +14,7 @@ const getPhotoURLFromGravatarBasedOnEmail = async (email: string) => {
 const useUpdateUserData = () => {
   const albumOps = useAlbumOperations();
   const photoOps = usePhotoOperations();
-  const { updateUserData, processing } = useCommonUtils();
+  const { updateUserData } = useCommonUtils();
 
   /**
    * Update the user's basic information
@@ -40,7 +40,6 @@ const useUpdateUserData = () => {
     ...albumOps,
     ...photoOps,
     updateBasicInfo,
-    processing,
   };
 };
 
