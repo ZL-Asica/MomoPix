@@ -1,51 +1,31 @@
 import { toast } from 'sonner';
 
-import { deleteFilesAPI } from '@/api';
+import { DeleteFiles } from '@/api';
+import type { DeleteRequest } from '@/schemas';
 
 const deleteFiles = async (
   albumName: string,
-  photos: Photo[],
-  deletePhotosFromAlbum: (albumName: string, photos: Photo[]) => void
-): Promise<boolean> => {
+  photos: Photo[]
+): Promise<UserData | null> => {
   if (photos.length === 0) {
     toast.error('未选择任何图片删除');
-    return false;
+    return null;
   }
-
   try {
-    // Get keys to delete
-    const keysToDelete = photos.map((photo) =>
-      photo.url.replace(`${import.meta.env.VITE_CF_R2}/`, '')
-    );
+    const urlsToDelete = photos.map((photo) => photo.url);
 
-    // Call API to delete files
-    const result = await deleteFilesAPI(keysToDelete, '');
+    const deleteResponse = await DeleteFiles({
+      albumName,
+      urls: urlsToDelete,
+    } as DeleteRequest);
 
-    // Handle the result
-    const successfulDeletes = new Set(result.deleted.map((d) => d.key));
-    const failedDeletes = result.failed;
+    toast.success(`成功删除 ${photos.length} 张照片`);
 
-    const deletedPhotos = photos.filter((photo) =>
-      successfulDeletes.has(
-        photo.url.replace(`${import.meta.env.VITE_CF_R2}/`, '')
-      )
-    );
-
-    if (deletedPhotos.length > 0) {
-      // Update the album and inform the user
-      await deletePhotosFromAlbum(albumName, deletedPhotos);
-    }
-
-    if (failedDeletes.length > 0) {
-      failedDeletes.forEach((failure) => {
-        console.error(`删除失败：${failure.key}，错误：${failure.error}`);
-      });
-    }
-
-    return failedDeletes.length === 0;
-  } catch (error) {
-    console.error('删除过程中发生错误：', error);
-    return false;
+    return deleteResponse;
+  } catch (error_) {
+    toast.error(`删除 ${photos.length} 张照片失败`);
+    console.error(`删除过程中发生错误：${(error_ as Error).message}`);
+    return null;
   }
 };
 

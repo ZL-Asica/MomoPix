@@ -1,26 +1,20 @@
-import createSuccessResponse from '../helpers/createSuccessResponse';
-import createErrorResponse from '../helpers/createErrorResponse';
+import { createErrorResponse, createSuccessResponse } from '@/helpers/index';
+import { getUserData, updateUserData } from '@/utils/user-data';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
-  const jwtPayload = context.data.user as JWTPayloadWithIatExp;
-  const uid = jwtPayload.uid;
-  const userDataRaw = await context.env.KV.get(`users:${uid}`);
+  const userData = await getUserData(context);
 
-  if (!userDataRaw) {
+  if (!userData) {
     return createErrorResponse(404, 'User not found');
   }
-
-  const userData = JSON.parse(userDataRaw);
 
   return createSuccessResponse(200, userData);
 };
 
 export const onRequestPut: PagesFunction<Env> = async (context) => {
-  const jwtPayload = context.data.user as JWTPayloadWithIatExp;
-  const uid = jwtPayload.uid;
+  const currentUserData = await getUserData(context);
 
-  const userDataRaw = await context.env.KV.get(`users:${uid}`);
-  if (!userDataRaw) {
+  if (!currentUserData) {
     return createErrorResponse(404, 'User not found');
   }
 
@@ -34,15 +28,11 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     return createErrorResponse(400, 'Invalid JSON data');
   }
 
-  const currentUserData = JSON.parse(userDataRaw);
-
-  const newUserData = {
-    ...currentUserData,
-    ...updatedData,
-    uid: currentUserData.uid,
-  };
-
-  await context.env.KV.put(`users:${uid}`, JSON.stringify(newUserData));
+  const newUserData = await updateUserData(
+    context.env,
+    currentUserData,
+    updatedData
+  );
 
   return createSuccessResponse(
     200,

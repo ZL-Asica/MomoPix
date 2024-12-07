@@ -3,13 +3,15 @@ import { toast } from 'sonner';
 
 import { MAX_FILE_SIZE_MB, MAX_FILES } from '@/consts';
 import { uploadImages } from '@/utils';
+import { useAuthStore } from '@/stores';
 
 const useFileUploader = (
   userData: UserData | null,
   selectedAlbum: string,
-  addPhotosToAlbum: (albumName: string, photos: Photo[]) => Promise<void>,
   onClose: () => void
 ) => {
+  const setAuthState = useAuthStore((state) => state.setAuthState);
+  const [loading, setLoading] = useState<boolean>(false);
   const [files, setFiles] = useState<{ file: File; name: string }[]>([]);
 
   const validateFile = (file: File) => {
@@ -89,19 +91,22 @@ const useFileUploader = (
       return a.name.localeCompare(b.name);
     });
 
-    const success = await uploadImages(
+    setLoading(true);
+
+    const response_ = await uploadImages(
       userData,
       sortedFiles.map((f) => f.file),
-      selectedAlbum,
-      addPhotosToAlbum
+      selectedAlbum
     );
-    if (success) {
+    setLoading(false);
+    if (response_) {
       setFiles([]); // Clear files
+      setAuthState(response_);
       onClose();
     }
   };
 
-  return { files, addFiles, deleteFile, renameFile, handleUpload };
+  return { files, loading, addFiles, deleteFile, renameFile, handleUpload };
 };
 
 export default useFileUploader;

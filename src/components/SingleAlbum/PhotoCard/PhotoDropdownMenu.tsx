@@ -4,7 +4,9 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useToggle } from '@zl-asica/react';
 
 import { useUpdateUserData } from '@/hooks';
+import { updateImages } from '@/utils';
 import { InputDialog, MovePhotoDialog, DeletePhotosDialog } from '@/components';
+import { useAuthStore } from '@/stores';
 
 import { FloatingIconButton } from '@/components/ui';
 
@@ -17,12 +19,14 @@ const PhotoDropdownMenu = ({
   albumName,
   photo,
 }: PhotoDropdownMenuProperties) => {
-  const { updateAlbum, processing, updatePhotoName } = useUpdateUserData();
+  const { updateAlbum, processing } = useUpdateUserData();
+  const setAuthState = useAuthStore((state) => state.setAuthState);
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [renameDialogOpen, toggleRenameDialog] = useToggle();
   const [openMoveDialog, toggleMoveDialog] = useToggle();
   const [openDeleteDialog, toggleDeleteDialog] = useToggle();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const setThumbnail = async () => {
     await updateAlbum(albumName, {
@@ -32,7 +36,15 @@ const PhotoDropdownMenu = ({
   };
 
   const renamePhoto = async (newName: string) => {
-    await updatePhotoName(albumName, photo.id, newName);
+    const response_ = await updateImages(
+      albumName,
+      photo.id,
+      newName,
+      setLoading
+    );
+    if (response_) {
+      setAuthState(response_);
+    }
     handleMenuClose();
   };
 
@@ -56,7 +68,7 @@ const PhotoDropdownMenu = ({
           onClick={handleMenuOpen}
           size='small'
           sx={{ p: 0 }}
-          disabled={processing}
+          disabled={processing || loading}
         >
           <MoreVertIcon fontSize='small' />
         </IconButton>

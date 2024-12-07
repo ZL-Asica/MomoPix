@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm build && wrangler pages dev",
+    "dev:frontend": "vite dev",
+    "dev:backend": "wrangler pages dev --proxy http://localhost:5173",
+    "dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\"",
     "build": "pnpm clean && tsc -b && vite build",
     "test": "vitest",
     "lint": "eslint .",
@@ -42,6 +44,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "@zl-asica/prettier-config": "^1.0.9",
+    "concurrently": "^9.1.0",
     "eslint": "^9.16.0",
     "eslint-config-zl-asica": "^1.0.20",
     "husky": "^9.1.7",

@@ -1,6 +1,7 @@
 interface Env {
   PUBLIC?: string;
   JWT_SECRET: string;
+  R2_URL: string;
   R2: R2Bucket;
   KV: KVNamespace;
 }
@@ -33,6 +34,12 @@ interface UserData {
 
 interface UserKVData extends UserData {
   password: string;
+}
+
+interface UploadFile {
+  key: string;
+  name: string;
+  file: Blob;
 }
 
 interface JWTPayload {

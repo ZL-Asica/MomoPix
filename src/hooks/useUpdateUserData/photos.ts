@@ -19,63 +19,6 @@ const usePhotoOperations = () => {
     );
   };
 
-  const addPhotosToAlbum = async (albumName: string, photos: Photo[]) => {
-    await modifyAlbum(
-      (draftAlbums) => {
-        const album = draftAlbums.find((album) => album.name === albumName);
-        if (album) {
-          album.photos.push(
-            ...photos.map((photo) => ({
-              ...photo,
-              lastModified: Date.now(),
-              uploadedAt: Date.now(),
-            }))
-          );
-        }
-      },
-      `成功添加 ${photos.length} 张照片到相册 ${albumName}`,
-      `添加 ${photos.length} 张照片到相册 ${albumName} 失败`
-    );
-  };
-
-  const deletePhotosFromAlbum = async (
-    albumName: string,
-    photos: Photo[]
-  ): Promise<void> => {
-    await modifyAlbum(
-      (draftAlbums) => {
-        const album = draftAlbums.find((album) => album.name === albumName);
-        if (album) {
-          album.photos = album.photos.filter(
-            (photo) => !photos.map((photo) => photo.id).includes(photo.id)
-          );
-        }
-      },
-      `成功删除 ${photos.length} 张照片`,
-      `删除 ${photos.length} 张照片失败`
-    );
-  };
-
-  const updatePhotoName = async (
-    albumName: string,
-    photoId: string,
-    updatedName: string
-  ) => {
-    await modifyAlbum(
-      (draftAlbums) => {
-        const album = draftAlbums.find((album) => album.name === albumName);
-        if (album) {
-          const photo = album.photos.find((photo) => photo.id === photoId);
-          if (photo) {
-            photo.name = updatedName;
-          }
-        }
-      },
-      `已重命名为 ${updatedName}`,
-      `重命名为 ${updatedName} 失败`
-    );
-  };
-
   const movePhoto = async (
     originalAlbumName: string,
     newAlbumName: string,
@@ -107,9 +50,6 @@ const usePhotoOperations = () => {
   };
 
   return {
-    addPhotosToAlbum,
-    deletePhotosFromAlbum,
-    updatePhotoName,
     movePhoto,
   };
 };

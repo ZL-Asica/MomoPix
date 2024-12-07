@@ -7,7 +7,7 @@ import {
   Button,
 } from '@mui/material';
 
-import { useFileDeleter, useUpdateUserData } from '@/hooks';
+import { useFileDeleter } from '@/hooks';
 import { useAuthStore } from '@/stores';
 import { SmallLoadingCircle } from '@/components';
 
@@ -25,7 +25,7 @@ const DeletePhotosDialog = ({
   onClose,
 }: DeletePhotosDialogProperties) => {
   const loading = useAuthStore((state) => state.loading);
-  const { deletePhotosFromAlbum } = useUpdateUserData();
+  const setAuthState = useAuthStore((state) => state.setAuthState);
 
   return (
     <Dialog
@@ -57,7 +57,10 @@ const DeletePhotosDialog = ({
         </Button>
         <Button
           onClick={async () => {
-            await useFileDeleter(albumName, photos, deletePhotosFromAlbum);
+            const response_ = await useFileDeleter(albumName, photos);
+            if (response_) {
+              setAuthState(response_);
+            }
             onClose();
           }}
           color='primary'

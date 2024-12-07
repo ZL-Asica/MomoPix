@@ -6,7 +6,7 @@ import Dropzone from './Dropzone';
 import FilePreview from './FilePreview';
 import { ModalContainer } from './styles';
 
-import { useFileUploader, useUpdateUserData } from '@/hooks';
+import { useFileUploader } from '@/hooks';
 import { useAuthStore } from '@/stores';
 
 import { SelectAlbumDropdown } from '@/components/Albums';
@@ -23,13 +23,12 @@ const UploadModal = ({
   targetAlbum = 'default',
 }: UploadModalProperties) => {
   const userData = useAuthStore((state) => state.userData);
-  const { addPhotosToAlbum, processing } = useUpdateUserData();
 
   const [isDragging, setIsDragging] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<string>(targetAlbum);
 
-  const { files, addFiles, deleteFile, renameFile, handleUpload } =
-    useFileUploader(userData, selectedAlbum, addPhotosToAlbum, onClose);
+  const { files, loading, addFiles, deleteFile, renameFile, handleUpload } =
+    useFileUploader(userData, selectedAlbum, onClose);
 
   return (
     <Modal
@@ -81,14 +80,14 @@ const UploadModal = ({
             variant='contained'
             color='primary'
             onClick={handleUpload}
-            disabled={files.length === 0 || processing}
+            disabled={files.length === 0 || loading}
           >
-            {processing ? '上传中...' : '上传'}
+            {loading ? '上传中...' : '上传'}
           </Button>
           <Button
             variant='outlined'
             onClick={onClose}
-            disabled={processing}
+            disabled={loading}
           >
             取消
           </Button>

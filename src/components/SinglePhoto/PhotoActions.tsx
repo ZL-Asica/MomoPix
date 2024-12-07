@@ -7,7 +7,8 @@ import CancelIcon from '@mui/icons-material/Close';
 import { useToggle } from '@zl-asica/react';
 
 import { MovePhotoDialog } from '@/components';
-import { useUpdateUserData } from '@/hooks';
+import { updateImages } from '@/utils';
+import { useAuthStore } from '@/stores';
 
 interface PhotoInfoAndActionsProperties {
   albumName: string;
@@ -18,16 +19,25 @@ const PhotoInfoAndActions = ({
   albumName,
   photo,
 }: PhotoInfoAndActionsProperties) => {
-  const { updatePhotoName, processing } = useUpdateUserData();
-
+  const setAuthState = useAuthStore((state) => state.setAuthState);
   const [photoName, setPhotoName] = useState(photo.name);
   const [isEditing, setIsEditing] = useState(false);
   const [updatedName, setUpdatedName] = useState(photo.name);
   const [openMoveDialog, toggleMoveDialog] = useToggle();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSaveName = async () => {
     if (updatedName !== photo.name) {
-      await updatePhotoName(albumName, photo.id, updatedName);
+      const response_ = await updateImages(
+        albumName,
+        photo.id,
+        updatedName,
+        setLoading
+      );
+      if (response_) {
+        setAuthState(response_);
+      }
+
       setIsEditing(false);
       setPhotoName(updatedName);
     }
@@ -78,7 +88,7 @@ const PhotoInfoAndActions = ({
                   size='small'
                   color='primary'
                   onClick={handleSaveName}
-                  disabled={processing}
+                  disabled={loading}
                 >
                   <SaveIcon fontSize='small' />
                 </IconButton>
@@ -88,7 +98,7 @@ const PhotoInfoAndActions = ({
                   size='small'
                   color='secondary'
                   onClick={handleCancelEdit}
-                  disabled={processing}
+                  disabled={loading}
                 >
                   <CancelIcon fontSize='small' />
                 </IconButton>

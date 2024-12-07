@@ -24,10 +24,14 @@ const fetchAPI = async <T>(
     method = 'GET',
     timeout = 5000,
     headers = {},
+    body,
     ...fetchOptions
   } = options;
 
-  const defaultHeaders = { 'Content-Type': 'application/json', ...headers };
+  const isFormData = body instanceof FormData;
+  const defaultHeaders = isFormData
+    ? headers // Let the browser handle Content-Type for FormData
+    : { 'Content-Type': 'application/json', ...headers };
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -36,6 +40,7 @@ const fetchAPI = async <T>(
     const response = await fetch(url, {
       method,
       headers: defaultHeaders,
+      body,
       ...fetchOptions,
       signal: controller.signal,
     });
