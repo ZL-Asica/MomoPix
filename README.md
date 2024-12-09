@@ -4,7 +4,8 @@
 > 基于 Cloudflare Pages, R2 作为储存空间，为你提供简洁、优雅的图床体验！🎉
 
 [![GitHub License][license-badge]][license-link]
-[![Node.js][node-badge]][node-link] |
+[![Node.js][node-badge]][node-link] [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FZL-Asica%2FMomoPix.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FZL-Asica%2FMomoPix?ref=badge_shield)
+|
 [![React][react-badge]][react-link]
 [![Vite][vite-badge]][vite-link] |
 [![Cloudflare][cloudflare-badge]][cloudflare-link]
@@ -157,3 +158,7 @@ MomoPix/
 [react-link]: https://react.dev/
 [vite-badge]: https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff
 [vite-link]: https://vite.dev/
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FZL-Asica%2FMomoPix.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FZL-Asica%2FMomoPix?ref=badge_large)
