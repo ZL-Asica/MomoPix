@@ -40,7 +40,7 @@ function SignUpPage() {
     )
     if (success) {
       toast.success('注册成功')
-      await navigate('/')
+      await navigate('/signin')
     }
   }
 

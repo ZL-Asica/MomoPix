@@ -82,10 +82,9 @@ function useAuth(setError: (error_: string | null) => void) {
 
     try {
       setLoading(true)
-      const registerResponse = await register({ username, password })
+      await register({ username, password })
 
       setError(null)
-      setUserData(registerResponse)
       return true
     }
     catch (error_) {
