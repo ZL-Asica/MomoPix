@@ -67,12 +67,10 @@ function SinglePhotoModal({
             gap: { xs: 2, md: 4 },
             p: { xs: 2, md: 4 },
             overflow: 'auto',
+            maxHeight: 'calc(90vh - 32px)',
           }}
         >
-          <ImageDisplay
-            url={photo.url}
-            alt={photo.name}
-          />
+          <ImageDisplay url={photo.url} alt={photo.name} />
 
           {/* Right side */}
           <Box
@@ -84,10 +82,7 @@ function SinglePhotoModal({
               gap: 2,
             }}
           >
-            <PhotoInfoAndActions
-              albumName={albumName}
-              photo={photo}
-            />
+            <PhotoInfoAndActions albumName={albumName} photo={photo} />
 
             <Divider sx={{ my: 2 }} />
 
