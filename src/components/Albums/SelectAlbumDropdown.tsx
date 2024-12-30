@@ -1,22 +1,22 @@
-import { TextField, MenuItem, Box } from '@mui/material';
-import { useToggle } from '@zl-asica/react';
+import { CreateNewAlbumModal } from '@/components/Albums'
+import { useAuthStore } from '@/stores'
 
-import { useAuthStore } from '@/stores';
+import { Box, MenuItem, TextField } from '@mui/material'
 
-import { CreateNewAlbumModal } from '@/components/Albums';
+import { useToggle } from '@zl-asica/react'
 
 interface SelectAlbumDropdownProperties {
-  selectedAlbum: string;
-  setSelectedAlbum: (album: string) => void;
+  selectedAlbum: string
+  setSelectedAlbum: (album: string) => void
 }
 
-const SelectAlbumDropdown = ({
+function SelectAlbumDropdown({
   selectedAlbum,
   setSelectedAlbum,
-}: SelectAlbumDropdownProperties) => {
-  const userData = useAuthStore((state) => state.userData);
-  const albums = userData?.albums || [];
-  const [dialogOpen, toggleDialogOpen] = useToggle();
+}: SelectAlbumDropdownProperties) {
+  const userData = useAuthStore(state => state.userData)
+  const albums = userData?.albums || []
+  const [dialogOpen, toggleDialogOpen] = useToggle()
 
   return (
     <>
@@ -30,13 +30,13 @@ const SelectAlbumDropdown = ({
       >
         <TextField
           select
-          label='选择相簿'
+          label="选择相簿"
           value={selectedAlbum}
-          onChange={(event_) => setSelectedAlbum(event_.target.value)}
+          onChange={event_ => setSelectedAlbum(event_.target.value)}
           fullWidth
-          margin='normal'
+          margin="normal"
         >
-          {albums.map((album) => (
+          {albums.map(album => (
             <MenuItem
               key={album.name}
               value={album.name}
@@ -45,7 +45,7 @@ const SelectAlbumDropdown = ({
             </MenuItem>
           ))}
           <MenuItem
-            value='create-new'
+            value="create-new"
             onClick={toggleDialogOpen}
           >
             新建相簿
@@ -60,7 +60,7 @@ const SelectAlbumDropdown = ({
         setAlbumName={setSelectedAlbum}
       />
     </>
-  );
-};
+  )
+}
 
-export default SelectAlbumDropdown;
+export default SelectAlbumDropdown

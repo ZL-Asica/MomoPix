@@ -1,15 +1,15 @@
-import { MAX_WIDTH, MAX_HEIGHT } from '@/consts';
+import { MAX_HEIGHT, MAX_WIDTH } from '@/consts'
 
-const formatFactor: Record<'image/avif' | 'image/webp' | 'image/jpeg', number> =
-  {
+const formatFactor: Record<'image/avif' | 'image/webp' | 'image/jpeg', number>
+  = {
     'image/avif': 1, // AVIF can handle low quality well
     'image/webp': 0.9, // WebP maintains good quality with lower values
     'image/jpeg': 0.8, // JPEG requires higher quality for good results
-  };
+  }
 
 const supportedFormats = Object.keys(formatFactor) as Array<
   keyof typeof formatFactor
->;
+>
 
 /**
  * Calculates the compression quality dynamically based on image properties.
@@ -35,26 +35,20 @@ const supportedFormats = Object.keys(formatFactor) as Array<
  * @param complexity - Estimated image complexity (0.0 = simple, 1.0 = highly complex).
  * @returns A quality value between 0.1 and 1.0.
  */
-const qualityCalculator = (
-  width: number,
-  height: number,
-  fileSize: number,
-  format: 'image/avif' | 'image/webp' | 'image/jpeg',
-  complexity: number
-): number => {
-  const totalPixels = width * height;
-  const resolutionFactor = Math.log10(totalPixels) / 7; // Normalize to [0, 1]
-  const sizeFactor = Math.log10(fileSize) / 6; // Normalize to [0, 1]
+function qualityCalculator(width: number, height: number, fileSize: number, format: 'image/avif' | 'image/webp' | 'image/jpeg', complexity: number): number {
+  const totalPixels = width * height
+  const resolutionFactor = Math.log10(totalPixels) / 7 // Normalize to [0, 1]
+  const sizeFactor = Math.log10(fileSize) / 6 // Normalize to [0, 1]
 
   // Calculate dynamic quality
-  let quality =
-    1 - 0.3 * resolutionFactor - 0.2 * sizeFactor - 0.2 * complexity;
+  let quality
+    = 1 - 0.3 * resolutionFactor - 0.2 * sizeFactor - 0.2 * complexity
 
   // Apply format-specific adjustments
-  quality *= formatFactor[format];
+  quality *= formatFactor[format]
 
-  return Math.max(0.1, Math.min(1, quality)); // Clamp to [0.1, 1.0]
-};
+  return Math.max(0.1, Math.min(1, quality)) // Clamp to [0.1, 1.0]
+}
 
 /**
  * Estimate image complexity based on color variance or edges.
@@ -63,35 +57,31 @@ const qualityCalculator = (
  * @param height - Image height
  * @returns A complexity score between 0.0 (simple) and 1.0 (highly complex)
  */
-const estimateImageComplexity = (
-  context: OffscreenCanvasRenderingContext2D,
-  width: number,
-  height: number
-): number => {
-  const imageData = context.getImageData(0, 0, width, height);
-  const data = imageData.data;
+function estimateImageComplexity(context: OffscreenCanvasRenderingContext2D, width: number, height: number): number {
+  const imageData = context.getImageData(0, 0, width, height)
+  const data = imageData.data
 
-  let variance = 0;
-  let mean = 0;
-  const length = data.length / 4; // Each pixel has 4 values (RGBA)
+  let variance = 0
+  let mean = 0
+  const length = data.length / 4 // Each pixel has 4 values (RGBA)
 
   // Calculate mean pixel brightness
   for (let index = 0; index < data.length; index += 4) {
-    const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3;
-    mean += brightness;
+    const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3
+    mean += brightness
   }
-  mean /= length;
+  mean /= length
 
   // Calculate variance
   for (let index = 0; index < data.length; index += 4) {
-    const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3;
-    variance += Math.pow(brightness - mean, 2);
+    const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3
+    variance += (brightness - mean) ** 2
   }
-  variance /= length;
+  variance /= length
 
   // Normalize variance to a 0-1 range
-  return Math.min(1, variance / 255);
-};
+  return Math.min(1, variance / 255)
+}
 
 /**
  * The function to compress the image
@@ -100,31 +90,28 @@ const estimateImageComplexity = (
  * @param removeAlpha - Whether to remove the alpha channel
  * @returns - The compressed image blob or null if failed
  */
-const compressImage = async (
-  imgBitmap: ImageBitmap,
-  originalSize: number,
-  removeAlpha: boolean
-): Promise<Blob | null> => {
-  let { width, height } = imgBitmap;
+async function compressImage(imgBitmap: ImageBitmap, originalSize: number, removeAlpha: boolean): Promise<Blob | null> {
+  let { width, height } = imgBitmap
 
   // Scale down image if necessary
-  const ratio = Math.min(1, MAX_WIDTH / width, MAX_HEIGHT / height);
-  width = Math.round(width * ratio);
-  height = Math.round(height * ratio);
+  const ratio = Math.min(1, MAX_WIDTH / width, MAX_HEIGHT / height)
+  width = Math.round(width * ratio)
+  height = Math.round(height * ratio)
 
-  const offscreenCanvas = new OffscreenCanvas(width, height);
-  const context = offscreenCanvas.getContext('2d');
-  if (!context) throw new Error('Failed to get canvas context');
+  const offscreenCanvas = new OffscreenCanvas(width, height)
+  const context = offscreenCanvas.getContext('2d')
+  if (!context)
+    throw new Error('Failed to get canvas context')
 
-  context.drawImage(imgBitmap, 0, 0, width, height);
+  context.drawImage(imgBitmap, 0, 0, width, height)
 
   // Estimate image complexity for quality adjustment
-  const complexity = estimateImageComplexity(context, width, height);
+  const complexity = estimateImageComplexity(context, width, height)
 
   // Remove alpha channel if needed
-  const alphaOption = removeAlpha ? { alpha: false } : {};
+  const alphaOption = removeAlpha ? { alpha: false } : {}
 
-  let lastBlob: Blob | null = null;
+  let lastBlob: Blob | null = null
 
   for (const format of supportedFormats) {
     try {
@@ -133,25 +120,26 @@ const compressImage = async (
         height,
         originalSize,
         format,
-        complexity
-      );
+        complexity,
+      )
       const blob = await offscreenCanvas.convertToBlob({
         type: format,
         quality,
         ...alphaOption,
-      });
+      })
 
-      if (blob && blob.size < originalSize) {
-        return blob; // Return the first successful compression
+      if (blob.size < originalSize) {
+        return blob // Return the first successful compression
       }
-      lastBlob = blob; // Store as fallback
-    } catch (error) {
-      console.warn(`Failed to compress image to ${format}:`, error);
+      lastBlob = blob // Store as fallback
+    }
+    catch (error) {
+      console.warn(`Failed to compress image to ${format}:`, error)
     }
   }
 
   // Return fallback blob (e.g., JPEG)
-  return lastBlob;
-};
+  return lastBlob
+}
 
-export default compressImage;
+export default compressImage

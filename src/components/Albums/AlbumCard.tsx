@@ -1,24 +1,24 @@
 import {
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
-  Typography,
   Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
   Grid2 as Grid,
-} from '@mui/material';
-import { Link } from 'react-router-dom';
+  Typography,
+} from '@mui/material'
+import { Link } from 'react-router-dom'
 
 interface AlbumCardProperties {
-  album: Album;
+  album: Album
 }
 
-const AlbumCard = ({ album }: AlbumCardProperties) => {
-  const placeholderBackground = 'linear-gradient(135deg, #f5f5f5, #e0e0e0)';
+function AlbumCard({ album }: AlbumCardProperties) {
+  const placeholderBackground = 'linear-gradient(135deg, #f5f5f5, #e0e0e0)'
 
   return (
     <Grid
-      component='li'
+      component="li"
       size={{ xs: 6, sm: 4, md: 3, lg: 2 }}
       sx={{
         listStyle: 'none',
@@ -27,16 +27,16 @@ const AlbumCard = ({ album }: AlbumCardProperties) => {
     >
       <Card
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: 2,
-          boxShadow: (theme) => theme.shadows[2],
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          'display': 'flex',
+          'flexDirection': 'column',
+          'borderRadius': 2,
+          'boxShadow': theme => theme.shadows[2],
+          'transition': 'transform 0.2s ease, box-shadow 0.2s ease',
           '&:hover': {
             transform: 'translateY(-5px)',
-            boxShadow: (theme) => theme.shadows[4],
+            boxShadow: theme => theme.shadows[4],
           },
-          height: '100%',
+          'height': '100%',
         }}
       >
         {/* Image Section */}
@@ -47,7 +47,7 @@ const AlbumCard = ({ album }: AlbumCardProperties) => {
           }}
         >
           <CardMedia
-            component='div'
+            component="div"
             sx={{
               height: { xs: 160, sm: 180 },
               backgroundColor:
@@ -73,7 +73,7 @@ const AlbumCard = ({ album }: AlbumCardProperties) => {
           }}
         >
           <Typography
-            variant='h6'
+            variant="h6"
             gutterBottom
             sx={{
               fontWeight: 600,
@@ -85,21 +85,25 @@ const AlbumCard = ({ album }: AlbumCardProperties) => {
             {album.name}
           </Typography>
           <Typography
-            variant='body2'
-            color='textSecondary'
+            variant="body2"
+            color="textSecondary"
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 1,
             }}
           >
-            照片数量: {album.photos.length || 0}
+            照片数量:
+            {' '}
+            {album.photos.length || 0}
           </Typography>
           <Typography
-            variant='body2'
-            color='textSecondary'
+            variant="body2"
+            color="textSecondary"
           >
-            创建时间: {new Date(album.createdAt).toLocaleDateString()}
+            创建时间:
+            {' '}
+            {new Date(album.createdAt).toLocaleDateString()}
           </Typography>
         </CardContent>
 
@@ -112,8 +116,8 @@ const AlbumCard = ({ album }: AlbumCardProperties) => {
           }}
         >
           <Button
-            size='small'
-            color='primary'
+            size="small"
+            color="primary"
             component={Link}
             to={`/album/${album.name}`}
             sx={{
@@ -126,7 +130,7 @@ const AlbumCard = ({ album }: AlbumCardProperties) => {
         </CardActions>
       </Card>
     </Grid>
-  );
-};
+  )
+}
 
-export default AlbumCard;
+export default AlbumCard

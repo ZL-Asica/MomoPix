@@ -1,37 +1,37 @@
-import { Turnstile } from '@marsidev/react-turnstile';
+import { Turnstile } from '@marsidev/react-turnstile'
 
 interface TurnstileClientProperties {
-  setTurnstileStatus: (status: TurnstileStatus) => void;
-  setError: (error_: string | null) => void;
+  setTurnstileStatus: (status: TurnstileStatus) => void
+  setError: (error_: string | null) => void
 }
 
-const TurnstileClient = ({
+function TurnstileClient({
   setTurnstileStatus,
   setError,
-}: TurnstileClientProperties) => {
-  const TurnstileKey = `${import.meta.env.VITE_TURNSTILE}`;
+}: TurnstileClientProperties) {
+  const TurnstileKey = `${import.meta.env.VITE_TURNSTILE}`
   if (!TurnstileKey) {
-    setTurnstileStatus('success');
-    return;
+    setTurnstileStatus('success')
+    return
   }
 
   return (
     <Turnstile
       siteKey={TurnstileKey}
       onSuccess={() => {
-        setTurnstileStatus('success');
-        setError(null);
+        setTurnstileStatus('success')
+        setError(null)
       }}
       onError={(error_) => {
-        setTurnstileStatus('error');
-        setError(error_);
+        setTurnstileStatus('error')
+        setError(error_)
       }}
       onExpire={() => {
-        setTurnstileStatus('expired');
-        setError('Turnstile 验证失败');
+        setTurnstileStatus('expired')
+        setError('Turnstile 验证失败')
       }}
     />
-  );
-};
+  )
+}
 
-export default TurnstileClient;
+export default TurnstileClient

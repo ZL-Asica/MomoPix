@@ -1,53 +1,57 @@
-import { useNavigate } from 'react-router-dom';
-import { Box, Button, Typography, Tooltip } from '@mui/material';
+import { InputDialog, UploadModal } from '@/components'
+import { useUpdateUserData } from '@/hooks'
 import {
-  PhotoLibrary as PhotoLibraryIcon,
   Edit as EditIcon,
-} from '@mui/icons-material';
-import { useToggle } from '@zl-asica/react';
+  PhotoLibrary as PhotoLibraryIcon,
+} from '@mui/icons-material'
+import { Box, Button, Tooltip, Typography } from '@mui/material'
 
-import { UploadModal, InputDialog } from '@/components';
-import { useUpdateUserData } from '@/hooks';
+import { useToggle } from '@zl-asica/react'
+import { useNavigate } from 'react-router-dom'
 
 interface AlbumHeaderProperties {
-  currentAlbum: Album;
+  currentAlbum: Album
 }
 
-const AlbumHeader = ({ currentAlbum }: AlbumHeaderProperties) => {
-  const navigate = useNavigate();
-  const { updateAlbum } = useUpdateUserData();
+function AlbumHeader({ currentAlbum }: AlbumHeaderProperties) {
+  const navigate = useNavigate()
+  const { updateAlbum } = useUpdateUserData()
 
-  const albumNameInput = currentAlbum?.name || '';
-  const [editingAlbum, toggleEditingAlbum] = useToggle();
-  const [uploadModalOpen, toggleUploadModalOpen] = useToggle();
+  const albumNameInput = currentAlbum?.name || ''
+  const [editingAlbum, toggleEditingAlbum] = useToggle()
+  const [uploadModalOpen, toggleUploadModalOpen] = useToggle()
 
   const handleSaveAlbum = async (newName: string) => {
-    await updateAlbum(currentAlbum.name, { name: newName });
-    navigate(`/album/${newName}`);
-  };
+    await updateAlbum(currentAlbum.name, { name: newName })
+    await navigate(`/album/${newName}`)
+  }
 
   return (
     <>
       <Box
-        display='flex'
-        alignItems='center'
-        justifyContent='space-between'
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
         mb={4}
       >
         <Box>
           <Typography
-            variant='h4'
+            variant="h4"
             gutterBottom
           >
             {currentAlbum.name}
           </Typography>
           <Typography
-            variant='body2'
-            color='textSecondary'
+            variant="body2"
+            color="textSecondary"
           >
-            照片数量: {currentAlbum.photos.length || 0}
+            照片数量:
+            {' '}
+            {currentAlbum.photos.length || 0}
             <br />
-            创建时间: {new Date(currentAlbum.createdAt).toLocaleDateString()}
+            创建时间:
+            {' '}
+            {new Date(currentAlbum.createdAt).toLocaleDateString()}
           </Typography>
         </Box>
         <Box
@@ -60,8 +64,8 @@ const AlbumHeader = ({ currentAlbum }: AlbumHeaderProperties) => {
           <Tooltip title={`上传到 ${currentAlbum.name}`}>
             <Button
               startIcon={<PhotoLibraryIcon />}
-              variant='contained'
-              color='primary'
+              variant="contained"
+              color="primary"
               onClick={toggleUploadModalOpen}
             >
               上传到此相册
@@ -78,7 +82,7 @@ const AlbumHeader = ({ currentAlbum }: AlbumHeaderProperties) => {
             <span>
               <Button
                 startIcon={<EditIcon />}
-                variant='outlined'
+                variant="outlined"
                 onClick={toggleEditingAlbum}
                 disabled={currentAlbum.name === 'default'}
               >
@@ -93,8 +97,8 @@ const AlbumHeader = ({ currentAlbum }: AlbumHeaderProperties) => {
       <InputDialog
         open={editingAlbum}
         onClose={toggleEditingAlbum}
-        title='编辑相册名称'
-        inputLabel='相册名称'
+        title="编辑相册名称"
+        inputLabel="相册名称"
         handleSave={handleSaveAlbum}
         defaultValue={albumNameInput}
       />
@@ -106,7 +110,7 @@ const AlbumHeader = ({ currentAlbum }: AlbumHeaderProperties) => {
         targetAlbum={currentAlbum.name}
       />
     </>
-  );
-};
+  )
+}
 
-export default AlbumHeader;
+export default AlbumHeader

@@ -1,21 +1,5 @@
 {
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.tabSize": 2,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "always",
-    "source.addMissingImports.ts": "always"
-  },
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/.yarn": true,
-    "**/.pnp.*": true,
-    "pnpm-lock.yaml": true,
-    "package-lock.json": true,
-    "yarn.lock": true
-  },
   "editor.wordWrap": "on",
-  "prettier.requireConfig": true,
-  "eslint.useFlatConfig": true,
   "typescript.tsdk": "node_modules/typescript/lib"
 }

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 const UpdateRequestSchema = z.object({
   albumName: z.string(),
@@ -6,11 +6,11 @@ const UpdateRequestSchema = z.object({
     z.object({
       id: z.string(),
       name: z.string(),
-    })
+    }),
   ),
-});
+})
 
-type UpdateRequest = z.infer<typeof UpdateRequestSchema>;
+type UpdateRequest = z.infer<typeof UpdateRequestSchema>
 
-export { UpdateRequestSchema };
-export type { UpdateRequest };
+export { UpdateRequestSchema }
+export type { UpdateRequest }

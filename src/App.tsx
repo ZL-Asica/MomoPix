@@ -1,86 +1,95 @@
-import { Route, Routes } from 'react-router-dom';
-import { useEffect } from 'react';
+import AppProviders from '@/AppProviders'
+import { GuestRoute, Layout, ProtectedRoute } from '@/components'
 
-import AppProviders from '@/AppProviders';
-import { Layout, ProtectedRoute, GuestRoute } from '@/components';
-import { useAuthStore } from '@/stores';
+import AlbumsPage from '@/pages/Albums'
+import NotFoundPage from '@/pages/NotFoundPage'
+import Profile from '@/pages/Profile'
 
-import SignInPage from '@/pages/SignIn';
-import NotFoundPage from '@/pages/NotFoundPage';
-import SignUpPage from '@/pages/SignUp';
-import Profile from '@/pages/Profile';
-import AlbumsPage from '@/pages/Albums';
-import SingleAlbumPage from '@/pages/SingleAlbum';
+import SignInPage from '@/pages/SignIn'
+import SignUpPage from '@/pages/SignUp'
+import SingleAlbumPage from '@/pages/SingleAlbum'
+import { useAuthStore } from '@/stores'
+import { useEffect } from 'react'
+import { Route, Routes } from 'react-router-dom'
 
-const App = () => {
-  const initialFetch = useAuthStore((state) => state.initialFetch);
+function App() {
+  const initialFetch = useAuthStore(state => state.initialFetch)
 
   useEffect(() => {
-    initialFetch();
-  }, [initialFetch]);
+    const fetchData = async () => {
+      try {
+        await initialFetch()
+      }
+      catch (error) {
+        console.error('Failed to perform initial fetch:', error)
+      }
+    }
+
+    fetchData().catch(console.error)
+  }, [initialFetch])
 
   return (
     <AppProviders>
       <Routes>
         <Route
-          path='/'
+          path="/"
           element={<Layout />}
         >
           {/* Default route */}
           <Route
             index
-            element={
+            element={(
               <ProtectedRoute>
                 <AlbumsPage />
               </ProtectedRoute>
-            }
+            )}
           />
 
           {/* Auth routes */}
           <Route
-            path='signin'
-            element={
+            path="signin"
+            element={(
               <GuestRoute>
                 <SignInPage />
               </GuestRoute>
-            }
+            )}
           />
           <Route
-            path='signup'
-            element={
+            path="signup"
+            element={(
               <GuestRoute>
                 <SignUpPage />
               </GuestRoute>
-            }
+            )}
           />
 
           {/* Authenticated user routes */}
           <Route
-            path='profile'
-            element={
+            path="profile"
+            element={(
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
-            }
+            )}
           />
           <Route
-            path='album/:albumName'
-            element={
+            path="album/:albumName"
+            element={(
               <ProtectedRoute>
                 <SingleAlbumPage />
               </ProtectedRoute>
-            }
+            )}
           />
 
           {/* Not Found */}
           <Route
-            path='*'
+            path="*"
             element={<NotFoundPage />}
           />
         </Route>
       </Routes>
     </AppProviders>
-  );
-};
+  )
+}
 
-export default App;
+export default App

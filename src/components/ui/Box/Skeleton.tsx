@@ -1,23 +1,26 @@
-import './Skeleton.css';
+import './Skeleton.css'
 
 interface SkeletonProperties {
-  variant?: 'rectangular' | 'circular';
-  width?: string | number;
-  height?: string | number;
+  variant?: 'rectangular' | 'circular'
+  width?: string | number
+  height?: string | number
 }
 
-const Skeleton = ({
+function Skeleton({
   variant = 'rectangular',
   width,
   height,
-}: SkeletonProperties) => (
-  <div
-    className={`skeleton ${variant}`}
-    style={{
-      width: width || '100%',
-      height: height || 'auto',
-    }}
-  ></div>
-);
+}: SkeletonProperties) {
+  return (
+    <div
+      className={`skeleton ${variant}`}
+      style={{
+        width: width ?? '100%',
+        height: height ?? 'auto',
+      }}
+    >
+    </div>
+  )
+}
 
-export default Skeleton;
+export default Skeleton

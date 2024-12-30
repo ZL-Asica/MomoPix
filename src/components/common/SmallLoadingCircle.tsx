@@ -1,10 +1,10 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material'
 
 interface SmallLoadingCircleProperties {
-  text?: string;
+  text?: string
 }
 
-const SmallLoadingCircle = ({ text }: SmallLoadingCircleProperties) => {
+function SmallLoadingCircle({ text = '' }: SmallLoadingCircleProperties) {
   return (
     <Box
       sx={{
@@ -14,7 +14,7 @@ const SmallLoadingCircle = ({ text }: SmallLoadingCircleProperties) => {
       }}
     >
       <Box
-        component='span'
+        component="span"
         sx={{
           display: 'inline-block',
           width: 24,
@@ -25,9 +25,9 @@ const SmallLoadingCircle = ({ text }: SmallLoadingCircleProperties) => {
           animation: 'spin 1s linear infinite',
         }}
       />
-      {text && <Typography variant='body2'>{text}</Typography>}
+      {text && <Typography variant="body2">{text}</Typography>}
     </Box>
-  );
-};
+  )
+}
 
-export default SmallLoadingCircle;
+export default SmallLoadingCircle

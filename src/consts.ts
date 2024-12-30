@@ -1,10 +1,10 @@
-const ITEMS_PER_PAGE_OPTIONS = [10, 20, 30];
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 30]
 
-const MAX_FILE_SIZE_MB = 5;
-const MAX_FILES = 10;
+const MAX_FILE_SIZE_MB = 5
+const MAX_FILES = 10
 
-const MAX_HEIGHT = 1440;
-const MAX_WIDTH = 2560;
+const MAX_HEIGHT = 1440
+const MAX_WIDTH = 2560
 
 export {
   ITEMS_PER_PAGE_OPTIONS,
@@ -12,4 +12,4 @@ export {
   MAX_FILES,
   MAX_HEIGHT,
   MAX_WIDTH,
-};
+}

@@ -1,58 +1,62 @@
-import { useEffect, useState } from 'react';
-import { Box, Button, TextField, Typography, Link } from '@mui/material';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-
-import { useAuth } from '@/hooks';
-import { SmallLoadingCircle } from '@/components';
-
+import { SmallLoadingCircle } from '@/components'
 import {
-  SignInUpContainer,
   SignInUpCard,
+  SignInUpContainer,
   TurnstileClient,
-} from '@/components/SignInUp';
+} from '@/components/SignInUp'
+import { useAuth } from '@/hooks'
+import { asyncHandler } from '@/utils'
+import { Box, Button, Link, TextField, Typography } from '@mui/material'
 
-const LoginPage = () => {
-  const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const { loginHandler, loading } = useAuth(setError);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import { toast } from 'sonner'
+
+function LoginPage() {
+  const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+  const { loginHandler, loading } = useAuth(setError)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
     username: '',
     password: '',
-  });
-  const [turnstileStatus, setTurnstileStatus] =
-    useState<TurnstileStatus>('loading');
+  })
+  const [turnstileStatus, setTurnstileStatus]
+    = useState<TurnstileStatus>('loading')
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault()
 
-    const success = await loginHandler(username, password, setValidationErrors);
+    const success = await loginHandler(username, password, setValidationErrors)
     if (success) {
-      toast.success('登录成功');
-      navigate('/');
+      toast.success('登录成功')
+      await navigate('/')
     }
-  };
+  }
 
   useEffect(() => {
-    if (error) toast.error(error);
-  }, [error]);
+    if (error !== null)
+      toast.error(error)
+  }, [error])
 
   return (
     <SignInUpContainer>
       <SignInUpCard>
         <Typography
-          variant='h4'
-          component='h1'
-          align='center'
+          variant="h4"
+          component="h1"
+          align="center"
           sx={{ fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
         >
           登录
         </Typography>
         <Box
-          component='form'
-          onSubmit={handleLogin}
+          component="form"
+          onSubmit={asyncHandler(async (event_: React.FormEvent<HTMLFormElement>) => {
+            await handleLogin(event_)
+          })}
           noValidate
           sx={{
             display: 'flex',
@@ -62,55 +66,56 @@ const LoginPage = () => {
           }}
         >
           <TextField
-            label='用户名'
+            label="用户名"
             fullWidth
-            type='text'
+            type="text"
             value={username}
-            placeholder='peterAnteater'
-            onChange={(event) => setUsername(event.target.value)}
+            placeholder="peterAnteater"
+            onChange={event => setUsername(event.target.value)}
             error={Boolean(validationErrors.username)}
-            helperText={validationErrors.username || ' '}
+            helperText={validationErrors.username ?? ' '}
           />
           <TextField
-            label='密码'
+            label="密码"
             fullWidth
-            type='password'
-            placeholder='••••••'
+            type="password"
+            placeholder="••••••"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={event => setPassword(event.target.value)}
             error={Boolean(validationErrors.password)}
-            helperText={validationErrors.password || ' '}
+            helperText={validationErrors.password ?? ' '}
           />
           <TurnstileClient
             setTurnstileStatus={setTurnstileStatus}
             setError={setError}
           />
           <Button
-            type='submit'
+            type="submit"
             fullWidth
-            variant='contained'
-            color='primary'
+            variant="contained"
+            color="primary"
             disabled={loading || turnstileStatus !== 'success'}
             sx={{ mt: 2 }}
           >
-            {loading ? <SmallLoadingCircle text='登录中...' /> : '登录'}
+            {loading ? <SmallLoadingCircle text="登录中..." /> : '登录'}
           </Button>
         </Box>
         <Typography
           sx={{ mt: 2 }}
-          align='center'
+          align="center"
         >
-          没有账号？{' '}
+          没有账号？
+          {' '}
           <Link
-            href='/signup'
-            underline='hover'
+            href="/signup"
+            underline="hover"
           >
             立刻注册
           </Link>
         </Typography>
       </SignInUpCard>
     </SignInUpContainer>
-  );
-};
+  )
+}
 
-export default LoginPage;
+export default LoginPage

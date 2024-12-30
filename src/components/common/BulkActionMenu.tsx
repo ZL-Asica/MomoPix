@@ -1,37 +1,37 @@
-import { Menu, MenuItem, IconButton } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useState } from 'react';
-import { useToggle } from '@zl-asica/react';
+import { DeletePhotosDialog, MovePhotoDialog } from '@/components'
+import { asyncHandler, copyPhotoLinks } from '@/utils'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import { IconButton, Menu, MenuItem } from '@mui/material'
 
-import { copyPhotoLinks } from '@/utils';
-import { DeletePhotosDialog, MovePhotoDialog } from '@/components';
+import { useToggle } from '@zl-asica/react'
+import { useState } from 'react'
 
 interface BulkActionMenuProperties {
-  albumName: string;
-  selectedItems: Photo[];
+  albumName: string
+  selectedItems: Photo[]
 }
 
-const BulkActionMenu = ({
+function BulkActionMenu({
   albumName,
   selectedItems,
-}: BulkActionMenuProperties) => {
-  const [openMoveDialog, toggleMoveDialog] = useToggle();
-  const [openDeleteDialog, toggleDeleteDialog] = useToggle();
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+}: BulkActionMenuProperties) {
+  const [openMoveDialog, toggleMoveDialog] = useToggle()
+  const [openDeleteDialog, toggleDeleteDialog] = useToggle()
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchor(event.currentTarget);
-  };
+    setMenuAnchor(event.currentTarget)
+  }
 
   const handleMenuClose = () => {
-    setMenuAnchor(null);
-  };
+    setMenuAnchor(null)
+  }
 
   return (
     <>
       <IconButton
         onClick={handleMenuOpen}
-        aria-label='Bulk actions'
+        aria-label="Bulk actions"
       >
         <MoreVertIcon />
       </IconButton>
@@ -43,22 +43,30 @@ const BulkActionMenu = ({
       >
         <MenuItem onClick={toggleMoveDialog}>一键移动</MenuItem>
         <MenuItem
-          onClick={async () => await copyPhotoLinks(selectedItems, 'direct')}
+          onClick={asyncHandler(async () => {
+            await copyPhotoLinks(selectedItems, 'direct')
+          })}
         >
           复制图片链接
         </MenuItem>
         <MenuItem
-          onClick={async () => await copyPhotoLinks(selectedItems, 'html')}
+          onClick={asyncHandler(async () => {
+            await copyPhotoLinks(selectedItems, 'html')
+          })}
         >
           复制 HTML
         </MenuItem>
         <MenuItem
-          onClick={async () => await copyPhotoLinks(selectedItems, 'markdown')}
+          onClick={asyncHandler(async () => {
+            await copyPhotoLinks(selectedItems, 'markdown')
+          })}
         >
           复制 Markdown
         </MenuItem>
         <MenuItem
-          onClick={async () => await copyPhotoLinks(selectedItems, 'bbcode')}
+          onClick={asyncHandler(async () => {
+            await copyPhotoLinks(selectedItems, 'bbcode')
+          })}
         >
           复制 BBCode
         </MenuItem>
@@ -79,7 +87,7 @@ const BulkActionMenu = ({
         onClose={toggleDeleteDialog}
       />
     </>
-  );
-};
+  )
+}
 
-export default BulkActionMenu;
+export default BulkActionMenu

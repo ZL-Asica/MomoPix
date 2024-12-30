@@ -1,18 +1,18 @@
-import { fetchAPI } from '@/utils';
-import type { UpdateRequest } from '@/schemas';
-import { UpdateRequestSchema } from '@/schemas';
+import type { UpdateRequest } from '@/schemas'
+import { UpdateRequestSchema } from '@/schemas'
+import { fetchAPI } from '@/utils'
 
-const updateFiles = async (body: UpdateRequest): Promise<UserData> => {
+async function updateFiles(body: UpdateRequest): Promise<UserData> {
   // Validate the request body against the schema
-  const parsedBody = UpdateRequestSchema.parse(body);
+  const parsedBody = UpdateRequestSchema.parse(body)
 
   // Make API call
   const response = await fetchAPI<UserData>('/api/file', {
     method: 'PUT',
     body: JSON.stringify(parsedBody),
-  });
+  })
 
-  return response.data;
-};
+  return response.data
+}
 
-export default updateFiles;
+export default updateFiles

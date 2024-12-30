@@ -1,50 +1,63 @@
-import { useState } from 'react';
-import { Menu, MenuItem, IconButton } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useToggle } from '@zl-asica/react';
+import { DeletePhotosDialog, InputDialog, MovePhotoDialog } from '@/components'
+import { FloatingIconButton } from '@/components/ui'
+import { useFileUpdater, useUpdateUserData } from '@/hooks'
+import { useAuthStore } from '@/stores'
 
-import { useFileUpdater, useUpdateUserData } from '@/hooks';
-import { InputDialog, MovePhotoDialog, DeletePhotosDialog } from '@/components';
-import { useAuthStore } from '@/stores';
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import { IconButton, Menu, MenuItem } from '@mui/material'
+import { useToggle } from '@zl-asica/react'
 
-import { FloatingIconButton } from '@/components/ui';
+import { useState } from 'react'
 
 interface PhotoDropdownMenuProperties {
-  albumName: string;
-  photo: Photo;
+  albumName: string
+  photo: Photo
 }
 
-const PhotoDropdownMenu = ({
+function PhotoDropdownMenu({
   albumName,
   photo,
-}: PhotoDropdownMenuProperties) => {
-  const { updateAlbum } = useUpdateUserData();
-  const localLoading = useAuthStore((state) => state.localLoading);
-  const setLocalLoading = useAuthStore((state) => state.setLocalLoading);
+}: PhotoDropdownMenuProperties) {
+  const { updateAlbum } = useUpdateUserData()
+  const localLoading = useAuthStore(state => state.localLoading)
+  const setLocalLoading = useAuthStore(state => state.setLocalLoading)
 
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [renameDialogOpen, toggleRenameDialog] = useToggle();
-  const [openMoveDialog, toggleMoveDialog] = useToggle();
-  const [openDeleteDialog, toggleDeleteDialog] = useToggle();
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
+  const [renameDialogOpen, toggleRenameDialog] = useToggle()
+  const [openMoveDialog, toggleMoveDialog] = useToggle()
+  const [openDeleteDialog, toggleDeleteDialog] = useToggle()
 
-  const setThumbnail = async () => {
-    setLocalLoading('photoActions', true);
-    await updateAlbum(albumName, {
-      thumbnail: photo.url,
-    });
-    setLocalLoading('photoActions', false);
-    handleMenuClose();
-  };
-
-  const renamePhoto = useFileUpdater().renamePhoto;
+  const renamePhoto = useFileUpdater().renamePhoto
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchor(event.currentTarget);
-  };
+    setMenuAnchor(event.currentTarget)
+  }
 
   const handleMenuClose = () => {
-    setMenuAnchor(null);
-  };
+    setMenuAnchor(null)
+  }
+
+  const setThumbnail = async () => {
+    try {
+      setLocalLoading('photoActions', true)
+      await updateAlbum(albumName, {
+        thumbnail: photo.url,
+      })
+    }
+    catch (error) {
+      console.error('Failed to set thumbnail:', error)
+    }
+    finally {
+      setLocalLoading('photoActions', false)
+      handleMenuClose()
+    }
+  }
+
+  const handleSetThumbnail = () => {
+    setThumbnail().catch((error) => {
+      console.error('Unexpected error in handleSetThumbnail:', error)
+    })
+  }
 
   return (
     <>
@@ -55,13 +68,13 @@ const PhotoDropdownMenu = ({
         sx={{ position: 'absolute' }}
       >
         <IconButton
-          aria-label='options'
+          aria-label="options"
           onClick={handleMenuOpen}
-          size='small'
+          size="small"
           sx={{ p: 0 }}
-          disabled={localLoading['photoActions']}
+          disabled={localLoading.photoActions}
         >
-          <MoreVertIcon fontSize='small' />
+          <MoreVertIcon fontSize="small" />
         </IconButton>
       </FloatingIconButton>
 
@@ -71,26 +84,26 @@ const PhotoDropdownMenu = ({
         onClose={handleMenuClose}
       >
         <MenuItem
-          onClick={setThumbnail}
-          disabled={localLoading['photoActions']}
+          onClick={handleSetThumbnail}
+          disabled={localLoading.photoActions}
         >
           设置封面
         </MenuItem>
         <MenuItem
           onClick={toggleRenameDialog}
-          disabled={localLoading['photoActions']}
+          disabled={localLoading.photoActions}
         >
           重命名
         </MenuItem>
         <MenuItem
           onClick={toggleMoveDialog}
-          disabled={localLoading['photoActions']}
+          disabled={localLoading.photoActions}
         >
           移动
         </MenuItem>
         <MenuItem
           onClick={toggleDeleteDialog}
-          disabled={localLoading['photoActions']}
+          disabled={localLoading.photoActions}
         >
           删除
         </MenuItem>
@@ -98,11 +111,10 @@ const PhotoDropdownMenu = ({
       <InputDialog
         open={renameDialogOpen}
         onClose={toggleRenameDialog}
-        title='重命名'
-        inputLabel='新图片名称'
+        title="重命名"
+        inputLabel="新图片名称"
         handleSave={async (newName: string) =>
-          await renamePhoto(albumName, photo.id, newName)
-        }
+          renamePhoto(albumName, photo.id, newName)}
         defaultValue={photo.name}
       />
 
@@ -120,7 +132,7 @@ const PhotoDropdownMenu = ({
         onClose={toggleDeleteDialog}
       />
     </>
-  );
-};
+  )
+}
 
-export default PhotoDropdownMenu;
+export default PhotoDropdownMenu

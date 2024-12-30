@@ -1,52 +1,52 @@
+import { FloatingIconButton, LazyImage } from '@/components/ui'
+import { useAuthStore } from '@/stores'
+
+import { CheckBox, CheckBoxOutlineBlank } from '@mui/icons-material'
+
 import {
   Card,
-  CardMedia,
   CardContent,
-  Typography,
+  CardMedia,
   Checkbox,
-} from '@mui/material';
-import { CheckBoxOutlineBlank, CheckBox } from '@mui/icons-material';
+  Typography,
+} from '@mui/material'
 
-import PhotoDropdownMenu from './PhotoDropdownMenu';
-
-import { useAuthStore } from '@/stores';
-
-import { FloatingIconButton, LazyImage } from '@/components/ui';
+import PhotoDropdownMenu from './PhotoDropdownMenu'
 
 interface PhotoCardProperties {
-  photo: Photo;
-  albumName: string;
-  selected: boolean;
-  onSelect: () => void;
-  onClick: () => void;
+  photo: Photo
+  albumName: string
+  selected: boolean
+  onSelect: () => void
+  onClick: () => void
 }
 
-const PhotoCard = ({
+function PhotoCard({
   photo,
   albumName,
   selected,
   onSelect,
   onClick,
-}: PhotoCardProperties) => {
-  const localLoading = useAuthStore((state) => state.localLoading);
+}: PhotoCardProperties) {
+  const localLoading = useAuthStore(state => state.localLoading)
 
   return (
     <Card
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 2,
-        boxShadow: (theme) => theme.shadows[2],
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        'display': 'flex',
+        'flexDirection': 'column',
+        'borderRadius': 2,
+        'boxShadow': theme => theme.shadows[2],
+        'transition': 'transform 0.2s ease, box-shadow 0.2s ease',
         '&:hover': {
           transform: 'translateY(-5px)',
-          boxShadow: (theme) => theme.shadows[4],
+          boxShadow: theme => theme.shadows[4],
         },
-        width: '100%',
+        'width': '100%',
       }}
     >
       <CardMedia
-        component='div'
+        component="div"
         sx={{
           position: 'relative',
           height: { xs: 160, sm: 180 },
@@ -61,14 +61,14 @@ const PhotoCard = ({
 
         <FloatingIconButton
           onClick={onSelect}
-          disabled={localLoading['photoActions']}
+          disabled={localLoading.photoActions}
         >
           <Checkbox
             checked={selected}
-            icon={<CheckBoxOutlineBlank fontSize='small' />}
-            checkedIcon={<CheckBox fontSize='small' />}
+            icon={<CheckBoxOutlineBlank fontSize="small" />}
+            checkedIcon={<CheckBox fontSize="small" />}
             sx={{ p: 0 }}
-            disabled={localLoading['photoActions']}
+            disabled={localLoading.photoActions}
           />
         </FloatingIconButton>
 
@@ -87,7 +87,7 @@ const PhotoCard = ({
         }}
       >
         <Typography
-          variant='body2'
+          variant="body2"
           sx={{
             textAlign: 'center',
             wordBreak: 'break-word',
@@ -98,7 +98,7 @@ const PhotoCard = ({
         </Typography>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default PhotoCard;
+export default PhotoCard

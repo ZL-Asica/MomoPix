@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 const PhotoSchema = z.object({
   id: z.string(),
@@ -7,14 +7,14 @@ const PhotoSchema = z.object({
   lastModified: z.number(),
   uploadedAt: z.number(),
   name: z.string(),
-});
+})
 
 const AlbumSchema = z.object({
   name: z.string(),
   thumbnail: z.string().url(),
   createdAt: z.string().datetime(),
   photos: z.array(PhotoSchema),
-});
+})
 
 const UserDataSchema = z.object({
   uid: z.string(),
@@ -24,9 +24,9 @@ const UserDataSchema = z.object({
   photoURL: z.string().url().nullable(),
   createdAt: z.string().datetime(),
   albums: z.array(AlbumSchema),
-});
+})
 
-const weakUsernames = new Set(['admin', 'user']);
+const weakUsernames = new Set(['admin', 'user'])
 
 const usernameSchema = z
   .string()
@@ -35,20 +35,20 @@ const usernameSchema = z
   .regex(/^[\w\u4E00-\u9FA5-]+$/, {
     message: '用户名仅允许字母、数字、下划线、横杠和中文',
   })
-  .refine((user) => !weakUsernames.has(user), {
+  .refine(user => !weakUsernames.has(user), {
     message: '不要使用简易用户名',
-  });
+  })
 
 const passwordSchema = z
   .string()
   .min(8, '密码长度至少为 8 位')
   .max(50, '密码长度不能超过 50 位')
-  .refine((password) => /\d/.test(password), { message: '密码必须包含数字' })
-  .refine((password) => /[A-Z]/.test(password), {
+  .refine(password => /\d/.test(password), { message: '密码必须包含数字' })
+  .refine(password => /[A-Z]/.test(password), {
     message: '密码必须包含大写字母',
   })
-  .refine((password) => /[a-z]/.test(password), {
+  .refine(password => /[a-z]/.test(password), {
     message: '密码必须包含小写字母',
-  });
+  })
 
-export { UserDataSchema, usernameSchema, passwordSchema };
+export { passwordSchema, UserDataSchema, usernameSchema }

@@ -1,1 +1,1 @@
-export { default as generateUploadData } from './generateUploadData';
+export { default as generateUploadData } from './generateUploadData'

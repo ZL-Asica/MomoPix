@@ -1,17 +1,17 @@
-import { produce } from 'immer';
+import { produce } from 'immer'
 
-import { useCommonUtils } from './utils';
+import { useCommonUtils } from './utils'
 
-type AlbumOperations = {
-  addAlbum: (albumName: string) => Promise<void>;
+interface AlbumOperations {
+  addAlbum: (albumName: string) => Promise<void>
   updateAlbum: (
     albumName: string,
     updatedFields: Partial<Pick<Album, 'name' | 'thumbnail'>>
-  ) => Promise<void>;
-};
+  ) => Promise<void>
+}
 
-const useAlbumOperations = (): AlbumOperations => {
-  const { ensureUserData, updateUserData, userData } = useCommonUtils();
+function useAlbumOperations(): AlbumOperations {
+  const { ensureUserData, updateUserData, userData } = useCommonUtils()
 
   const addAlbum = async (albumName: string) => {
     const newAlbum: Album = {
@@ -19,41 +19,41 @@ const useAlbumOperations = (): AlbumOperations => {
       thumbnail: '',
       createdAt: new Date().toISOString(),
       photos: [],
-    };
+    }
 
-    ensureUserData();
+    ensureUserData()
 
-    const updatedAlbums = produce(userData!.albums || [], (draft) => {
-      draft.push(newAlbum);
-    });
+    const updatedAlbums = produce(userData!.albums ?? [], (draft) => {
+      draft.push(newAlbum)
+    })
 
     await updateUserData(
       { albums: updatedAlbums },
       `新增相册 ${albumName} 成功`,
-      `新增相册 ${albumName} 失败`
-    );
-  };
+      `新增相册 ${albumName} 失败`,
+    )
+  }
 
   const updateAlbum = async (
     albumName: string,
-    updatedFields: Partial<Pick<Album, 'name' | 'thumbnail'>>
+    updatedFields: Partial<Pick<Album, 'name' | 'thumbnail'>>,
   ) => {
-    ensureUserData();
-    const updatedAlbums = produce(userData!.albums || [], (draft) => {
-      const album = draft.find((album) => album.name === albumName);
+    ensureUserData()
+    const updatedAlbums = produce(userData!.albums ?? [], (draft) => {
+      const album = draft.find(album => album.name === albumName)
       if (album) {
-        Object.assign(album, updatedFields);
+        Object.assign(album, updatedFields)
       }
-    });
+    })
 
-    const successMessage =
-      'name' in updatedFields
+    const successMessage
+      = 'name' in updatedFields
         ? `相册 ${albumName} 已重命名`
-        : `相册 ${albumName} 封面已更新`;
-    await updateUserData({ albums: updatedAlbums }, successMessage);
-  };
+        : `相册 ${albumName} 封面已更新`
+    await updateUserData({ albums: updatedAlbums }, successMessage)
+  }
 
-  return { addAlbum, updateAlbum };
-};
+  return { addAlbum, updateAlbum }
+}
 
-export { useAlbumOperations };
+export { useAlbumOperations }

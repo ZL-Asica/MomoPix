@@ -1,9 +1,9 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material'
 
-const Footer = () => {
+function Footer() {
   return (
     <Box
-      component='footer'
+      component="footer"
       sx={{
         py: 2,
         px: 4,
@@ -12,13 +12,17 @@ const Footer = () => {
       }}
     >
       <Typography
-        variant='body2'
-        color='textSecondary'
+        variant="body2"
+        color="textSecondary"
       >
-        © {new Date().getFullYear()} MomoPix. 版权所有.
+        ©
+        {' '}
+        {new Date().getFullYear()}
+        {' '}
+        MomoPix. 版权所有.
       </Typography>
     </Box>
-  );
-};
+  )
+}
 
-export default Footer;
+export default Footer

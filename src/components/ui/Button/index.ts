@@ -1,1 +1,1 @@
-export { default as FloatingIconButton } from './FloatingIconButton';
+export { default as FloatingIconButton } from './FloatingIconButton'

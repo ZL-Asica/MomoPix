@@ -1,21 +1,21 @@
-import { Toaster } from 'sonner';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material';
+import { theme } from '@/utils'
+import { ThemeProvider } from '@mui/material'
+import { BrowserRouter as Router } from 'react-router-dom'
 
-import { theme } from '@/utils';
+import { Toaster } from 'sonner'
 
-const AppProviders = ({ children }: { children: React.ReactNode }) => {
+function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <Router>
       <ThemeProvider theme={theme}>
         <Toaster
           richColors
-          expand={true}
+          expand
         />
         {children}
       </ThemeProvider>
     </Router>
-  );
-};
+  )
+}
 
-export default AppProviders;
+export default AppProviders

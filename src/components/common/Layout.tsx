@@ -1,10 +1,10 @@
-import { Box } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import { Box } from '@mui/material'
+import { Outlet } from 'react-router-dom'
 
-import Header from './Header';
-import Footer from './Footer';
+import Footer from './Footer'
+import Header from './Header'
 
-const Layout = () => {
+function Layout() {
   return (
     <Box
       sx={{
@@ -13,12 +13,12 @@ const Layout = () => {
         minHeight: '100vh',
         margin: 0,
         padding: 0,
-        backgroundColor: (theme) => theme.palette.background.default,
+        backgroundColor: theme => theme.palette.background.default,
       }}
     >
       <Header />
       <Box
-        component='main'
+        component="main"
         sx={{
           flexGrow: 1,
           py: 4,
@@ -38,7 +38,7 @@ const Layout = () => {
       </Box>
       <Footer />
     </Box>
-  );
-};
+  )
+}
 
-export default Layout;
+export default Layout

@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles'
 
 // Define light and dark color schemes
 const lightPalette = {
@@ -18,7 +18,7 @@ const lightPalette = {
     primary: '#2d2d2d',
     secondary: '#4f4f4f',
   },
-};
+}
 
 const darkPalette = {
   primary: {
@@ -37,7 +37,7 @@ const darkPalette = {
     primary: '#f1f1f1',
     secondary: '#d0d0d0',
   },
-};
+}
 
 // Create the theme
 const theme = createTheme({
@@ -74,13 +74,13 @@ const theme = createTheme({
           fontWeight: 500,
         },
         contained: {
-          boxShadow: 'none',
+          'boxShadow': 'none',
           '&:hover': {
             boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
           },
         },
         outlined: {
-          borderWidth: '2px',
+          'borderWidth': '2px',
           '&:hover': {
             backgroundColor: 'rgba(0,0,0,0.04)',
           },
@@ -125,8 +125,8 @@ const theme = createTheme({
     MuiLink: {
       styleOverrides: {
         root: ({ theme }) => ({
-          color: theme.palette.primary.main,
-          textDecoration: 'none',
+          'color': theme.palette.primary.main,
+          'textDecoration': 'none',
           '&:hover': {
             textDecoration: 'underline',
           },
@@ -147,7 +147,7 @@ const theme = createTheme({
     MuiCardContent: {
       styleOverrides: {
         root: {
-          padding: '16px',
+          'padding': '16px',
           '&:last-child': {
             paddingBottom: '16px',
           },
@@ -175,10 +175,10 @@ const theme = createTheme({
     MuiMenuItem: {
       styleOverrides: {
         root: {
-          borderRadius: '8px',
-          margin: '4px 8px',
-          padding: '8px 16px',
-          transition: 'background-color 0.2s ease',
+          'borderRadius': '8px',
+          'margin': '4px 8px',
+          'padding': '8px 16px',
+          'transition': 'background-color 0.2s ease',
           '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.08)',
           },
@@ -186,6 +186,6 @@ const theme = createTheme({
       },
     },
   },
-});
+})
 
-export default theme;
+export default theme

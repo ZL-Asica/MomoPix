@@ -1,16 +1,16 @@
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material'
 
-const LoadingIndicator = () => {
+function LoadingIndicator() {
   return (
     <Box
-      display='flex'
-      justifyContent='center'
-      alignItems='center'
-      minHeight='100vh'
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="100vh"
     >
       <CircularProgress size={36} />
     </Box>
-  );
-};
+  )
+}
 
-export default LoadingIndicator;
+export default LoadingIndicator

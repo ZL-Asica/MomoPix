@@ -1,7 +1,6 @@
-import { zlAsicaTsReactConfig } from 'eslint-config-zl-asica';
+import antfu from '@antfu/eslint-config'
 
-export default [
-  ...zlAsicaTsReactConfig,
+export default antfu(
   {
     ignores: [
       'dist',
@@ -15,19 +14,14 @@ export default [
       'backend',
       'functions',
     ],
-  },
-  {
-    files: ['src/**/*.{ts,tsx}'],
-    languageOptions: {
-      ecmaVersion: 2020,
-      parserOptions: {
-        project: './tsconfig.app.json',
-        projectService: true,
-      },
+    react: true,
+    typescript: {
+      tsconfigPath: 'tsconfig.app.json',
     },
-    rules: {
-      'unicorn/filename-case': 'off',
-      'unicorn/no-array-for-each': 'off',
+    formatters: {
+      css: true,
+      html: true,
+      markdown: 'prettier',
     },
-  },
-];
+  }
+)

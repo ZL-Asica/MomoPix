@@ -1,11 +1,12 @@
-import { Box, TextField, IconButton, Typography } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { copyToClipboard } from '@zl-asica/react';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { asyncHandler } from '@/utils'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import { Box, IconButton, TextField, Typography } from '@mui/material'
+import { copyToClipboard } from '@zl-asica/react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
-const CopyableLinks = ({ photo }: { photo: Photo }) => {
-  const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
+function CopyableLinks({ photo }: { photo: Photo }) {
+  const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
 
   const links = [
     { label: '直达链接', value: photo.url },
@@ -15,7 +16,7 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
     },
     { label: 'Markdown', value: `![${photo.name}](${photo.url})` },
     { label: 'BBCode', value: `[img]${photo.url}[/img]` },
-  ];
+  ]
 
   return (
     <Box
@@ -26,7 +27,7 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
       }}
     >
       <Typography
-        variant='h6'
+        variant="h6"
         gutterBottom
         sx={{
           mb: 4,
@@ -35,7 +36,7 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
         图片链接
       </Typography>
 
-      {links.map((link) => (
+      {links.map(link => (
         <Box
           key={link.label}
           sx={{
@@ -55,17 +56,19 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
                   event_.target.select(), // Select the text when focused
               },
             }}
-            variant='outlined'
-            size='small'
+            variant="outlined"
+            size="small"
           />
           <IconButton
-            onClick={async () => {
-              await copyToClipboard(link.value, () => {
-                toast.success('已复制');
-                setCopiedLabel(link.label);
-                setTimeout(() => setCopiedLabel(null), 3000);
-              });
-            }}
+            onClick={
+              asyncHandler(async () => {
+                await copyToClipboard(link.value, () => {
+                  toast.success('已复制')
+                  setCopiedLabel(link.label)
+                  setTimeout(() => setCopiedLabel(null), 3000)
+                })
+              })
+            }
             aria-label={`Copy ${link.label}`}
           >
             <ContentCopyIcon
@@ -75,7 +78,7 @@ const CopyableLinks = ({ photo }: { photo: Photo }) => {
         </Box>
       ))}
     </Box>
-  );
-};
+  )
+}
 
-export default CopyableLinks;
+export default CopyableLinks

@@ -1,23 +1,23 @@
-import { Box, Divider, Modal, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from '@mui/icons-material/Close'
+import { Box, Divider, IconButton, Modal } from '@mui/material'
 
-import PhotoInfoAndActions from './PhotoActions';
-import CopyableLinks from './CopyableLinks';
-import ImageDisplay from './ImageDisplay';
+import CopyableLinks from './CopyableLinks'
+import ImageDisplay from './ImageDisplay'
+import PhotoInfoAndActions from './PhotoActions'
 
 interface SinglePhotoModalProperties {
-  albumName: string | null;
-  photo: Photo | null;
-  onClose: () => void;
+  albumName: string | null
+  photo: Photo | null
+  onClose: () => void
 }
 
-const SinglePhotoModal = ({
+function SinglePhotoModal({
   albumName,
   photo,
   onClose,
-}: SinglePhotoModalProperties) => {
-  if (!albumName) return null;
-  if (!photo) return null;
+}: SinglePhotoModalProperties) {
+  if (albumName === null || photo === null)
+    return null
 
   return (
     <Modal
@@ -39,19 +39,19 @@ const SinglePhotoModal = ({
           overflow: 'hidden',
           backgroundColor: 'background.paper',
           borderRadius: { xs: 0, sm: 3 },
-          boxShadow: (theme) => theme.shadows[5],
+          boxShadow: theme => theme.shadows[5],
         }}
       >
         {/* Close button */}
         <IconButton
           onClick={onClose}
           sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            zIndex: 10,
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            color: '#fff',
+            'position': 'absolute',
+            'top': 16,
+            'right': 16,
+            'zIndex': 10,
+            'backgroundColor': 'rgba(0, 0, 0, 0.4)',
+            'color': '#fff',
             '&:hover': {
               backgroundColor: 'rgba(0, 0, 0, 0.6)',
             },
@@ -96,7 +96,7 @@ const SinglePhotoModal = ({
         </Box>
       </Box>
     </Modal>
-  );
-};
+  )
+}
 
-export default SinglePhotoModal;
+export default SinglePhotoModal

@@ -1,5 +1,5 @@
-import { styled } from '@mui/material/styles';
-import { Box } from '@mui/material';
+import { Box } from '@mui/material'
+import { styled } from '@mui/material/styles'
 
 const ModalContainer = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -11,10 +11,10 @@ const ModalContainer = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.spacing(2),
   padding: theme.spacing(4),
-}));
+}))
 
 const DropzoneContainer = styled(Box, {
-  shouldForwardProp: (property) => property !== 'isDragging',
+  shouldForwardProp: property => property !== 'isDragging',
 })<{ isDragging: boolean }>(({ isDragging, theme }) => ({
   border: `2px dashed ${isDragging ? theme.palette.primary.dark : theme.palette.primary.main}`,
   borderRadius: theme.spacing(1),
@@ -24,14 +24,14 @@ const DropzoneContainer = styled(Box, {
   cursor: 'pointer',
   backgroundColor: isDragging ? 'rgba(245, 245, 245, 0.5)' : 'transparent', // Add background color when dragging
   transform: isDragging ? 'scale(1.05)' : 'scale(1)',
-}));
+}))
 
 const PreviewImage = styled('img')({
   width: '100%',
   height: '100%',
   objectFit: 'contain',
   borderRadius: 8,
-});
+})
 
 const PreviewContainer = styled(Box)(({ theme }) => ({
   width: 120,
@@ -43,6 +43,6 @@ const PreviewContainer = styled(Box)(({ theme }) => ({
   borderRadius: theme.spacing(1),
   overflow: 'hidden',
   backgroundColor: theme.palette.background.default,
-}));
+}))
 
-export { ModalContainer, DropzoneContainer, PreviewImage, PreviewContainer };
+export { DropzoneContainer, ModalContainer, PreviewContainer, PreviewImage }

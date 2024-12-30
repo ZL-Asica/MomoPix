@@ -1,10 +1,10 @@
-import { styled, Stack, Card } from '@mui/material';
+import { Card, Stack, styled } from '@mui/material'
 
 const SignInUpContainer = styled(Stack)(({ theme }) => ({
-  padding: theme.spacing(4),
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
+  'padding': theme.spacing(4),
+  'alignItems': 'center',
+  'justifyContent': 'center',
+  'position': 'relative',
   '&::before': {
     content: '""',
     display: 'block',
@@ -12,7 +12,7 @@ const SignInUpContainer = styled(Stack)(({ theme }) => ({
     inset: 0,
     zIndex: -1,
   },
-}));
+}))
 
 const SignInUpCard = styled(Card)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -32,6 +32,6 @@ const SignInUpCard = styled(Card)(({ theme }) => ({
       hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px
     `,
   }),
-}));
+}))
 
-export { SignInUpContainer, SignInUpCard };
+export { SignInUpCard, SignInUpContainer }

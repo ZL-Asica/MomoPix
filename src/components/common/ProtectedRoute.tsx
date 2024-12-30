@@ -1,56 +1,56 @@
-import type { ReactElement } from 'react';
-import { Navigate } from 'react-router-dom';
+import type { ReactElement } from 'react'
+import { useAuthStore } from '@/stores'
 
-import LoadingIndicator from './LoadingIndicator';
+import { Navigate } from 'react-router-dom'
 
-import { useAuthStore } from '@/stores';
+import LoadingIndicator from './LoadingIndicator'
 
 /**
  * Protects routes for authenticated users only.
  * Redirects to /signin if the user is not authenticated.
  */
-const ProtectedRoute = ({ children }: { children: ReactElement }) => {
-  const userData = useAuthStore((state) => state.userData);
-  const globalLoading = useAuthStore((state) => state.globalLoading);
+function ProtectedRoute({ children }: { children: ReactElement }) {
+  const userData = useAuthStore(state => state.userData)
+  const globalLoading = useAuthStore(state => state.globalLoading)
 
   if (globalLoading) {
-    return <LoadingIndicator />;
+    return <LoadingIndicator />
   }
 
   if (!userData) {
     return (
       <Navigate
-        to='/signin'
+        to="/signin"
         replace
       />
-    );
+    )
   }
 
-  return children;
-};
+  return children
+}
 
 /**
  * Protects routes for unauthenticated (guest) users only.
  * Redirects to / if the user is authenticated.
  */
-const GuestRoute = ({ children }: { children: ReactElement }) => {
-  const userData = useAuthStore((state) => state.userData);
-  const globalLoading = useAuthStore((state) => state.globalLoading);
+function GuestRoute({ children }: { children: ReactElement }) {
+  const userData = useAuthStore(state => state.userData)
+  const globalLoading = useAuthStore(state => state.globalLoading)
 
   if (globalLoading) {
-    return <LoadingIndicator />;
+    return <LoadingIndicator />
   }
 
   if (userData) {
     return (
       <Navigate
-        to='/'
+        to="/"
         replace
       />
-    );
+    )
   }
 
-  return children;
-};
+  return children
+}
 
-export { ProtectedRoute, GuestRoute };
+export { GuestRoute, ProtectedRoute }

@@ -1,11 +1,11 @@
-import { Box } from '@mui/material';
+import { Box } from '@mui/material'
 
 interface ImageDisplayProperties {
-  url: string;
-  alt: string;
+  url: string
+  alt: string
 }
 
-const ImageDisplay = ({ url, alt }: ImageDisplayProperties) => {
+function ImageDisplay({ url, alt }: ImageDisplayProperties) {
   return (
     <Box
       sx={{
@@ -27,7 +27,7 @@ const ImageDisplay = ({ url, alt }: ImageDisplayProperties) => {
         }}
       />
     </Box>
-  );
-};
+  )
+}
 
-export default ImageDisplay;
+export default ImageDisplay

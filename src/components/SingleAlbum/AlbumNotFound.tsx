@@ -1,12 +1,13 @@
-import { Box, Button, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { asyncHandler } from '@/utils'
+import { Box, Button, Typography } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
 
 interface AlbumNotFoundProperties {
-  albumName: string;
+  albumName: string
 }
 
-const AlbumNotFound = ({ albumName }: AlbumNotFoundProperties) => {
-  const navigate = useNavigate();
+function AlbumNotFound({ albumName }: AlbumNotFoundProperties) {
+  const navigate = useNavigate()
   return (
     <Box
       sx={{
@@ -19,7 +20,7 @@ const AlbumNotFound = ({ albumName }: AlbumNotFoundProperties) => {
     >
       <Typography
         sx={{ textAlign: 'center' }}
-        variant='h4'
+        variant="h4"
         gutterBottom
       >
         不存在的相册
@@ -27,16 +28,20 @@ const AlbumNotFound = ({ albumName }: AlbumNotFoundProperties) => {
         {albumName}
       </Typography>
       <Button
-        type='submit'
-        variant='contained'
-        color='primary'
+        type="submit"
+        variant="contained"
+        color="primary"
         sx={{ mt: 2 }}
-        onClick={() => navigate('/')}
+        onClick={
+          asyncHandler(async () => {
+            await navigate('/')
+          })
+        }
       >
         返回相册列表
       </Button>
     </Box>
-  );
-};
+  )
+}
 
-export default AlbumNotFound;
+export default AlbumNotFound

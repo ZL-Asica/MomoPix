@@ -1,36 +1,41 @@
-import { Box, Grid2 as Grid, Typography, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import AddIcon from '@mui/icons-material/Add';
-import { useToggle } from '@zl-asica/react';
+import { AlbumCard, CreateNewAlbumModal } from '@/components/Albums'
+import { useAuthStore } from '@/stores'
+import { asyncHandler } from '@/utils'
+import AddIcon from '@mui/icons-material/Add'
+import { Box, Button, Grid2 as Grid, Typography } from '@mui/material'
 
-import { useAuthStore } from '@/stores';
+import { useToggle } from '@zl-asica/react'
 
-import { AlbumCard, CreateNewAlbumModal } from '@/components/Albums';
+import { useNavigate } from 'react-router-dom'
 
-const AlbumsPage = () => {
-  const userData = useAuthStore((state) => state.userData);
-  const navigate = useNavigate();
+function AlbumsPage() {
+  const userData = useAuthStore(state => state.userData)
+  const navigate = useNavigate()
 
-  const [dialogOpen, toggleDialogOpen] = useToggle();
+  const [dialogOpen, toggleDialogOpen] = useToggle()
 
-  const albums = userData?.albums || [];
+  const albums = userData?.albums || []
 
-  if (!userData) navigate('/');
+  if (!userData) {
+    asyncHandler(async () => {
+      await navigate('/')
+    })
+  }
 
   return (
     <Box
-      mx='auto'
+      mx="auto"
       px={2}
       py={4}
     >
       {/* Page Title */}
       <Typography
-        variant='h4'
-        align='center'
+        variant="h4"
+        align="center"
         gutterBottom
         sx={{
           fontWeight: 'bold',
-          color: (theme) => theme.palette.primary.main,
+          color: theme => theme.palette.primary.main,
         }}
       >
         我的相簿
@@ -38,9 +43,9 @@ const AlbumsPage = () => {
 
       {/* Create album button */}
       <Box
-        display='flex'
-        justifyContent='space-between'
-        alignItems='center'
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
         marginBottom={3}
         sx={{
           flexWrap: 'wrap',
@@ -48,13 +53,17 @@ const AlbumsPage = () => {
         }}
       >
         <Typography
-          variant='subtitle1'
-          color='text.secondary'
+          variant="subtitle1"
+          color="text.secondary"
         >
-          共 {albums.length} 个相簿
+          共
+          {' '}
+          {albums.length}
+          {' '}
+          个相簿
         </Typography>
         <Button
-          variant='contained'
+          variant="contained"
           startIcon={<AddIcon />}
           onClick={toggleDialogOpen}
           sx={{
@@ -75,9 +84,9 @@ const AlbumsPage = () => {
           justifyContent: { xs: 'center', md: 'flex-start' },
         }}
       >
-        {albums.map((album, index) => (
+        {albums.map(album => (
           <AlbumCard
-            key={index}
+            key={album.name}
             album={album}
           />
         ))}
@@ -89,7 +98,7 @@ const AlbumsPage = () => {
         toggleDialogOpen={toggleDialogOpen}
       />
     </Box>
-  );
-};
+  )
+}
 
-export default AlbumsPage;
+export default AlbumsPage

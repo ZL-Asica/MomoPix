@@ -1,2 +1,2 @@
-export { default as TurnstileClient } from './TurnstileClient';
-export { SignInUpContainer, SignInUpCard } from './Styles';
+export { SignInUpCard, SignInUpContainer } from './Styles'
+export { default as TurnstileClient } from './TurnstileClient'

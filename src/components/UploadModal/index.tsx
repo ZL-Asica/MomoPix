@@ -1,47 +1,48 @@
-import { useState } from 'react';
-import { Modal, Grid2 as Grid, Box, Button } from '@mui/material';
+import { SelectAlbumDropdown } from '@/components/Albums'
+import { useFileUploader } from '@/hooks'
 
-import ModalHeader from './ModalHeader';
-import Dropzone from './Dropzone';
-import FilePreview from './FilePreview';
-import { ModalContainer } from './styles';
+import { useAuthStore } from '@/stores'
+import { asyncHandler } from '@/utils'
+import { Box, Button, Grid2 as Grid, Modal } from '@mui/material'
+import { useState } from 'react'
 
-import { useFileUploader } from '@/hooks';
-import { useAuthStore } from '@/stores';
+import Dropzone from './Dropzone'
+import FilePreview from './FilePreview'
 
-import { SelectAlbumDropdown } from '@/components/Albums';
+import ModalHeader from './ModalHeader'
+import { ModalContainer } from './styles'
 
 interface UploadModalProperties {
-  open: boolean;
-  onClose: () => void;
-  targetAlbum?: string;
+  open: boolean
+  onClose: () => void
+  targetAlbum?: string
 }
 
-const UploadModal = ({
+function UploadModal({
   open,
   onClose,
   targetAlbum = 'default',
-}: UploadModalProperties) => {
-  const localLoading = useAuthStore((state) => state.localLoading);
+}: UploadModalProperties) {
+  const localLoading = useAuthStore(state => state.localLoading)
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [selectedAlbum, setSelectedAlbum] = useState<string>(targetAlbum);
+  const [isDragging, setIsDragging] = useState(false)
+  const [selectedAlbum, setSelectedAlbum] = useState<string>(targetAlbum)
 
-  const { files, addFiles, deleteFile, renameFile, handleUpload } =
-    useFileUploader(selectedAlbum, onClose);
+  const { files, addFiles, deleteFile, renameFile, handleUpload }
+    = useFileUploader(selectedAlbum, onClose)
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      aria-labelledby='upload-modal-title'
+      aria-labelledby="upload-modal-title"
       sx={{
         margin: 8,
       }}
     >
       <ModalContainer>
         <ModalHeader
-          title='上传图片'
+          title="上传图片"
           onClose={onClose}
         />
         <SelectAlbumDropdown
@@ -62,39 +63,43 @@ const UploadModal = ({
         >
           {files.map(({ file, name }, index) => (
             <FilePreview
-              key={index}
+              key={`${name}-${file.lastModified}`}
               file={file}
               name={name}
               onDelete={() => deleteFile(index)}
-              onRename={(newName) => renameFile(index, newName)}
+              onRename={newName => renameFile(index, newName)}
             />
           ))}
         </Grid>
 
         <Box
-          display='flex'
-          justifyContent='space-between'
+          display="flex"
+          justifyContent="space-between"
           mt={3}
         >
           <Button
-            variant='contained'
-            color='primary'
-            onClick={handleUpload}
-            disabled={files.length === 0 || localLoading['upload']}
+            variant="contained"
+            color="primary"
+            onClick={
+              asyncHandler(async () => {
+                await handleUpload()
+              })
+            }
+            disabled={files.length === 0 || localLoading.upload}
           >
-            {localLoading['upload'] ? '上传中...' : '上传'}
+            {localLoading.upload ? '上传中...' : '上传'}
           </Button>
           <Button
-            variant='outlined'
+            variant="outlined"
             onClick={onClose}
-            disabled={localLoading['upload']}
+            disabled={localLoading.upload}
           >
             取消
           </Button>
         </Box>
       </ModalContainer>
     </Modal>
-  );
-};
+  )
+}
 
-export default UploadModal;
+export default UploadModal

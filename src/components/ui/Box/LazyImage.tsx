@@ -1,32 +1,32 @@
-import { useState } from 'react';
+import { useState } from 'react'
 
-import Skeleton from './Skeleton';
+import Skeleton from './Skeleton'
 
 interface LazyImageProperties {
-  src: string;
-  alt?: string;
-  errorPlaceholder?: string;
-  onClick?: () => void;
+  src: string
+  alt?: string
+  errorPlaceholder?: string
+  onClick?: () => void
 }
 
-const LazyImage = ({
+function LazyImage({
   src,
   alt = 'Image',
   errorPlaceholder = 'Load Failed',
   onClick,
-}: LazyImageProperties) => {
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState(false);
-  const [showSkeleton, setShowSkeleton] = useState(true);
+}: LazyImageProperties) {
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
+  const [showSkeleton, setShowSkeleton] = useState(true)
 
   const handleLoad = () => {
-    setLoaded(true);
-    setTimeout(() => setShowSkeleton(false), 300);
-  };
+    setLoaded(true)
+    setTimeout(() => setShowSkeleton(false), 300)
+  }
 
   return (
     <div
-      role='button'
+      role="button"
       tabIndex={0}
       style={{
         position: 'absolute',
@@ -37,16 +37,16 @@ const LazyImage = ({
       onClick={onClick}
       onKeyDown={(event_) => {
         if (event_.key === 'Enter' || event_.key === ' ') {
-          onClick?.();
+          onClick?.()
         }
       }}
     >
       {/* Skeleton Placeholder */}
       {showSkeleton && (
         <Skeleton
-          variant='rectangular'
-          width='100%'
-          height='100%'
+          variant="rectangular"
+          width="100%"
+          height="100%"
         />
       )}
 
@@ -56,8 +56,8 @@ const LazyImage = ({
         alt={alt}
         onLoad={handleLoad}
         onError={() => {
-          setError(true);
-          setShowSkeleton(false);
+          setError(true)
+          setShowSkeleton(false)
         }}
         style={{
           display: loaded && !error ? 'block' : 'none',
@@ -92,7 +92,7 @@ const LazyImage = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default LazyImage;
+export default LazyImage

@@ -1,26 +1,28 @@
-import type { SxProps, Theme } from '@mui/material';
-import { Box, IconButton } from '@mui/material';
-import type { MouseEventHandler, ReactNode } from 'react';
+import type { SxProps, Theme } from '@mui/material'
+import type { MouseEventHandler, ReactNode } from 'react'
+import { Box, IconButton } from '@mui/material'
 
 interface FloatingIconButtonProperties {
-  children: ReactNode;
-  onClick?: MouseEventHandler<HTMLElement>;
-  position?: { top?: number; right?: number; bottom?: number; left?: number };
-  background?: string;
-  size?: number;
-  disabled?: boolean;
-  sx?: SxProps<Theme>;
+  children: ReactNode
+  onClick?: MouseEventHandler<HTMLElement>
+  position?: { top?: number, right?: number, bottom?: number, left?: number }
+  background?: string
+  size?: number
+  disabled?: boolean
+  sx?: SxProps<Theme>
 }
 
-const FloatingIconButton = ({
+const defaultPosition = { top: 8, right: 8 }
+
+function FloatingIconButton({
   children,
   onClick,
-  position = { top: 8, right: 8 },
+  position = defaultPosition,
   background,
   size = 32,
   disabled = false,
   sx,
-}: FloatingIconButtonProperties) => {
+}: FloatingIconButtonProperties) {
   return (
     <Box
       sx={{
@@ -28,8 +30,8 @@ const FloatingIconButton = ({
         ...position,
         zIndex: 10,
         background:
-          background ||
-          ((theme) =>
+          (background ?? '')
+          || (theme =>
             theme.palette.mode === 'dark'
               ? 'rgba(0, 0, 0, 0.6)' // half-transparent black
               : 'rgba(255, 255, 255, 0.8)'), // half-transparent white
@@ -44,14 +46,14 @@ const FloatingIconButton = ({
     >
       <IconButton
         onClick={onClick}
-        size='small'
+        size="small"
         disabled={disabled}
         sx={{ p: 0 }}
       >
         {children}
       </IconButton>
     </Box>
-  );
-};
+  )
+}
 
-export default FloatingIconButton;
+export default FloatingIconButton

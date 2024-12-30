@@ -1,68 +1,69 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { SmallLoadingCircle, UploadModal } from '@/components'
+import { useAuthStore } from '@/stores'
+import { asyncHandler } from '@/utils'
 import {
   AccountBox as AccountBoxIcon,
   CloudUpload as CloudUploadIcon,
-  Logout as LogoutIcon,
   Login as LoginIcon,
+  Logout as LogoutIcon,
   PersonAdd as PersonAddIcon,
-} from '@mui/icons-material';
+} from '@mui/icons-material'
 import {
   AppBar,
-  Toolbar,
-  Typography,
+  Avatar,
   Box,
+  IconButton,
   Menu,
   MenuItem,
-  IconButton,
-  Avatar,
   Skeleton,
-} from '@mui/material';
-import { useClickOutside, useToggle } from '@zl-asica/react';
+  Toolbar,
+  Typography,
+} from '@mui/material'
+import { useClickOutside, useToggle } from '@zl-asica/react'
 
-import { SmallLoadingCircle, UploadModal } from '@/components';
-import { useAuthStore } from '@/stores';
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
-const Header = () => {
-  const userData = useAuthStore((state) => state.userData);
-  const localLoading = useAuthStore((state) => state.localLoading);
-  const logout = useAuthStore((state) => state.logout);
-  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
-  const [uploadModalOpen, toggleUploadModalOpen] = useToggle();
-  const menuReference = useRef(null);
-  const location = useLocation();
+function Header() {
+  const userData = useAuthStore(state => state.userData)
+  const localLoading = useAuthStore(state => state.localLoading)
+  const logout = useAuthStore(state => state.logout)
+  const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null)
+  const [uploadModalOpen, toggleUploadModalOpen] = useToggle()
+  const menuReference = useRef(null)
+  const location = useLocation()
 
   useClickOutside(menuReference, () => {
-    setAnchorElement(null);
-  });
+    setAnchorElement(null)
+  })
 
   useEffect(() => {
-    setAnchorElement(null);
-  }, [location]);
+    setAnchorElement(null)
+  }, [location])
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElement(event.currentTarget);
-  };
+    setAnchorElement(event.currentTarget)
+  }
 
   const handleMenuClose = () => {
-    setAnchorElement(null);
-  };
+    setAnchorElement(null)
+  }
 
   return (
     <AppBar
-      position='static'
-      color='primary'
+      position="static"
+      color="primary"
       sx={{ mb: 2, borderRadius: '0 0' }}
     >
       <Toolbar>
         {/* App Title */}
         <Typography
-          variant='h6'
-          component='div'
+          variant="h6"
+          component="div"
           sx={{ flexGrow: 1, color: 'white' }}
         >
           <Link
-            to='/'
+            to="/"
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
             MomoPix
@@ -71,17 +72,17 @@ const Header = () => {
 
         {/* User Actions */}
         <Box
-          display='flex'
-          alignItems='center'
+          display="flex"
+          alignItems="center"
           gap={1.5}
         >
           {userData && (
             <IconButton
-              size='large'
-              color='inherit'
+              size="large"
+              color="inherit"
               onClick={toggleUploadModalOpen}
               sx={{
-                transition: '0.2s',
+                'transition': '0.2s',
                 '&:hover': { color: 'secondary.main' },
               }}
             >
@@ -89,40 +90,42 @@ const Header = () => {
             </IconButton>
           )}
           <IconButton
-            size='large'
-            color='inherit'
-            aria-controls='menu-appbar'
-            aria-haspopup='true'
+            size="large"
+            color="inherit"
+            aria-controls="menu-appbar"
+            aria-haspopup="true"
             onClick={handleMenuOpen}
-            sx={{ transition: '0.2s', '&:hover': { color: 'secondary.main' } }}
+            sx={{ 'transition': '0.2s', '&:hover': { color: 'secondary.main' } }}
           >
-            {localLoading['logout'] ? (
-              <Skeleton
-                variant='circular'
-                animation='wave'
-                width={40}
-                height={40}
-              />
-            ) : (
-              <Avatar
-                src={userData?.photoURL ?? undefined}
-                alt={userData?.displayName || 'U'}
-                sx={{
-                  bgcolor: userData?.photoURL
-                    ? 'transparent'
-                    : 'secondary.main',
-                }}
-              >
-                {userData?.displayName?.charAt(0).toUpperCase() || ''}
-              </Avatar>
-            )}
+            {localLoading.logout
+              ? (
+                  <Skeleton
+                    variant="circular"
+                    animation="wave"
+                    width={40}
+                    height={40}
+                  />
+                )
+              : (
+                  <Avatar
+                    src={userData?.photoURL ?? undefined}
+                    alt={userData?.displayName ?? 'U'}
+                    sx={{
+                      bgcolor: (userData?.photoURL ?? '')
+                        ? 'transparent'
+                        : 'secondary.main',
+                    }}
+                  >
+                    {userData?.displayName?.charAt(0).toUpperCase() ?? ''}
+                  </Avatar>
+                )}
           </IconButton>
         </Box>
 
         {/* User Menu */}
         <Menu
           ref={menuReference}
-          id='menu-appbar'
+          id="menu-appbar"
           anchorEl={anchorElement}
           anchorOrigin={{
             vertical: 'bottom',
@@ -140,38 +143,42 @@ const Header = () => {
           {userData
             ? [
                 <MenuItem
-                  key='profile'
+                  key="profile"
                   component={Link}
-                  to='/profile'
+                  to="/profile"
                 >
                   <AccountBoxIcon sx={{ mr: 1 }} />
                   个人资料
                 </MenuItem>,
                 <MenuItem
-                  key='logout'
-                  onClick={async () => await logout()}
+                  key="logout"
+                  onClick={asyncHandler(async () => {
+                    await logout()
+                  })}
                 >
                   <LogoutIcon sx={{ mr: 1 }} />
-                  {localLoading['logout'] ? (
-                    <SmallLoadingCircle text='登出中...' />
-                  ) : (
-                    '登出'
-                  )}
+                  {localLoading.logout
+                    ? (
+                        <SmallLoadingCircle text="登出中..." />
+                      )
+                    : (
+                        '登出'
+                      )}
                 </MenuItem>,
               ]
             : [
                 <MenuItem
-                  key='signin'
+                  key="signin"
                   component={Link}
-                  to='/signin'
+                  to="/signin"
                 >
                   <LoginIcon sx={{ mr: 1 }} />
                   登录
                 </MenuItem>,
                 <MenuItem
-                  key='signup'
+                  key="signup"
                   component={Link}
-                  to='/signup'
+                  to="/signup"
                 >
                   <PersonAddIcon sx={{ mr: 1 }} />
                   注册
@@ -186,7 +193,7 @@ const Header = () => {
         onClose={toggleUploadModalOpen}
       />
     </AppBar>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

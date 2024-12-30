@@ -1,11 +1,11 @@
-import { fetchAPI } from '@/utils';
+import { fetchAPI } from '@/utils'
 
-const usersPut = async (body: Partial<UserData>): Promise<UserData> => {
+async function usersPut(body: Partial<UserData>): Promise<UserData> {
   const response = await fetchAPI<UserData>('/api/users', {
     method: 'PUT',
     body: JSON.stringify(body),
-  });
-  return response.data;
-};
+  })
+  return response.data
+}
 
-export { usersPut };
+export { usersPut }
