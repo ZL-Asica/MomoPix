@@ -21,7 +21,7 @@ interface UploadModalProperties {
 function UploadModal({
   open,
   onClose,
-  targetAlbum = 'default',
+  targetAlbum = 'Default',
 }: UploadModalProperties) {
   const localLoading = useAuthStore(state => state.localLoading)
 
