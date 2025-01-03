@@ -22,23 +22,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IGNORED: |
-            yarn.lock
+            pnpm-lock.yaml
             package-lock.json
+            .yarn/*
+            yarn.lock
             .pnp.*
             dist/**
             build/**
             .cache/**
 
         with:
-          sizes: >
-            {
-              "0": "XS",
-              "50": "S",
-              "150": "M",
-              "500": "L",
-              "1000": "XL",
-              "3000": "XXL"
-            }
+          sizes: '{"0": "XS", "20": "S", "50": "M", "200": "L", "800": "XL", "2000": "XXL"}'
 
       - name: Set label colors
         uses: actions/github-script@v7
@@ -54,32 +48,26 @@ jobs:
               XXL: 'e99695', // Light coral
             };
 
-            const sizeLabel = "${{ steps.size-label.outputs.sizeLabel }}";
+            const sizeLabel = ${{ steps.size-label.outputs.sizeLabel }};
+            const color = labelsToColor[sizeLabel];
+
             if (sizeLabel) {
-              const color = labelsToColor[sizeLabel] || 'b0b0b0'; // Default to gray
               try {
-                // Check if label exists
+                // Check if the label already exists
                 await github.rest.issues.getLabel({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   name: sizeLabel,
                 });
               } catch (error) {
-                // Create label if it doesn't exist
+                // If label doesn't exist, create it with the specified color
                 await github.rest.issues.createLabel({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   name: sizeLabel,
-                  color: color,
+                  color: color || 'b0b0b0', // Default to gray if no color is found
                 });
               }
-              // Add the label to the PR
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: [sizeLabel],
-              });
             }
 
       - name: Comment on large PRs
@@ -92,5 +80,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: "This PR is too large and may need to be broken into smaller pieces. Consider refactoring for better maintainability. 💡"
+              body: "This PR is too large and may need to be broken into smaller pieces."
             });
