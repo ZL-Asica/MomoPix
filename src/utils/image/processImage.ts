@@ -8,8 +8,9 @@ import compressImage from './compressImage'
 function hasAlphaChannel(imgBitmap: ImageBitmap): boolean {
   const canvas = new OffscreenCanvas(imgBitmap.width, imgBitmap.height)
   const context = canvas.getContext('2d')
-  if (!context)
+  if (!context) {
     throw new Error('Failed to get canvas context')
+  }
 
   context.drawImage(imgBitmap, 0, 0)
   const imageData = context.getImageData(

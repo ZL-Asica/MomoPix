@@ -26,8 +26,9 @@ function Profile() {
 
   // Stats
   const stats = useMemo(() => {
-    if (!userData)
+    if (!userData) {
       return { albums: 0, photos: 0, totalSize: 0, oldest: null, newest: null }
+    }
 
     const albums = userData.albums.length
     const photos = userData.albums.reduce(

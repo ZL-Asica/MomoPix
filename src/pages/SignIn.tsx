@@ -37,8 +37,9 @@ function LoginPage() {
   }
 
   useEffect(() => {
-    if (error !== null)
+    if (error !== null) {
       toast.error(error)
+    }
   }, [error])
 
   return (

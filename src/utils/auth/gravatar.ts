@@ -22,8 +22,9 @@ async function fetchGravatarProfile(email: string): Promise<{ displayName?: stri
 
   try {
     const response = await fetch(profileUrl)
-    if (!response.ok)
+    if (!response.ok) {
       throw new Error('Profile not found')
+    }
 
     const data = await response.json() as { entry: { displayName?: string, thumbnailUrl?: string }[] }
     const profile = data.entry[0]

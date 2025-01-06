@@ -22,8 +22,9 @@ const SelectionBox: React.FC<SelectionBoxProperties> = ({
   end,
   color = '#0078d7', // Default base color
 }) => {
-  if (!start || !end)
+  if (!start || !end) {
     return null
+  }
 
   const left = Math.min(start.x, end.x)
   const top = Math.min(start.y, end.y)

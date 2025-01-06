@@ -37,8 +37,9 @@ function useCommonUtils(): CommonUtils {
     setLocalLoading('userData', true)
     try {
       const response = await usersPut(updatedData)
-      if (response.albums === undefined)
+      if (response.albums === undefined) {
         throw new Error('Invalid user data response')
+      }
 
       setUserData(response)
       toast.success(successMessage)

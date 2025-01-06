@@ -16,8 +16,9 @@ function SinglePhotoModal({
   photo,
   onClose,
 }: SinglePhotoModalProperties) {
-  if (albumName === null || photo === null)
+  if (albumName === null || photo === null) {
     return null
+  }
 
   return (
     <Modal

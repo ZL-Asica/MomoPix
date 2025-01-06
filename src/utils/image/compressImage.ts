@@ -100,8 +100,9 @@ async function compressImage(imgBitmap: ImageBitmap, originalSize: number, remov
 
   const offscreenCanvas = new OffscreenCanvas(width, height)
   const context = offscreenCanvas.getContext('2d')
-  if (!context)
+  if (!context) {
     throw new Error('Failed to get canvas context')
+  }
 
   context.drawImage(imgBitmap, 0, 0, width, height)
 

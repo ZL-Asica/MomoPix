@@ -40,8 +40,9 @@ function MovePhotoDialog({
 
   const handleMovePhoto = async () => {
     // Prevent moving if no album is selected
-    if (!targetAlbum)
+    if (!targetAlbum) {
       return
+    }
     setLocalLoading('photoActions', true)
     await Promise.all(
       photo.map(async photo => movePhoto(albumName, targetAlbum, photo.id)),

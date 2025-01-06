@@ -24,8 +24,9 @@ function getCoordinates(event: MouseEvent | TouchEvent): { x: number, y: number 
 
 // Utility function to avoid text input / textarea / select / button elements
 function isInputElement(element: HTMLElement | null): boolean {
-  if (!element)
+  if (!element) {
     return false
+  }
   const tagName = element.tagName
   return (
     tagName === 'INPUT'
@@ -57,8 +58,9 @@ function SelectableContainer<T,>({
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       const isCtrlOrCommand = event.ctrlKey || event.metaKey
-      if (isInputElement(event.target as HTMLElement))
+      if (isInputElement(event.target as HTMLElement)) {
         return
+      }
 
       // Select All (Ctrl+A or Command+A)
       if (isCtrlOrCommand && event.key === 'a' && !event.shiftKey) {
@@ -85,8 +87,9 @@ function SelectableContainer<T,>({
   }, [items, selectedItems, onSelectionChange])
 
   const handleStart = (event: React.MouseEvent | React.TouchEvent) => {
-    if (isInputElement(event.target as HTMLElement))
+    if (isInputElement(event.target as HTMLElement)) {
       return
+    }
 
     event.preventDefault()
     const { x, y } = getCoordinates(event.nativeEvent)
@@ -117,8 +120,9 @@ function SelectableContainer<T,>({
 
       const selected = items.filter((item) => {
         const element = itemSelector(item)
-        if (!element)
+        if (!element) {
           return false
+        }
 
         const rect = element.getBoundingClientRect()
         return !(
@@ -137,8 +141,9 @@ function SelectableContainer<T,>({
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     const isCtrlOrCommand = event.ctrlKey || event.metaKey
-    if (isInputElement(event.target as HTMLElement))
+    if (isInputElement(event.target as HTMLElement)) {
       return
+    }
 
     // Detect Ctrl+A or Command+A (Select All)
     if (isCtrlOrCommand && event.key === 'a' && !event.shiftKey) {
