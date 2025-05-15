@@ -1,6 +1,0 @@
-export { default as DeleteFiles } from './deleteFiles'
-export { default as login } from './login'
-export { default as register } from './register'
-export { default as UpdateFiles } from './updateFiles'
-export { default as UploadFiles } from './uploadFiles'
-export { usersPut } from './users'
