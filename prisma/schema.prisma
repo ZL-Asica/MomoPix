@@ -1,0 +1,47 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model accounts {
+  id                 String                 @id
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Unsupported("number")?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  oauth_token_secret String?
+  oauth_token        String?
+}
+
+model sessions {
+  id           String
+  sessionToken String   @id
+  userId       String
+  expires      DateTime
+}
+
+model users {
+  id            String    @id @default("")
+  name          String?
+  email         String?
+  emailVerified DateTime?
+  image         String?
+}
+
+model verification_tokens {
+  identifier  String
+  token       String    @id
+  expires     DateTime
+}

@@ -1,0 +1,22 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: MomoPix
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Zhuoran
+    family-names: Liu
+    orcid: 'https://orcid.org/0009-0008-7221-2324'
+    affiliation: Northwestern University
+repository-code: 'https://github.com/ZL-Asica/MomoPix'
+abstract: >-
+  MomoPix is a lightweight, easy-to-deploy image hosting
+  service.
+keywords:
+  - Image Hosting
+  - Next.js
+license: AGPL-3.0

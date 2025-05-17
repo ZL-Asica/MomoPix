@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "zignd.html-css-class-completion",
+    "yoavbls.pretty-ts-errors",
+    "meganrogge.template-string-converter",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-close-tag",
+    "naumovs.color-highlight",
+    "anseki.vscode-color",
+    "pranaygp.vscode-css-peek",
+    "bradlc.vscode-tailwindcss"
+  ]
+}
