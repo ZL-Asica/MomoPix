@@ -10,3 +10,8 @@ interface ImageFile {
   targetFormat?: string
   compressedSize?: number
 }
+
+interface ActionResponse {
+  success: boolean
+  message: string
+}

@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Overview
+
+This project, named MomoPix, a lightweight, flexible image hosting solution, is built using Next.js, TailwindCSS, TypeScript, ShadCN, Cloudflare D1, Cloudflare R2, Auth.js, and Prisma.
+
+# Project Structure
+
+- **components**: Contains reusable UI components.
+- **app**: Next.js app for routing.
+- **hooks**: Custom React hooks for state management.
+- **lib**: Custom utility functions.
+- **schemas**: Zod Schema.
+- **types**: Global type declare.
+
+# Development Guidelines
+
+- Use TypeScript for type safety.
+- Follow the coding standards defined in the ESLint configuration.
+- Ensure all components are responsive and accessible.
+- Prefer `const` component rather than `function`. For pages and layout prefer `function` component.
+- Use Tailwind CSS for styling, ShadCN for UI, adhering to the defined color palette.
+
+# Important Scripts
+
+- `dev`: Starts the development server.
+- `build`: Builds the application for production.
+
+# AI Interaction Guidelines
+
+- When generating code, prioritize TypeScript and React best practices.
+- Ensure that any new components are reusable and follow the existing design patterns.
+- Minimize the use of AI generated comments, instead use clearly named variables and functions.
+- Always validate user inputs and handle errors gracefully.
+- Use the existing components and pages as a reference for the new components and pages.
+
+# Additional Resources
+
+- [Next.js Documentation](mdc:https:/nextjs.org/docs)
+- [TypeScript Handbook](mdc:https:/www.typescriptlang.org/docs)
+- [Tailwind CSS Documentation](mdc:https:/tailwindcss.com/docs)
+- [React Documentation](mdc:https:/reactjs.org/docs/getting-started.html)
+- [Prisma Documentatio with Cloudflare D1](mdc:https:/www.prisma.io/docs/orm/overview/databases/cloudflare-d1)
+- [Cloudflare OpenNEXT Documentation](mdc:https:/opennext.js.org/cloudflare)

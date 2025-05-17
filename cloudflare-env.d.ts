@@ -4,9 +4,9 @@
 
 interface CloudflareEnv {
   DB: D1Database;
-  AUTH_SECRET: string;
   AUTH_RESEND_KEY: string;
   AUTH_EMAIL_FROM: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 declare namespace Cloudflare {

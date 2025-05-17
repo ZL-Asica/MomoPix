@@ -1,3 +1,5 @@
+@import './utilities.css';
+
 @theme static {
   /* Fade in down animation */
   --animate-fade-in-down: fade-in-down 0.6s ease-out;
