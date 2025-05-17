@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono, Noto_Sans_SC } from 'next/font/google'
+import { Toaster } from 'sonner'
+import { Footer, Header, ScrollPositionBar } from '@/components/layout'
 
 import './globals.css'
 
@@ -26,6 +28,8 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Momo Pix',
   description: 'Momo Pix',
+  // ! Remove this when the site is ready
+  robots: { index: false, follow: false },
 }
 
 export default function RootLayout({
@@ -38,7 +42,13 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${notoSansSC.variable} ${jetBrainsMono.variable} font-sans flex max-h-full min-h-screen flex-col antialiased`}
       >
-        {children}
+        <Toaster position="top-center" richColors />
+        <ScrollPositionBar />
+        <Header />
+        <main className="grow mt-20 px-4 sm:px-6 motion-safe:animate-mask-reveal">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   )
