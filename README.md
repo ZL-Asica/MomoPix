@@ -3,14 +3,9 @@
 > **MomoPix** 是一个轻量、易于搭建的个人图床工具，名字取自日语中的“桃 ( もも )”，意为“桃子”。
 > 基于 Cloudflare Pages, R2 作为储存空间，为你提供简洁、优雅的图床体验！🎉
 
-[![GitHub License][license-badge]][license-link]
-[![Node.js][node-badge]][node-link] |
-[![React][react-badge]][react-link]
-[![Vite][vite-badge]][vite-link] |
-[![Cloudflare][cloudflare-badge]][cloudflare-link]
-[![pnpm Version][pnpm-badge]][pnpm-link]
-[![Eslint][eslint-badge]][eslint-link]
-[![Prettier][prettier-badge]][prettier-link]
+[![GitHub License][license-badge]][license-link] [![Latest Release][release-badge]][release-link]
+
+[![Node.js][node-badge]][node-link] [![pnpm Version][pnpm-badge]][pnpm-link] | [![Next.js][nextjs-badge]][nextjs-link] [![Tailwind CSS][tailwind-badge]][tailwind-link] | [![Cloudflare][cloudflare-badge]][cloudflare-link] [![Eslint][eslint-badge]][eslint-link] [![Prettier][prettier-badge]][prettier-link]
 
 > 🚧 **本项目仍在开发中（重构中），部署文档尚未编写完成，请暂时勿用于生产环境。**
 
@@ -105,13 +100,15 @@ MomoPix/
 [eslint-link]: https://www.npmjs.com/package/eslint-config-zl-asica
 [license-badge]: https://img.shields.io/github/license/ZL-Asica/MomoPix
 [license-link]: https://github.com/ZL-Asica/MomoPix/blob/main/LICENSE
+[nextjs-badge]: https://img.shields.io/badge/Next.js-black?logo=next.js&logoColor=white
+[nextjs-link]: https://nextjs.org/
 [node-badge]: https://img.shields.io/badge/node%3E=18.18-339933?logo=node.js&logoColor=white
 [node-link]: https://nodejs.org/
 [pnpm-badge]: https://img.shields.io/github/package-json/packageManager/ZL-Asica/MomoPix?label=&logo=pnpm&logoColor=fff&color=F69220
 [pnpm-link]: https://pnpm.io/
 [prettier-badge]: https://img.shields.io/badge/Prettier-F7B93E?logo=Prettier&logoColor=white
 [prettier-link]: https://www.npmjs.com/package/@zl-asica/prettier-config
-[react-badge]: https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB
-[react-link]: https://react.dev/
-[vite-badge]: https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff
-[vite-link]: https://vite.dev/
+[release-badge]: https://img.shields.io/github/v/release/ZL-Asica/MomoPix?display_name=release&label=MomoPix&color=fc8da3
+[release-link]: https://github.com/ZL-Asica/MomoPix/releases
+[tailwind-badge]: https://img.shields.io/badge/Tailwind%20CSS-06B6D4?logo=tailwindcss&logoColor=white
+[tailwind-link]: https://tailwindcss.com/
