@@ -3,6 +3,8 @@
   "files.associations": {
     "wrangler.json": "jsonc"
   },
+  "tailwindCSS.experimental.configFile": "src/app/globals.css",
+  "tailwindCSS.classFunctions": ["tw", "clsx"],
   // Disable the default formatter, use eslint instead
   "prettier.enable": false,
   "editor.formatOnSave": false,
