@@ -18,20 +18,25 @@ interface HeaderMenuProps {
   onClickHandler?: () => void
 }
 
-const HeaderMenu = ({ isMobile, ulClassName, onClickHandler }: HeaderMenuProps) => {
+const HeaderMenu = ({
+  isMobile,
+  ulClassName,
+  // onClickHandler,
+}: HeaderMenuProps) => {
   const currentPath = usePathname()
   const { isDarkTheme, toggleTheme } = useTheme('momo-pix-theme-color', 7)
 
   const menuItems: MenuItem[] = [
     { href: '/', label: 'Home', icon: <House /> },
-    { href: '/images', label: 'Images', icon: <Images /> },
+    { href: '/', label: 'Images', icon: <Images /> },
+    // { href: '/images', label: 'Images', icon: <Images /> },
   ]
 
   return (
     <ul className={`gap-4 ${ulClassName}`}>
       {menuItems.map(item => (
         <HeaderMenuButton
-          key={item.href}
+          key={`header-menu-item-${item.href}-${item.label}`}
           isMobile={isMobile}
           currentPath={currentPath}
           href={item.href}
@@ -41,7 +46,10 @@ const HeaderMenu = ({ isMobile, ulClassName, onClickHandler }: HeaderMenuProps) 
       ))}
 
       {/* User Menu */}
-      <UserMenu isMobile={isMobile} onClickHandler={onClickHandler} />
+      <UserMenu
+        isMobile={isMobile}
+        // onClickHandler={onClickHandler}
+      />
 
       {/* Theme Switch */}
       <li className={`${isMobile ? 'mt-4 flex w-full justify-around' : 'flex justify-center gap-4'}`}>
@@ -51,7 +59,7 @@ const HeaderMenu = ({ isMobile, ulClassName, onClickHandler }: HeaderMenuProps) 
           aria-label="Toggle Theme"
           onClick={() => {
             toggleTheme()
-            onClickHandler && onClickHandler()
+            // onClickHandler && onClickHandler()
           }}
         >
           <span className="flex h-6 w-6 items-center justify-center transition-all-300 group-hover:scale-125 ">

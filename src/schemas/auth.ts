@@ -5,5 +5,5 @@ const turnstileTokenSchema = z.object({
 })
 
 export const signInSchema = turnstileTokenSchema.extend({
-  email: z.string().email().describe('The email address to sign in with'),
+  email: z.email().describe('The email address to sign in with'),
 })

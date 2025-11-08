@@ -11,6 +11,7 @@ export const checkImage = (
   file: File,
 ): {
   format: string
+  name: string
   originalSize: number
 } => {
   if (file.size > MAX_SIZE_LIMIT) {
@@ -18,6 +19,7 @@ export const checkImage = (
   }
   return {
     format: checkImageFormat(file),
+    name: file.name,
     originalSize: file.size,
   }
 }

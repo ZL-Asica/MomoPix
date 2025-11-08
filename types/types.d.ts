@@ -3,6 +3,7 @@ type SupportedFormat = 'avif' | 'webp' | 'jpeg' | 'png'
 interface ImageFile {
   id: string
   file: File
+  name: string
   preview: string
   format: string
   originalSize: number
@@ -14,4 +15,42 @@ interface ImageFile {
 interface ActionResponse {
   success: boolean
   message: string
+}
+
+interface ImageStats {
+  isTransformed: boolean
+  compressedSize: number | null
+  savedPercent: number // + - % the amount saved (or increased)
+  sizePercent: number // The size relative to original size
+  sourceFormat: string
+  targetFormat?: string
+  displayName: string
+  savedLabel: string
+  savedClassName: string
+}
+
+interface ImageListSummary {
+  totalCount: number
+  transformedCount: number
+  totalOriginalSize: number // Only calculate converted part
+  totalCompressedSize: number // Only calculate converted part
+  savedPercent: number // Based on the overall saved percentage of converted images
+  hasTransformed: boolean
+  progressDone: number
+  showProgress: boolean
+  progressPercent: number
+  ringPercent: number
+  ringPositive: boolean
+}
+
+interface QualityPreset {
+  min: number
+  max: number
+  note: string
+}
+
+interface QualityState {
+  label: string
+  description: string
+  intentClass: string
 }

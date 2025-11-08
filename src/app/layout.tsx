@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { SessionProvider } from 'next-auth/react'
 import { Inter, Noto_Sans_SC } from 'next/font/google'
 import { Toaster } from 'sonner'
 
@@ -39,13 +38,11 @@ export default function RootLayout({
       >
         <Toaster position="top-center" richColors />
         <ScrollPositionBar />
-        <SessionProvider>
-          <Header />
-          <main className="grow mt-24 px-4 sm:px-6 motion-safe:animate-mask-reveal">
-            {children}
-          </main>
-          <Footer />
-        </SessionProvider>
+        <Header />
+        <main className="grow mt-24 px-4 sm:px-6 motion-safe:animate-mask-reveal">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   )
