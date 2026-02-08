@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 const Footer = () => {
   return (
     <footer className="mb-2 mt-10 w-full">
@@ -11,25 +9,25 @@ const Footer = () => {
           {/* Please leave this credit intact. Really appreciate it! */}
           Powered by
           {' '}
-          <Link
+          <a
             href="https://github.com/ZL-Asica/MomoPix"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-all transition-all-300 underline decoration-dashed underline-offset-1 hover:underline-offset-4 hover:text-primary"
           >
             MomoPix
-          </Link>
+          </a>
           {' '}
           · Crafted by
           {' '}
-          <Link
+          <a
             href="https://zla.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-all transition-all-300 underline decoration-dashed underline-offset-1 hover:underline-offset-4 hover:text-primary"
           >
             ZL Asica
-          </Link>
+          </a>
         </p>
       </div>
     </footer>

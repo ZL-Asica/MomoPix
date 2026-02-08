@@ -1,5 +1,3 @@
-'use clinet'
-
 import { encode as encodeAVIF } from '@jsquash/avif'
 import { encode as encodeJPEG } from '@jsquash/jpeg'
 import { optimise as encodePNG } from '@jsquash/oxipng'

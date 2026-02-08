@@ -1,8 +1,6 @@
-'use client'
-
+import { useLocation } from '@tanstack/react-router'
 import { useTheme } from '@zl-asica/react'
 import { House, Images, Moon, Sun } from 'lucide-react'
-import { usePathname } from 'next/navigation'
 import HeaderMenuButton from './HeaderMenuButton'
 import UserMenu from './UserMenu'
 
@@ -21,9 +19,9 @@ interface HeaderMenuProps {
 const HeaderMenu = ({
   isMobile,
   ulClassName,
-  // onClickHandler,
+  onClickHandler,
 }: HeaderMenuProps) => {
-  const currentPath = usePathname()
+  const currentPath = useLocation().pathname
   const { isDarkTheme, toggleTheme } = useTheme('momo-pix-theme-color', 7)
 
   const menuItems: MenuItem[] = [
@@ -48,7 +46,7 @@ const HeaderMenu = ({
       {/* User Menu */}
       <UserMenu
         isMobile={isMobile}
-        // onClickHandler={onClickHandler}
+        onClickHandler={onClickHandler}
       />
 
       {/* Theme Switch */}
@@ -59,7 +57,7 @@ const HeaderMenu = ({
           aria-label="Toggle Theme"
           onClick={() => {
             toggleTheme()
-            // onClickHandler && onClickHandler()
+            onClickHandler && onClickHandler()
           }}
         >
           <span className="flex h-6 w-6 items-center justify-center transition-all-300 group-hover:scale-125 ">

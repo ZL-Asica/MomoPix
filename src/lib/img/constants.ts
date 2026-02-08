@@ -1,5 +1,7 @@
-export const MAX_SIZE_LIMIT = 10 * 1024 * 1024 // 10MB
+/** Maximum accepted upload size in bytes (10 MB). */
+export const MAX_SIZE_LIMIT = 10 * 1024 * 1024
 
+/** MIME types accepted for input images. */
 export const SUPPORTED_FORMAT_MIME_TYPES = [
   'image/apng',
   'image/avif',
@@ -12,3 +14,11 @@ export const SUPPORTED_FORMAT_MIME_TYPES = [
   'image/webp',
   'image/bmp',
 ]
+
+/** MIME type lookup by output format. */
+export const OUTPUT_MIME_TYPE_BY_FORMAT: Record<SupportedFormat, string> = {
+  avif: 'image/avif',
+  webp: 'image/webp',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+}

@@ -15,7 +15,6 @@ const ImagePreview = ({
 }: ImagePreviewProps) => {
   return (
     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-      {/* eslint-disable-next-line next/no-img-element */}
       <img
         src={image.preview}
         alt={`Preview of ${image.file.name}`}

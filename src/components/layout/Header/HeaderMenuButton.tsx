@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@tanstack/react-router'
 
 interface HeaderMenuButtonProps {
   isMobile: boolean
@@ -21,7 +21,7 @@ const HeaderMenuButton = ({
     <>
       <li className="group relative flex w-full items-center justify-center rounded-lg hover:bg-gray-light">
         <Link
-          href={href}
+          to={href}
           title={label}
           className={`relative flex w-full items-center gap-4 px-4 py-3 text-lg font-medium no-underline transition-all-300 group-hover:text-primary
                 ${href !== '/' && currentPath !== undefined && currentPath !== null && currentPath.startsWith(href) ? 'text-primary' : ''}
@@ -44,7 +44,7 @@ const HeaderMenuButton = ({
       {/* Mobile - Divider */}
       {isMobile && (
         <li className="w-full" aria-hidden>
-          <div className="h-[1px] w-full bg-gradient-to-r from-gray-light via-primary-300 to-gray-light" />
+          <div className="h-px w-full bg-linear-to-r from-gray-light via-primary-300 to-gray-light" />
         </li>
       )}
     </>

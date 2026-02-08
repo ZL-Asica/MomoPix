@@ -1,12 +1,13 @@
-'use client'
-
+import { createFileRoute } from '@tanstack/react-router'
 import JSZip from 'jszip'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { ImageList, ImageUploadArea, TransformControl } from '@/components/Home'
 import { useImageTransform } from '@/hooks'
 
-export default function HomePage() {
+export const Route = createFileRoute('/')({ component: HomePage })
+
+function HomePage() {
   const [downloadingAll, startDownloadingAll] = useTransition()
 
   const {
@@ -44,7 +45,6 @@ export default function HomePage() {
     startDownloadingAll(async () => {
       const zip = new JSZip()
 
-      // Only package transformed images
       const transformed = images.filter(img => img.transformed)
 
       if (transformed.length === 0) {

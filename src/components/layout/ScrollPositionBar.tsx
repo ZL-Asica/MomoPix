@@ -1,5 +1,3 @@
-'use client'
-
 import { useScrollPosition } from '@zl-asica/react'
 
 const ScrollPositionBar = () => {

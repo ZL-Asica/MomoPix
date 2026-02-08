@@ -1,11 +1,11 @@
 # MomoPix
 
 > **MomoPix** 是一个轻量、易于搭建的个人图床工具，名字取自日语中的“桃 ( もも )”，意为“桃子”。
-> 基于 Cloudflare Pages, R2 作为储存空间，为你提供简洁、优雅的图床体验！🎉
+> 基于 Cloudflare Worker, R2 作为储存空间，为你提供简洁、优雅的图床体验！🎉
 
 [![GitHub License][license-badge]][license-link] [![Latest Release][release-badge]][release-link]
 
-[![Node.js][node-badge]][node-link] [![pnpm Version][pnpm-badge]][pnpm-link] | [![Next.js][nextjs-badge]][nextjs-link] [![Tailwind CSS][tailwind-badge]][tailwind-link] | [![Cloudflare][cloudflare-badge]][cloudflare-link] [![Eslint][eslint-badge]][eslint-link] [![Prettier][prettier-badge]][prettier-link]
+[![Node.js][node-badge]][node-link] [![pnpm Version][pnpm-badge]][pnpm-link] | [![Tailwind CSS][tailwind-badge]][tailwind-link] | [![Cloudflare][cloudflare-badge]][cloudflare-link] [![Eslint][eslint-badge]][eslint-link] [![Prettier]
 
 > 🚧 **本项目仍在开发中（重构中），部署文档尚未编写完成，请暂时勿用于生产环境。**
 
@@ -21,7 +21,7 @@
 
 - **📂 快速上传**：支持拖拽上传，简洁明了的操作界面。
 - **🌐 多种格式链接**：一键复制直链、HTML、Markdown 或 BBCode 格式链接。
-- **🔒 安全**：基于 Cloudflare 的存储与 Cloudflare Pages Functions 框架，轻松部署，安全可靠。
+- **🔒 安全**：基于 Cloudflare 的 R2 存储与 Cloudflare Workers 框架，轻松部署，安全可靠。
 - **📸 相簿管理**：分类管理你的图片，自定义相簿名称与封面。
 - **🎨 自定义外观**：灵活的样式与主题支持，打造专属体验。
 
@@ -29,16 +29,13 @@
 
 ## 📦 技术栈
 
-- **前端**：
-  - [Next.js](https://nextjs.org/) ⚡
+- **核心**：
+  - [Tanstack Start](https://tanstack.com/start) ⚡
   - [Tailwind CSS](https://tailwindcss.com/) 🖌️
-- **后端**：
-  - [Next.js](https://nextjs.org/) ⚡
   - [Cloudflare](https://www.cloudflare.com/)：感谢大善人🙏
 - **开发工具**：
   - [pnpm](https://pnpm.io/) 🚀
   - [ESLint][eslint-link] 🔍
-  - [Prettier][prettier-link] 🎨
 
 ---
 
@@ -100,14 +97,10 @@ MomoPix/
 [eslint-link]: https://www.npmjs.com/package/eslint-config-zl-asica
 [license-badge]: https://img.shields.io/github/license/ZL-Asica/MomoPix
 [license-link]: https://github.com/ZL-Asica/MomoPix/blob/main/LICENSE
-[nextjs-badge]: https://img.shields.io/badge/Next.js-black?logo=next.js&logoColor=white
-[nextjs-link]: https://nextjs.org/
 [node-badge]: https://img.shields.io/badge/node%3E=18.18-339933?logo=node.js&logoColor=white
 [node-link]: https://nodejs.org/
 [pnpm-badge]: https://img.shields.io/github/package-json/packageManager/ZL-Asica/MomoPix?label=&logo=pnpm&logoColor=fff&color=F69220
 [pnpm-link]: https://pnpm.io/
-[prettier-badge]: https://img.shields.io/badge/Prettier-F7B93E?logo=Prettier&logoColor=white
-[prettier-link]: https://www.npmjs.com/package/@zl-asica/prettier-config
 [release-badge]: https://img.shields.io/github/v/release/ZL-Asica/MomoPix?display_name=release&label=MomoPix&color=fc8da3
 [release-link]: https://github.com/ZL-Asica/MomoPix/releases
 [tailwind-badge]: https://img.shields.io/badge/Tailwind%20CSS-06B6D4?logo=tailwindcss&logoColor=white

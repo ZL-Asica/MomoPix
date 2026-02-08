@@ -36,7 +36,10 @@ const ImageList = ({
         onDownloadAll={() => onDownloadAll(images)}
       />
 
-      <div className="space-y-4" role="list">
+      <div
+        className="space-y-4"
+        role="list"
+      >
         {images.map(image => (
           <ImageListItem
             key={image.id}

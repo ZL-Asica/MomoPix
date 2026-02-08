@@ -1,26 +1,26 @@
 {
   "name": "momo-pix",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.29.1",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "deploy": "pnpm run lint:fix && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "preview": "pnpm run lint:fix && opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "pnpm run build && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings ./cloudflare-env.d.ts",
     "prepare": "husky"
   },
   "dependencies": {
+    "@cloudflare/vite-plugin": "^1.23.1",
     "@jsquash/avif": "^2.1.0",
     "@jsquash/jpeg": "^1.6.0",
     "@jsquash/oxipng": "^2.3.0",
     "@jsquash/webp": "^1.5.0",
-    "@marsidev/react-turnstile": "^1.3.1",
-    "@opennextjs/cloudflare": "^1.0.3",
+    "@marsidev/react-turnstile": "^1.4.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "^2.1.8",
@@ -31,46 +31,55 @@
     "@radix-ui/react-slider": "^1.3.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
-    "@zl-asica/react": "^0.7.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/match-sorter-utils": "^8.19.4",
+    "@tanstack/react-devtools": "^0.9.5",
+    "@tanstack/react-form": "^1.28.0",
+    "@tanstack/react-router": "^1.159.3",
+    "@tanstack/react-router-devtools": "^1.159.3",
+    "@tanstack/react-router-ssr-query": "^1.159.3",
+    "@tanstack/react-start": "^1.159.3",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/router-plugin": "^1.159.3",
+    "@zl-asica/react": "^0.13.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.23.24",
+    "framer-motion": "^12.33.0",
     "jszip": "^3.10.1",
-    "lucide-react": "^0.553.0",
+    "lucide-react": "^0.563.0",
     "nanoid": "^5.1.6",
-    "next": "15.5.6",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-dropzone": "^14.3.8",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-dropzone": "^14.4.0",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.3.0",
-    "zod": "^4.1.12"
+    "tailwind-merge": "^3.4.0",
+    "vite-tsconfig-paths": "^6.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^6.2.0",
-    "@changesets/cli": "^2.29.7",
-    "@eslint-react/eslint-plugin": "^2.3.1",
-    "@next/eslint-plugin-next": "16.0.1",
-    "@tailwindcss/postcss": "^4.1.17",
+    "@antfu/eslint-config": "^7.3.0",
+    "@changesets/cli": "^2.29.8",
+    "@cloudflare/workers-types": "^4.20260207.0",
+    "@eslint-react/eslint-plugin": "^2.12.2",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@tanstack/devtools-vite": "^0.5.1",
     "@types/node": "^24.10.0",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "16.0.1",
-    "eslint-plugin-format": "^1.0.2",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.3",
+    "baseline-browser-mapping": "^2.9.19",
+    "eslint": "^10.0.0",
+    "eslint-plugin-format": "^1.4.0",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-react-refresh": "^0.5.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.6",
-    "prettier": "^3.6.2",
-    "tailwindcss": "^4.1.17",
+    "lint-staged": "^16.2.7",
+    "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
-    "wrangler": "^4.46.0"
-  },
-  "prettier": {
-    "semi": false,
-    "singleQuote": true
+    "vite": "^7.3.1",
+    "web-vitals": "^5.1.0",
+    "wrangler": "^4.63.0"
   },
   "browserslist": {
     "production": [
@@ -85,17 +94,8 @@
       "last 1 safari version"
     ]
   },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "19.2.2",
-      "@types/react-dom": "19.2.2"
-    }
-  },
   "lint-staged": {
-    "**/*.{md,mdx}": [
-      "prettier --write"
-    ],
-    "**/*.{js,jsx,ts,tsx,json,css,scss,less,styl,html,yml,mdx}": [
+    "**/*.{js,jsx,ts,tsx,json,css,scss,less,styl,html,yml,md,mdx}": [
       "eslint --fix"
     ]
   }

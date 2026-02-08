@@ -1,31 +1,25 @@
 {
   "compilerOptions": {
-    "incremental": true,
     "target": "ES2022",
-    "jsx": "preserve",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "module": "esnext",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "resolveJsonModule": true,
-    "types": [
-      "./cloudflare-env.d.ts",
-      "node"
-    ],
-    "allowJs": true,
+    "types": ["vite/client"],
+    "allowImportingTsExtensions": true,
     "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noEmit": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": false,
     "skipLibCheck": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "noUncheckedSideEffectImports": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/components/Home/TransformControl"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "vite.config.js"]
 }

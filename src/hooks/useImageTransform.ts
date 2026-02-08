@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { checkImage, encodeImage, loadImageFromFile } from '@/lib/img'
+import { checkImage, normalizeTransformError, transformImageFile } from '@/lib/img'
 
 const useImageTransform = () => {
   const [images, setImages] = useState<ImageFile[]>([])
@@ -38,43 +38,31 @@ const useImageTransform = () => {
     try {
       const updated: ImageFile[] = []
 
-      for (let i = 0; i < images.length; i++) {
-        const image = images[i]
+      for (let index = 0; index < images.length; index++) {
+        const image = images[index]
 
-        const imageData = await loadImageFromFile(image.file)
-        if (!imageData) {
-          throw new Error('Failed to load image')
-        }
-
-        const transformed = await encodeImage(
-          imageData,
+        const { blob } = await transformImageFile(
+          image.file,
           targetFormat,
           useManualQuality ? quality : undefined,
         )
 
-        const buffer
-          = transformed instanceof ArrayBuffer
-            ? transformed
-            : Uint8Array.from(transformed).buffer
-
         updated.push({
           ...image,
-          transformed: new Blob([buffer], { type: image.file.type }),
+          transformed: blob,
           targetFormat,
-          compressedSize: buffer.byteLength,
+          compressedSize: blob.size,
         })
 
-        setTransformedImageCount(i + 1)
+        setTransformedImageCount(index + 1)
       }
 
       setImages(updated)
       toast.success('Images transformed successfully')
     }
     catch (error: unknown) {
-      const errorMessage
-        = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Transform error:', errorMessage)
-      toast.error('Failed to transform images')
+      const normalized = normalizeTransformError(error)
+      toast.error('Failed to transform images', { description: normalized.message })
     }
     finally {
       setIsProcessing(false)

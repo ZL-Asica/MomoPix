@@ -1,18 +1,16 @@
-'use client'
-
+import { Link } from '@tanstack/react-router'
 import { useClickOutside, useHideOnScrollDown, useToggle } from '@zl-asica/react'
 import { Menu } from 'lucide-react'
-import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import HeaderMenu from './HeaderMenu'
 
 const Header = () => {
   const [isOpen, toggleOpen] = useToggle()
-  const menuReference = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
   const isHeaderVisible = useHideOnScrollDown(headerRef)
 
-  useClickOutside(menuReference, () => {
+  useClickOutside(menuRef, () => {
     if (isOpen) {
       toggleOpen()
     }
@@ -42,7 +40,7 @@ const Header = () => {
       <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 bg-background">
         {/* Logo */}
         <Link
-          href="/"
+          to="/"
           aria-label="Navigate to Home Page"
           className="transition-all-300 text-hover-primary text-2xl font-bold text-foreground no-underline"
         >
@@ -64,7 +62,7 @@ const Header = () => {
         {/* Mobile Menu */}
         <div
           id="mobile-menu"
-          ref={menuReference}
+          ref={menuRef}
           className={`transition-all-300 fixed right-0 top-0 z-50 h-screen w-1/2 bg-background shadow-lg md:hidden ${
             isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
           }`}

@@ -38,6 +38,19 @@ next-env.d.ts
 # OpenNext
 /.open-next
 
+# Vite
+dist
+dist-ssr
+*.local
+count.txt
+
+# Tanstack
+.nitro
+.tanstack
+.output
+.vinxi
+todos.json
+
 # wrangler files
 .wrangler
 .dev.vars*

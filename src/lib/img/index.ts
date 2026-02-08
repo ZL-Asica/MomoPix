@@ -1,3 +1,2 @@
 export { checkImage } from './checker'
-export { encodeImage } from './encoders'
-export { loadImageFromFile } from './loadImage'
+export { normalizeTransformError, transformImageFile } from './transform-client'
