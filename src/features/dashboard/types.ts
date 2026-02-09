@@ -1,8 +1,8 @@
-import type { AlbumImageRecord, AlbumRecord, StorageMeta } from '@/lib/storage/types'
+import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage/types'
 
 export interface DashboardState {
   albums: AlbumRecord[]
-  images: AlbumImageRecord[]
+  images: AlbumImageListItem[]
   meta: StorageMeta | null
   selectedAlbumId: string
 }
@@ -23,6 +23,6 @@ export interface MoveAlbumInput {
 }
 
 export interface MoveImageInput {
-  imageId: string
+  objectKey: string
   targetAlbumId: string
 }

@@ -26,15 +26,15 @@ export function albumKey(albumId: string): string {
 /**
  * Builds the KV key for a full image metadata record.
  */
-export function imageKey(imageId: string): string {
-  return `${STORAGE_KEYS.imagePrefix}${imageId}`
+export function imageKey(objectKey: string): string {
+  return `${STORAGE_KEYS.imagePrefix}${objectKey}`
 }
 
 /**
  * Builds the album-scoped image index key.
  */
-export function albumImageKey(albumId: string, imageId: string): string {
-  return `${STORAGE_KEYS.albumImagePrefix}${albumId}:${imageId}`
+export function albumImageKey(albumId: string, objectKey: string): string {
+  return `${STORAGE_KEYS.albumImagePrefix}${albumId}:${objectKey}`
 }
 
 /**

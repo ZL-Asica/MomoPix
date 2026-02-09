@@ -107,8 +107,8 @@ export async function recountUsage(kv: KVNamespace): Promise<StorageMeta> {
 /**
  * Checks whether a canonical image metadata row exists.
  */
-export async function hasImageRecord(kv: KVNamespace, imageId: string): Promise<boolean> {
-  const key = imageKey(imageId)
+export async function hasImageRecord(kv: KVNamespace, objectKey: string): Promise<boolean> {
+  const key = imageKey(objectKey)
   const raw = await kv.get(key)
   return raw !== null
 }

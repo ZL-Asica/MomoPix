@@ -39,19 +39,20 @@ function DashboardPage() {
     createAlbum,
     deleteImage,
     images,
+    imageUrlError,
     isUploading,
     meta,
     mobileSidebarOpen,
     moveAlbum,
     moveImage,
-    moveImageId,
-    pendingDeleteImageId,
+    moveImageObjectKey,
+    pendingDeleteObjectKey,
     renameAlbum,
     selectedAlbumId,
     setDefaultAlbum,
     setMobileSidebarOpen,
-    setMoveImageId,
-    setPendingDeleteImageId,
+    setMoveImageObjectKey,
+    setPendingDeleteObjectKey,
     setSelectedAlbumId,
     uploadFiles,
   } = useDashboardData()
@@ -60,11 +61,11 @@ function DashboardPage() {
 
   const { search, setSearch, table } = useImagesTable({
     images,
-    onMoveImage: (imageId) => {
-      setMoveImageId(imageId)
+    onMoveImage: (objectKey) => {
+      setMoveImageObjectKey(objectKey)
     },
-    onDeleteImage: (imageId) => {
-      setPendingDeleteImageId(imageId)
+    onDeleteImage: (objectKey) => {
+      setPendingDeleteObjectKey(objectKey)
     },
   })
 
@@ -145,22 +146,29 @@ function DashboardPage() {
           />
         </CardHeader>
         <CardContent>
+          {imageUrlError !== null && (
+            <p role="alert" className="mb-3 text-sm text-destructive">
+              Image preview URL error:
+              {' '}
+              {imageUrlError}
+            </p>
+          )}
           <ImagesTable table={table} />
         </CardContent>
       </Card>
 
       <MoveImageDialog
-        imageId={moveImageId}
+        objectKey={moveImageObjectKey}
         selectedAlbumId={selectedAlbumId}
         albums={albums}
         onMoveImage={moveImage}
-        onClose={() => setMoveImageId(null)}
+        onClose={() => setMoveImageObjectKey(null)}
       />
 
       <DeleteImageDialog
-        imageId={pendingDeleteImageId}
+        objectKey={pendingDeleteObjectKey}
         onDelete={deleteImage}
-        onCancel={() => setPendingDeleteImageId(null)}
+        onCancel={() => setPendingDeleteObjectKey(null)}
       />
 
       <AlbumDialogs

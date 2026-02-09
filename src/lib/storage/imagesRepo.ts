@@ -5,8 +5,8 @@ import { albumImageKey, albumImagePrefixForAlbum, imageKey, STORAGE_KEYS } from 
 /**
  * Loads the canonical image metadata row.
  */
-export async function getImageRecord(kv: KVNamespace, imageId: string): Promise<ImageRecord | null> {
-  return getJson<ImageRecord>(kv, imageKey(imageId))
+export async function getImageRecord(kv: KVNamespace, objectKey: string): Promise<ImageRecord | null> {
+  return getJson<ImageRecord>(kv, imageKey(objectKey))
 }
 
 /**
@@ -17,8 +17,8 @@ export async function putImageRecords(
   image: ImageRecord,
   albumImage: AlbumImageRecord,
 ): Promise<void> {
-  await putJson(kv, imageKey(image.id), image)
-  await putJson(kv, albumImageKey(albumImage.albumId, albumImage.imageId), albumImage)
+  await putJson(kv, imageKey(image.objectKey), image)
+  await putJson(kv, albumImageKey(albumImage.albumId, albumImage.objectKey), albumImage)
 }
 
 /**
@@ -40,8 +40,8 @@ export async function listAlbumImages(
  * Deletes canonical and album-index rows for one image.
  */
 export async function deleteImageRecords(kv: KVNamespace, image: ImageRecord): Promise<void> {
-  await deleteKey(kv, imageKey(image.id))
-  await deleteKey(kv, albumImageKey(image.albumId, image.id))
+  await deleteKey(kv, imageKey(image.objectKey))
+  await deleteKey(kv, albumImageKey(image.albumId, image.objectKey))
 }
 
 /**
@@ -57,11 +57,11 @@ export async function moveImageRecords(
     ...input.image,
     albumId: input.targetAlbumId,
     updatedAt: timestamp,
-    albumIndexKey: albumImageKey(input.targetAlbumId, input.image.id),
+    albumIndexKey: albumImageKey(input.targetAlbumId, input.image.objectKey),
   }
 
   const nextIndex: AlbumImageRecord = {
-    imageId: updatedImage.id,
+    objectKey: updatedImage.objectKey,
     albumId: input.targetAlbumId,
     name: updatedImage.storedName,
     nameLower: updatedImage.storedName.toLowerCase(),
@@ -70,12 +70,11 @@ export async function moveImageRecords(
     width: updatedImage.width,
     height: updatedImage.height,
     createdAt: updatedImage.createdAt,
-    r2Key: updatedImage.r2Key,
   }
 
-  await deleteKey(kv, albumImageKey(input.image.albumId, input.image.id))
-  await putJson(kv, imageKey(updatedImage.id), updatedImage)
-  await putJson(kv, albumImageKey(nextIndex.albumId, nextIndex.imageId), nextIndex)
+  await deleteKey(kv, albumImageKey(input.image.albumId, input.image.objectKey))
+  await putJson(kv, imageKey(updatedImage.objectKey), updatedImage)
+  await putJson(kv, albumImageKey(nextIndex.albumId, nextIndex.objectKey), nextIndex)
 
   return updatedImage
 }

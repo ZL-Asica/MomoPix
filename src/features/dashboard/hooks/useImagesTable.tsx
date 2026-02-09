@@ -1,5 +1,5 @@
 import type { ColumnDef, RowSelectionState, SortingState } from '@tanstack/react-table'
-import type { AlbumImageRecord } from '@/lib/storage/types'
+import type { AlbumImageListItem } from '@/lib/storage/types'
 import {
   flexRender,
   getCoreRowModel,
@@ -14,20 +14,24 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatBytes } from '@/lib/storage/format'
 
 interface UseImagesTableOptions {
-  images: AlbumImageRecord[]
-  onMoveImage: (imageId: string) => void
-  onDeleteImage: (imageId: string) => void
+  images: AlbumImageListItem[]
+  onMoveImage: (objectKey: string) => void
+  onDeleteImage: (objectKey: string) => void
 }
 
 /**
  * Configures TanStack Table state and columns for dashboard image browsing.
  */
-export function useImagesTable({ images, onMoveImage, onDeleteImage }: UseImagesTableOptions) {
+export function useImagesTable({
+  images,
+  onMoveImage,
+  onDeleteImage,
+}: UseImagesTableOptions) {
   const [search, setSearch] = useState('')
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
-  const columns = useMemo<ColumnDef<AlbumImageRecord>[]>(() => [
+  const columns = useMemo<ColumnDef<AlbumImageListItem>[]>(() => [
     {
       id: 'select',
       header: ({ table }) => (
@@ -53,12 +57,20 @@ export function useImagesTable({ images, onMoveImage, onDeleteImage }: UseImages
       id: 'preview',
       header: 'Preview',
       cell: ({ row }) => (
-        <img
-          src={`/i/${row.original.imageId}`}
-          alt={row.original.name}
-          className="h-12 w-12 rounded-md border object-cover"
-          loading="lazy"
-        />
+        row.original.publicUrl !== null
+          ? (
+              <img
+                src={row.original.publicUrl}
+                alt={row.original.name}
+                className="h-12 w-12 rounded-md border object-cover"
+                loading="lazy"
+              />
+            )
+          : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-md border text-[10px] text-muted-foreground">
+                URL ERR
+              </div>
+            )
       ),
       enableSorting: false,
       enableGlobalFilter: false,
@@ -105,16 +117,23 @@ export function useImagesTable({ images, onMoveImage, onDeleteImage }: UseImages
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => window.open(`/i/${row.original.imageId}`, '_blank', 'noopener,noreferrer')}
+              onClick={() => {
+                const url = row.original.publicUrl
+                if (url === null) {
+                  return
+                }
+                window.open(url, '_blank', 'noopener,noreferrer')
+              }}
+              disabled={row.original.publicUrl === null}
             >
               <UserRoundSearch className="mr-2 h-4 w-4" />
-              View
+              {row.original.publicUrl !== null ? 'View' : 'View (Unavailable)'}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onMoveImage(row.original.imageId)}>
+            <DropdownMenuItem onClick={() => onMoveImage(row.original.objectKey)}>
               <MoveRight className="mr-2 h-4 w-4" />
               Move
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDeleteImage(row.original.imageId)} className="text-destructive">
+            <DropdownMenuItem onClick={() => onDeleteImage(row.original.objectKey)} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>

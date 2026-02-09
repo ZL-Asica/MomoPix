@@ -134,6 +134,7 @@ Separate platform adapters from Momopix domain logic.
   - Keep Momopix repositories/services in domain modules (`src/lib/storage/*` today; `src/lib/momopix/*` if introduced).
   - Keep `createServerFn` handlers minimal: auth check, validation, call service/repo functions, map response.
   - Validate inputs before mutations.
+  - Treat `R2_PUBLIC_DOMAIN` as required for all runtimes (dev/prod) and build image URLs through shared helpers.
 - Don't:
   - Scatter raw `kv.get/put/list` and `bucket.get/put/delete` calls across UI/routes.
   - Encode domain naming/index rules in UI components.

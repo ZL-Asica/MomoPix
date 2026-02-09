@@ -48,7 +48,7 @@ export const listImagesSchema = z.object({
  * Payload schema for moving one image between albums.
  */
 export const moveImageSchema = z.object({
-  imageId: z.string().min(1),
+  objectKey: z.string().min(1),
   targetAlbumId: albumIdSchema,
 })
 
@@ -56,5 +56,5 @@ export const moveImageSchema = z.object({
  * Payload schema for deleting one image.
  */
 export const deleteImageSchema = z.object({
-  imageId: z.string().min(1),
+  objectKey: z.string().min(1),
 })

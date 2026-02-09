@@ -1,21 +1,28 @@
 import type { ImageSource } from '@/lib/storage/types'
-import { deleteObject, getObject, putObject } from '@/lib/cloudflare/r2'
+import { nanoid } from 'nanoid'
+import { deleteObject, putObject } from '@/lib/cloudflare/r2'
 
 function now(): Date {
   return new Date()
 }
 
 /**
- * Creates the canonical object key format `YYYY/MM/<nanoid8>.<ext>`.
+ * Builds the canonical R2 object key `YYYY/MM/DD/<nanoid8>.<ext>`.
  *
- * @param imageId Unique identifier for the image.
- * @param ext Normalized file extension for the image.
- * @param date Optional date source for deterministic tests.
+ * Uses UTC date components to keep key formatting consistent across regions.
+ *
+ * @param input Key builder input.
+ * @param input.ext Normalized file extension for the image.
+ * @param input.date Optional date source for deterministic tests.
  */
-export function createR2ObjectKey(imageId: string, ext: string, date = now()): string {
+export function buildR2ObjectKey(input: { ext: string, date?: Date }): string {
+  const { ext } = input
+  const date = input.date ?? now()
+  const objectId = nanoid(8)
   const year = date.getUTCFullYear()
   const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  return `${year}/${month}/${imageId}.${ext}`
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}/${month}/${day}/${objectId}.${ext}`
 }
 
 /**
@@ -27,7 +34,6 @@ export async function putImageObject(
     key: string
     bytes: ArrayBuffer
     mime: string
-    imageId: string
     albumId: string
     source: ImageSource
     uploadedAt: string
@@ -38,16 +44,12 @@ export async function putImageObject(
       contentType: input.mime,
     },
     customMetadata: {
-      imageId: input.imageId,
+      objectKey: input.key,
       albumId: input.albumId,
       uploadedAt: input.uploadedAt,
       source: input.source,
     },
   })
-}
-
-export async function getImageObject(bucket: R2Bucket, key: string): Promise<R2ObjectBody | null> {
-  return getObject(bucket, key)
 }
 
 export async function deleteImageObject(bucket: R2Bucket, key: string): Promise<void> {

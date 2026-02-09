@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface MoveImageDialogProps {
-  imageId: string | null
+  objectKey: string | null
   selectedAlbumId: string
   albums: AlbumRecord[]
-  onMoveImage: (input: { imageId: string, targetAlbumId: string }) => Promise<void>
+  onMoveImage: (input: { objectKey: string, targetAlbumId: string }) => Promise<void>
   onClose: () => void
 }
 
 export function MoveImageDialog({
-  imageId,
+  objectKey,
   selectedAlbumId,
   albums,
   onMoveImage,
@@ -23,23 +23,23 @@ export function MoveImageDialog({
 }: MoveImageDialogProps) {
   const moveImageForm = useForm({
     defaultValues: {
-      imageId: imageId ?? '',
+      objectKey: objectKey ?? '',
       targetAlbumId: selectedAlbumId,
     },
     onSubmit: async ({ value }) => {
       await onMoveImage({
-        imageId: value.imageId,
+        objectKey: value.objectKey,
         targetAlbumId: value.targetAlbumId,
       })
     },
   })
 
   useEffect(() => {
-    moveImageForm.setFieldValue('imageId', imageId ?? '')
+    moveImageForm.setFieldValue('objectKey', objectKey ?? '')
     moveImageForm.setFieldValue('targetAlbumId', selectedAlbumId)
-  }, [imageId, moveImageForm, selectedAlbumId])
+  }, [objectKey, moveImageForm, selectedAlbumId])
 
-  if (imageId === null) {
+  if (objectKey === null) {
     return null
   }
 
@@ -57,13 +57,13 @@ export function MoveImageDialog({
             void moveImageForm.handleSubmit()
           }}
         >
-          <moveImageForm.Field name="imageId">
+          <moveImageForm.Field name="objectKey">
             {field => (
               <Input
                 value={field.state.value}
                 onChange={event_ => field.handleChange(event_.target.value)}
                 className="sm:max-w-50"
-                placeholder="Image ID"
+                placeholder="Object Key"
               />
             )}
           </moveImageForm.Field>
@@ -94,13 +94,13 @@ export function MoveImageDialog({
 }
 
 interface DeleteImageDialogProps {
-  imageId: string | null
-  onDelete: (imageId: string) => Promise<void>
+  objectKey: string | null
+  onDelete: (objectKey: string) => Promise<void>
   onCancel: () => void
 }
 
-export function DeleteImageDialog({ imageId, onDelete, onCancel }: DeleteImageDialogProps) {
-  if (imageId === null) {
+export function DeleteImageDialog({ objectKey, onDelete, onCancel }: DeleteImageDialogProps) {
+  if (objectKey === null) {
     return null
   }
 
@@ -114,7 +114,7 @@ export function DeleteImageDialog({ imageId, onDelete, onCancel }: DeleteImageDi
         <Button
           variant="destructive"
           onClick={() => {
-            void onDelete(imageId)
+            void onDelete(objectKey)
           }}
         >
           Delete

@@ -18,6 +18,7 @@ declare namespace Cloudflare {
 		CLOUDFLARE_DATABASE_ID: string;
 		CLOUDFLARE_D1_TOKEN: string;
 		R2_BUCKET: R2Bucket;
+		R2_PUBLIC_DOMAIN: string;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}
@@ -25,7 +26,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "AUTH_TOKEN" | "SESSION_SECRET" | "VITE_TURNSTILE_SITE_KEY" | "TURNSTILE_SECRET_KEY" | "AUTH_URL" | "AUTH_TRUSTED_ORIGINS" | "RESEND_API_KEY" | "APP_NAME" | "FROM_EMAIL" | "SUPPORT_EMAIL" | "CLOUDFLARE_ACCOUNT_ID" | "CLOUDFLARE_DATABASE_ID" | "CLOUDFLARE_D1_TOKEN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "AUTH_TOKEN" | "SESSION_SECRET" | "VITE_TURNSTILE_SITE_KEY" | "TURNSTILE_SECRET_KEY" | "AUTH_URL" | "AUTH_TRUSTED_ORIGINS" | "RESEND_API_KEY" | "APP_NAME" | "FROM_EMAIL" | "SUPPORT_EMAIL" | "CLOUDFLARE_ACCOUNT_ID" | "CLOUDFLARE_DATABASE_ID" | "CLOUDFLARE_D1_TOKEN" | "R2_PUBLIC_DOMAIN">> {}
 }
 
 // Begin runtime types

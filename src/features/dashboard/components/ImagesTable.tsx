@@ -1,12 +1,12 @@
 import type { Table as TableInstance } from '@tanstack/react-table'
-import type { AlbumImageRecord } from '@/lib/momopix/storage/types'
+import type { AlbumImageListItem } from '@/lib/storage/types'
 import { flexRender } from '@tanstack/react-table'
 import { ImageIcon } from 'lucide-react'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 interface ImagesTableProps {
-  table: TableInstance<AlbumImageRecord>
+  table: TableInstance<AlbumImageListItem>
 }
 
 export function ImagesTable({ table }: ImagesTableProps) {

@@ -47,9 +47,8 @@ export interface AlbumRecord {
  * Canonical metadata record for one stored image.
  */
 export interface ImageRecord {
-  id: string
+  objectKey: string
   albumId: string
-  r2Key: string
   originalName: string
   storedName: string
   ext: string
@@ -67,7 +66,7 @@ export interface ImageRecord {
  * Album-scoped listing row for fast browsing and filtering.
  */
 export interface AlbumImageRecord {
-  imageId: string
+  objectKey: string
   albumId: string
   name: string
   nameLower: string
@@ -76,7 +75,13 @@ export interface AlbumImageRecord {
   width: number | null
   height: number | null
   createdAt: ISODateString
-  r2Key: string
+}
+
+/**
+ * Album image row enriched with a display-ready public URL.
+ */
+export interface AlbumImageListItem extends AlbumImageRecord {
+  publicUrl: string | null
 }
 
 /**

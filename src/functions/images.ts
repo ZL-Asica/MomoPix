@@ -1,13 +1,14 @@
-import type { AlbumImageRecord, ImageRecord, ImageSource } from '@/lib/storage/types'
+import type { AlbumImageListItem, AlbumImageRecord, ImageRecord, ImageSource } from '@/lib/storage/types'
 import { createServerFn } from '@tanstack/react-start'
-import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/guards'
 import { getKVBinding, getR2Binding } from '@/lib/cloudflare/bindings'
+import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
 import { getAlbumRecord } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
 import { deleteImageRecords, getImageRecord, listAlbumImages, moveImageRecords, putImageRecords } from '@/lib/storage/imagesRepo'
-import { createR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
+import { albumImageKey } from '@/lib/storage/keys'
+import { buildR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
 import { adjustUsage, markNeedsRecount } from '@/lib/storage/usage'
 import { deleteImageSchema, listImagesSchema, moveImageSchema } from '@/lib/storage/validators'
 
@@ -53,7 +54,23 @@ export const listImagesFn = createServerFn({ method: 'POST' })
       throw new Error('Album not found')
     }
     const images = await listAlbumImages(kv, data.albumId)
-    return { images }
+
+    let imageUrlError: string | null = null
+    let publicDomain: string | null = null
+    try {
+      publicDomain = getR2PublicDomain()
+    }
+    catch (error) {
+      imageUrlError = error instanceof Error ? error.message : String(error)
+      console.error('[listImagesFn] Failed to resolve R2 public domain for image URLs:', error)
+    }
+
+    const imagesWithUrl: AlbumImageListItem[] = images.map(image => ({
+      ...image,
+      publicUrl: publicDomain !== null ? buildPublicImageUrl(image.objectKey, publicDomain) : null,
+    }))
+
+    return { images: imagesWithUrl, imageUrlError }
   })
 
 /**
@@ -84,27 +101,24 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     const ext = normalizeImageExt(fileEntry.name, fileEntry.type)
     const mime = normalizeImageMime(ext, fileEntry.type)
     const storedName = toStoredName(originalName, ext)
-    const imageId = nanoid(8)
+    const objectKey = buildR2ObjectKey({ ext })
     const uploadedAt = new Date().toISOString()
     const bytes = await fileEntry.arrayBuffer()
-    const r2Key = createR2ObjectKey(imageId, ext)
     const width = parseNumberField(data.get('width'))
     const height = parseNumberField(data.get('height'))
 
     await putImageObject(r2, {
-      key: r2Key,
+      key: objectKey,
       bytes,
       mime,
-      imageId,
       albumId,
       source,
       uploadedAt,
     })
 
     const image: ImageRecord = {
-      id: imageId,
+      objectKey,
       albumId,
-      r2Key,
       originalName,
       storedName,
       ext,
@@ -117,10 +131,10 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       source,
       albumIndexKey: '',
     }
-    image.albumIndexKey = `v1:u:single-user:album-image:${albumId}:${image.id}`
+    image.albumIndexKey = albumImageKey(albumId, image.objectKey)
 
     const albumImage: AlbumImageRecord = {
-      imageId: image.id,
+      objectKey: image.objectKey,
       albumId,
       name: image.storedName,
       nameLower: image.storedName.toLowerCase(),
@@ -129,7 +143,6 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       width: image.width,
       height: image.height,
       createdAt: image.createdAt,
-      r2Key: image.r2Key,
     }
 
     try {
@@ -141,7 +154,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       })
     }
     catch (error) {
-      await deleteImageObject(r2, r2Key).catch(() => {})
+      await deleteImageObject(r2, objectKey).catch(() => {})
       await markNeedsRecount(kv).catch(() => {})
       throw error
     }
@@ -158,7 +171,7 @@ export const moveImageFn = createServerFn({ method: 'POST' })
     await requireAuth()
     const kv = getKVBinding()
 
-    const image = await getImageRecord(kv, data.imageId)
+    const image = await getImageRecord(kv, data.objectKey)
     if (!image) {
       throw new Error('Image not found')
     }
@@ -203,13 +216,13 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
     await requireAuth()
     const kv = getKVBinding()
     const r2 = getR2Binding()
-    const image = await getImageRecord(kv, data.imageId)
+    const image = await getImageRecord(kv, data.objectKey)
 
     if (!image) {
       throw new Error('Image not found')
     }
 
-    await deleteImageObject(r2, image.r2Key)
+    await deleteImageObject(r2, image.objectKey)
 
     try {
       await deleteImageRecords(kv, image)

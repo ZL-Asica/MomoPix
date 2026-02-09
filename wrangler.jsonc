@@ -14,13 +14,15 @@
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "05115a2da85a46e3ace1fd77e0a0df8a"
+      "id": "05115a2da85a46e3ace1fd77e0a0df8a",
+      "remote": true
     }
   ],
   "r2_buckets": [
     {
       "binding": "R2_BUCKET",
-      "bucket_name": "zla-img"
+      "bucket_name": "zla-img",
+      "remote": true
     }
   ],
   "routes": [

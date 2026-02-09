@@ -1,5 +1,5 @@
 import type { CreateAlbumInput, MoveAlbumInput, MoveImageInput, RenameAlbumInput } from '@/features/dashboard/types'
-import type { AlbumImageRecord, AlbumRecord, StorageMeta } from '@/lib/storage/types'
+import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useUpload } from '@/features/dashboard/hooks/useUpload'
@@ -14,10 +14,11 @@ export function useDashboardData() {
   const [albums, setAlbums] = useState<AlbumRecord[]>([])
   const [meta, setMeta] = useState<StorageMeta | null>(null)
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>(ROOT_ALBUM_ID)
-  const [images, setImages] = useState<AlbumImageRecord[]>([])
+  const [images, setImages] = useState<AlbumImageListItem[]>([])
+  const [imageUrlError, setImageUrlError] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [moveImageId, setMoveImageId] = useState<string | null>(null)
-  const [pendingDeleteImageId, setPendingDeleteImageId] = useState<string | null>(null)
+  const [moveImageObjectKey, setMoveImageObjectKey] = useState<string | null>(null)
+  const [pendingDeleteObjectKey, setPendingDeleteObjectKey] = useState<string | null>(null)
 
   const albumById = useMemo(() => new Map(albums.map(album => [album.id, album])), [albums])
 
@@ -38,6 +39,7 @@ export function useDashboardData() {
   const loadImages = useCallback(async (albumId: string) => {
     const payload = await listImagesFn({ data: { albumId } })
     setImages(payload.images)
+    setImageUrlError(payload.imageUrlError ?? null)
   }, [])
 
   const refreshAlbum = useCallback(async (albumId: string) => {
@@ -129,23 +131,23 @@ export function useDashboardData() {
     toast.success('Default album updated')
   }, [loadAlbums])
 
-  const moveImage = useCallback(async ({ imageId, targetAlbumId }: MoveImageInput) => {
+  const moveImage = useCallback(async ({ objectKey, targetAlbumId }: MoveImageInput) => {
     await moveImageFn({
       data: {
-        imageId,
+        objectKey,
         targetAlbumId,
       },
     })
 
     await refreshAlbum(selectedAlbumId)
-    setMoveImageId(null)
+    setMoveImageObjectKey(null)
     toast.success('Image moved')
   }, [refreshAlbum, selectedAlbumId])
 
-  const deleteImage = useCallback(async (imageId: string) => {
-    await deleteImageFn({ data: { imageId } })
+  const deleteImage = useCallback(async (objectKey: string) => {
+    await deleteImageFn({ data: { objectKey } })
     await refreshAlbum(selectedAlbumId)
-    setPendingDeleteImageId(null)
+    setPendingDeleteObjectKey(null)
     toast.success('Image deleted')
   }, [refreshAlbum, selectedAlbumId])
 
@@ -153,15 +155,16 @@ export function useDashboardData() {
     albums,
     albumById,
     images,
+    imageUrlError,
     meta,
     selectedAlbumId,
     setSelectedAlbumId,
     mobileSidebarOpen,
     setMobileSidebarOpen,
-    moveImageId,
-    setMoveImageId,
-    pendingDeleteImageId,
-    setPendingDeleteImageId,
+    moveImageObjectKey,
+    setMoveImageObjectKey,
+    pendingDeleteObjectKey,
+    setPendingDeleteObjectKey,
     isUploading,
     uploadFiles,
     createAlbum,
