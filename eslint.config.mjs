@@ -5,6 +5,7 @@ export default antfu({
     'eslint.config.mjs',
     'src/routeTree.gen.ts',
     'src/components/ui/**.tsx',
+    'AGENTS.md',
   ],
   typescript: {
     tsconfigPath: 'tsconfig.json',
