@@ -3,18 +3,20 @@ import { createFileRoute } from '@tanstack/react-router'
 import JSZip from 'jszip'
 import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { ImageList, ImageUploadArea, TransformControl } from '@/components/Home'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ImageList, ImageUploadArea, TransformControl } from '@/features/home'
+import { useImageTransform } from '@/features/home/hooks'
 import { listAlbumsFn } from '@/functions/albums'
 import { getCurrentUserFn } from '@/functions/auth'
 import { uploadImageFn } from '@/functions/images'
-import { useImageTransform } from '@/hooks'
 import { getImageDimensions } from '@/lib/images/dimensions'
 import { normalizeImageMime } from '@/lib/storage/format'
 
-export const Route = createFileRoute('/')({ component: HomePage })
+export const Route = createFileRoute('/')({
+  component: HomePage,
+})
 
 function HomePage() {
   const [downloadingAll, startDownloadingAll] = useTransition()
