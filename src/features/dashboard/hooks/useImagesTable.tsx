@@ -1,4 +1,4 @@
-import type { ColumnDef, RowSelectionState, SortingState } from '@tanstack/react-table'
+import type { ColumnDef, RowSelectionState, SortingState, Table as TableInstance } from '@tanstack/react-table'
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import {
   flexRender,
@@ -7,8 +7,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { ImageActionsDropdownMenu } from '@/features/dashboard/components/ImageActionsMenu'
+import { applyShiftRangeSelection } from '@/features/dashboard/lib/shiftRangeSelection'
 import { formatBytes } from '@/lib/storage/format'
 
 interface UseImagesTableOptions {
@@ -36,8 +37,52 @@ export function useImagesTable({
   const [search, setSearch] = useState('')
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const lastAnchorRowIdRef = useRef<string | null>(null)
   const clearSelection = useCallback(() => {
     setRowSelection({})
+    lastAnchorRowIdRef.current = null
+  }, [])
+
+  const toggleRowSelection = useCallback((input: {
+    rowId: string
+    shiftKey: boolean
+    table: TableInstance<AlbumImageListItem>
+  }) => {
+    const rows = input.table.getRowModel().rows
+    const rowIds = rows.map(row => row.id)
+    const targetIndex = rowIds.findIndex(rowId => rowId === input.rowId)
+    if (targetIndex < 0) {
+      return
+    }
+
+    const anchorRowId = lastAnchorRowIdRef.current
+    const anchorIndex = anchorRowId !== null
+      ? rowIds.findIndex(rowId => rowId === anchorRowId)
+      : -1
+    const nextSelected = !rows[targetIndex]?.getIsSelected()
+
+    setRowSelection((previousSelection) => {
+      if (input.shiftKey && anchorIndex >= 0) {
+        return applyShiftRangeSelection({
+          rowIds,
+          rowSelection: previousSelection,
+          anchorIndex,
+          targetIndex,
+          nextSelected,
+        })
+      }
+
+      const nextSelection = { ...previousSelection }
+      if (nextSelected) {
+        nextSelection[input.rowId] = true
+      }
+      else {
+        delete nextSelection[input.rowId]
+      }
+      return nextSelection
+    })
+
+    lastAnchorRowIdRef.current = input.rowId
   }, [])
 
   const columns = useMemo<ColumnDef<AlbumImageListItem>[]>(() => [
@@ -51,12 +96,19 @@ export function useImagesTable({
           onChange={event_ => table.toggleAllPageRowsSelected(event_.target.checked)}
         />
       ),
-      cell: ({ row }) => (
+      cell: ({ row, table }) => (
         <input
           type="checkbox"
           aria-label={`Select ${row.original.name}`}
           checked={row.getIsSelected()}
-          onChange={event_ => row.toggleSelected(event_.target.checked)}
+          readOnly
+          onClick={(event_) => {
+            toggleRowSelection({
+              rowId: row.id,
+              shiftKey: event_.shiftKey,
+              table,
+            })
+          }}
         />
       ),
       enableSorting: false,
@@ -140,7 +192,7 @@ export function useImagesTable({
         </div>
       ),
     },
-  ], [onDeleteImage, onMoveImage, onRenameImage])
+  ], [onDeleteImage, onMoveImage, onRenameImage, toggleRowSelection])
 
   const table = useReactTable({
     data: images,
