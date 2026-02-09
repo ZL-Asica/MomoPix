@@ -31,6 +31,10 @@ function parseNumberField(value: FormDataEntryValue | null): number | null {
   return parsed
 }
 
+function normalizeDimensionValue(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
 function sourceFrom(value: FormDataEntryValue | null): ImageSource {
   if (value === 'index-compressed') {
     return 'index-compressed'
@@ -82,6 +86,8 @@ export const listImagesFn = createServerFn({ method: 'POST' })
         ...image,
         name,
         nameLower: name.toLowerCase(),
+        width: normalizeDimensionValue(image.width),
+        height: normalizeDimensionValue(image.height),
         publicUrl: publicDomain !== null ? buildPublicImageUrl(image.objectKey, publicDomain) : null,
       }
     })

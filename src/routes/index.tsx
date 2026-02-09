@@ -11,6 +11,7 @@ import { listAlbumsFn } from '@/functions/albums'
 import { getCurrentUserFn } from '@/functions/auth'
 import { uploadImageFn } from '@/functions/images'
 import { useImageTransform } from '@/hooks'
+import { getImageDimensions } from '@/lib/images/dimensions'
 import { normalizeImageMime } from '@/lib/storage/format'
 
 export const Route = createFileRoute('/')({ component: HomePage })
@@ -161,12 +162,22 @@ function HomePage() {
         const blob = image.transformed as Blob
         const mime = normalizeImageMime(ext, blob.type)
         const file = new File([blob], fileName, { type: mime })
+        const dimensions = await getImageDimensions(file)
+        if (dimensions === null) {
+          toast.warning('Could not read transformed image dimensions', {
+            description: `Uploading ${file.name} without width/height metadata`,
+          })
+        }
 
         const formData = new FormData()
         formData.set('file', file)
         formData.set('albumId', selectedAlbumId)
         formData.set('source', 'index-compressed')
         formData.set('originalName', image.file.name)
+        if (dimensions !== null) {
+          formData.set('width', String(dimensions.width))
+          formData.set('height', String(dimensions.height))
+        }
 
         await uploadImageFn({ data: formData })
       }

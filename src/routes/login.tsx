@@ -4,7 +4,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { TURNSTILE_SITE_KEY } from '@/client-constants'
+import { VITE_TURNSTILE_SITE_KEY } from '@/client-constants'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -147,7 +147,7 @@ function LoginPage() {
               {authConfig.enabled && (
                 <div className="flex justify-center">
                   <Turnstile
-                    siteKey={TURNSTILE_SITE_KEY}
+                    siteKey={VITE_TURNSTILE_SITE_KEY}
                     onSuccess={token => form.setFieldValue('turnstileToken', token)}
                     onError={() => {
                       form.setFieldValue('turnstileToken', '')

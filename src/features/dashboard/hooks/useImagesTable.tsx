@@ -101,11 +101,21 @@ export function useImagesTable({
       header: 'Dimensions',
       cell: ({ row }) => {
         const { width, height } = row.original
-        if (width === null || height === null) {
+        if (typeof width !== 'number' || typeof height !== 'number') {
           return <span className="text-muted-foreground">Unknown</span>
         }
         return `${width} × ${height}`
       },
+      enableSorting: false,
+      enableGlobalFilter: false,
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      cell: ({ row }) =>
+        row.original.publicUrl?.split('.').pop()?.toUpperCase()
+        ?? row.original.mime.split('/').pop()?.toUpperCase()
+        ?? 'Unknown',
       enableSorting: false,
       enableGlobalFilter: false,
     },

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { uploadImageFn } from '@/functions/images'
+import { getImageDimensions } from '@/lib/images/dimensions'
 
 interface UseUploadOptions {
   selectedAlbumId: string
@@ -26,10 +27,21 @@ export function useUpload({ selectedAlbumId, onUploaded }: UseUploadOptions) {
     setIsUploading(true)
     try {
       for (const file of Array.from(files)) {
+        const dimensions = await getImageDimensions(file)
+        if (dimensions === null) {
+          toast.warning('Could not read image dimensions', {
+            description: `Uploading ${file.name} without width/height metadata`,
+          })
+        }
+
         const formData = new FormData()
         formData.set('file', file)
         formData.set('albumId', selectedAlbumId)
         formData.set('source', 'dashboard-upload')
+        if (dimensions !== null) {
+          formData.set('width', String(dimensions.width))
+          formData.set('height', String(dimensions.height))
+        }
         await uploadImageFn({ data: formData })
       }
 
