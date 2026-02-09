@@ -26,3 +26,13 @@ export interface MoveImageInput {
   objectKey: string
   targetAlbumId: string
 }
+
+export interface RenameImageInput {
+  objectKey: string
+  name: string
+}
+
+export interface BulkMoveImagesInput {
+  objectKeys: string[]
+  targetAlbumId: string
+}

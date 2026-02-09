@@ -6,11 +6,19 @@ import { getKVBinding, getR2Binding } from '@/lib/cloudflare/bindings'
 import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
 import { getAlbumRecord } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
-import { deleteImageRecords, getImageRecord, listAlbumImages, moveImageRecords, putImageRecords } from '@/lib/storage/imagesRepo'
+import { deriveDefaultImageName, resolveImageName } from '@/lib/storage/imageName'
+import { deleteImageRecords, getImageRecord, listAlbumImages, moveImageRecords, putImageRecords, renameImageRecords } from '@/lib/storage/imagesRepo'
 import { albumImageKey } from '@/lib/storage/keys'
 import { buildR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
 import { adjustUsage, markNeedsRecount } from '@/lib/storage/usage'
-import { deleteImageSchema, listImagesSchema, moveImageSchema } from '@/lib/storage/validators'
+import {
+  deleteImageSchema,
+  deleteImagesSchema,
+  listImagesSchema,
+  moveImageSchema,
+  moveImagesSchema,
+  renameImageSchema,
+} from '@/lib/storage/validators'
 
 function parseNumberField(value: FormDataEntryValue | null): number | null {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -65,10 +73,18 @@ export const listImagesFn = createServerFn({ method: 'POST' })
       console.error('[listImagesFn] Failed to resolve R2 public domain for image URLs:', error)
     }
 
-    const imagesWithUrl: AlbumImageListItem[] = images.map(image => ({
-      ...image,
-      publicUrl: publicDomain !== null ? buildPublicImageUrl(image.objectKey, publicDomain) : null,
-    }))
+    const imagesWithUrl: AlbumImageListItem[] = images.map((image) => {
+      const name = resolveImageName({
+        name: image.name,
+        objectKey: image.objectKey,
+      })
+      return {
+        ...image,
+        name,
+        nameLower: name.toLowerCase(),
+        publicUrl: publicDomain !== null ? buildPublicImageUrl(image.objectKey, publicDomain) : null,
+      }
+    })
 
     return { images: imagesWithUrl, imageUrlError }
   })
@@ -102,6 +118,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     const mime = normalizeImageMime(ext, fileEntry.type)
     const storedName = toStoredName(originalName, ext)
     const objectKey = buildR2ObjectKey({ ext })
+    const imageName = deriveDefaultImageName(originalName, objectKey)
     const uploadedAt = new Date().toISOString()
     const bytes = await fileEntry.arrayBuffer()
     const width = parseNumberField(data.get('width'))
@@ -119,6 +136,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     const image: ImageRecord = {
       objectKey,
       albumId,
+      name: imageName,
       originalName,
       storedName,
       ext,
@@ -136,8 +154,8 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     const albumImage: AlbumImageRecord = {
       objectKey: image.objectKey,
       albumId,
-      name: image.storedName,
-      nameLower: image.storedName.toLowerCase(),
+      name: image.name,
+      nameLower: image.name.toLowerCase(),
       sizeBytes: image.sizeBytes,
       mime: image.mime,
       width: image.width,
@@ -208,6 +226,79 @@ export const moveImageFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Moves multiple images between albums and reports success/failure counts.
+ */
+export const moveImagesFn = createServerFn({ method: 'POST' })
+  .inputValidator(moveImagesSchema)
+  .handler(async ({ data }) => {
+    await requireAuth()
+    const kv = getKVBinding()
+
+    const targetAlbum = await getAlbumRecord(kv, data.targetAlbumId)
+    if (!targetAlbum) {
+      throw new Error('Target album not found')
+    }
+
+    const objectKeys = [...new Set(data.objectKeys)]
+    let succeeded = 0
+    let failed = 0
+
+    for (const objectKey of objectKeys) {
+      try {
+        const image = await getImageRecord(kv, objectKey)
+        if (!image) {
+          throw new Error('Image not found')
+        }
+
+        if (image.albumId !== data.targetAlbumId) {
+          await moveImageRecords(kv, {
+            image,
+            targetAlbumId: data.targetAlbumId,
+          })
+          await adjustUsage(kv, {
+            albumId: image.albumId,
+            deltaBytes: -image.sizeBytes,
+            deltaCount: -1,
+          })
+          await adjustUsage(kv, {
+            albumId: data.targetAlbumId,
+            deltaBytes: image.sizeBytes,
+            deltaCount: 1,
+          })
+        }
+
+        succeeded += 1
+      }
+      catch (error) {
+        failed += 1
+        await markNeedsRecount(kv).catch(() => {})
+        console.error(`[moveImagesFn] Failed to move image ${objectKey}:`, error)
+      }
+    }
+
+    return {
+      total: objectKeys.length,
+      succeeded,
+      failed,
+    }
+  })
+
+/**
+ * Renames one image metadata record without changing its object key.
+ */
+export const renameImageFn = createServerFn({ method: 'POST' })
+  .inputValidator(renameImageSchema)
+  .handler(async ({ data }) => {
+    await requireAuth()
+    const kv = getKVBinding()
+    const image = await renameImageRecords(kv, {
+      objectKey: data.objectKey,
+      name: data.name,
+    })
+    return { image }
+  })
+
+/**
  * Deletes an image from R2 and metadata indexes.
  */
 export const deleteImageFn = createServerFn({ method: 'POST' })
@@ -236,5 +327,49 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
     catch (error) {
       await markNeedsRecount(kv).catch(() => {})
       throw error
+    }
+  })
+
+/**
+ * Deletes multiple images and reports success/failure counts.
+ */
+export const deleteImagesFn = createServerFn({ method: 'POST' })
+  .inputValidator(deleteImagesSchema)
+  .handler(async ({ data }) => {
+    await requireAuth()
+    const kv = getKVBinding()
+    const r2 = getR2Binding()
+    const objectKeys = [...new Set(data.objectKeys)]
+
+    let succeeded = 0
+    let failed = 0
+
+    for (const objectKey of objectKeys) {
+      try {
+        const image = await getImageRecord(kv, objectKey)
+        if (!image) {
+          throw new Error('Image not found')
+        }
+
+        await deleteImageObject(r2, image.objectKey)
+        await deleteImageRecords(kv, image)
+        await adjustUsage(kv, {
+          albumId: image.albumId,
+          deltaBytes: -image.sizeBytes,
+          deltaCount: -1,
+        })
+        succeeded += 1
+      }
+      catch (error) {
+        failed += 1
+        await markNeedsRecount(kv).catch(() => {})
+        console.error(`[deleteImagesFn] Failed to delete image ${objectKey}:`, error)
+      }
+    }
+
+    return {
+      total: objectKeys.length,
+      succeeded,
+      failed,
     }
   })

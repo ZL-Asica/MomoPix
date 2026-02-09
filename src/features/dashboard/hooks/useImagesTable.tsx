@@ -7,14 +7,19 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { MoveRight, Trash2, UserRoundSearch } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useCallback, useMemo, useState } from 'react'
+import { ImageActionsDropdownMenu } from '@/features/dashboard/components/ImageActionsMenu'
 import { formatBytes } from '@/lib/storage/format'
 
 interface UseImagesTableOptions {
   images: AlbumImageListItem[]
+  onRenameImage: (objectKey: string) => void
+  onMoveImage: (objectKey: string) => void
+  onDeleteImage: (objectKey: string) => void
+}
+
+export interface ImagesTableMeta {
+  onRenameImage: (objectKey: string) => void
   onMoveImage: (objectKey: string) => void
   onDeleteImage: (objectKey: string) => void
 }
@@ -24,12 +29,16 @@ interface UseImagesTableOptions {
  */
 export function useImagesTable({
   images,
+  onRenameImage,
   onMoveImage,
   onDeleteImage,
 }: UseImagesTableOptions) {
   const [search, setSearch] = useState('')
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const clearSelection = useCallback(() => {
+    setRowSelection({})
+  }, [])
 
   const columns = useMemo<ColumnDef<AlbumImageListItem>[]>(() => [
     {
@@ -111,37 +120,17 @@ export function useImagesTable({
       enableSorting: false,
       enableGlobalFilter: false,
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline">Actions</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                const url = row.original.publicUrl
-                if (url === null) {
-                  return
-                }
-                window.open(url, '_blank', 'noopener,noreferrer')
-              }}
-              disabled={row.original.publicUrl === null}
-            >
-              <UserRoundSearch className="mr-2 h-4 w-4" />
-              {row.original.publicUrl !== null ? 'View' : 'View (Unavailable)'}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onMoveImage(row.original.objectKey)}>
-              <MoveRight className="mr-2 h-4 w-4" />
-              Move
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDeleteImage(row.original.objectKey)} className="text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-end">
+          <ImageActionsDropdownMenu
+            image={row.original}
+            onRenameImage={onRenameImage}
+            onMoveImage={onMoveImage}
+            onDeleteImage={onDeleteImage}
+          />
+        </div>
       ),
     },
-  ], [onDeleteImage, onMoveImage])
+  ], [onDeleteImage, onMoveImage, onRenameImage])
 
   const table = useReactTable({
     data: images,
@@ -154,6 +143,11 @@ export function useImagesTable({
     onGlobalFilterChange: setSearch,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
+    meta: {
+      onRenameImage,
+      onMoveImage,
+      onDeleteImage,
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -166,9 +160,16 @@ export function useImagesTable({
     },
   })
 
+  const selectedImagesOrdered = useMemo(
+    () => table.getRowModel().rows.filter(row => row.getIsSelected()).map(row => row.original),
+    [table],
+  )
+
   return {
     columns,
+    clearSelection,
     flexRender,
+    selectedImagesOrdered,
     search,
     setSearch,
     table,

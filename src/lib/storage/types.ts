@@ -49,6 +49,7 @@ export interface AlbumRecord {
 export interface ImageRecord {
   objectKey: string
   albumId: string
+  name: string
   originalName: string
   storedName: string
   ext: string

@@ -1,5 +1,6 @@
 import type { AlbumImageRecord, ImageRecord } from '@/lib/storage/types'
 import { deleteKey, getJson, listKeysWithPrefix, putJson } from '@/lib/cloudflare/kv'
+import { resolveImageName } from '@/lib/storage/imageName'
 import { albumImageKey, albumImagePrefixForAlbum, imageKey, STORAGE_KEYS } from '@/lib/storage/keys'
 
 /**
@@ -59,12 +60,16 @@ export async function moveImageRecords(
     updatedAt: timestamp,
     albumIndexKey: albumImageKey(input.targetAlbumId, input.image.objectKey),
   }
+  const displayName = resolveImageName({
+    name: updatedImage.name,
+    objectKey: updatedImage.objectKey,
+  })
 
   const nextIndex: AlbumImageRecord = {
     objectKey: updatedImage.objectKey,
     albumId: input.targetAlbumId,
-    name: updatedImage.storedName,
-    nameLower: updatedImage.storedName.toLowerCase(),
+    name: displayName,
+    nameLower: displayName.toLowerCase(),
     sizeBytes: updatedImage.sizeBytes,
     mime: updatedImage.mime,
     width: updatedImage.width,
@@ -73,6 +78,46 @@ export async function moveImageRecords(
   }
 
   await deleteKey(kv, albumImageKey(input.image.albumId, input.image.objectKey))
+  await putJson(kv, imageKey(updatedImage.objectKey), updatedImage)
+  await putJson(kv, albumImageKey(nextIndex.albumId, nextIndex.objectKey), nextIndex)
+
+  return updatedImage
+}
+
+/**
+ * Renames one image while preserving its object key and binary object.
+ *
+ * This updates both the canonical image row and the album index row.
+ */
+export async function renameImageRecords(
+  kv: KVNamespace,
+  input: { objectKey: string, name: string },
+): Promise<ImageRecord> {
+  const image = await getImageRecord(kv, input.objectKey)
+  if (!image) {
+    throw new Error('Image not found')
+  }
+
+  const timestamp = new Date().toISOString()
+  const nextName = input.name.trim()
+  const updatedImage: ImageRecord = {
+    ...image,
+    name: nextName,
+    updatedAt: timestamp,
+  }
+
+  const nextIndex: AlbumImageRecord = {
+    objectKey: updatedImage.objectKey,
+    albumId: updatedImage.albumId,
+    name: nextName,
+    nameLower: nextName.toLowerCase(),
+    sizeBytes: updatedImage.sizeBytes,
+    mime: updatedImage.mime,
+    width: updatedImage.width,
+    height: updatedImage.height,
+    createdAt: updatedImage.createdAt,
+  }
+
   await putJson(kv, imageKey(updatedImage.objectKey), updatedImage)
   await putJson(kv, albumImageKey(nextIndex.albumId, nextIndex.objectKey), nextIndex)
 

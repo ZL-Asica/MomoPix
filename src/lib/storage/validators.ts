@@ -5,6 +5,7 @@ import { ROOT_ALBUM_ID } from '@/lib/storage/types'
  * Shared validator for album identifiers.
  */
 export const albumIdSchema = z.string().min(1)
+export const imageNameSchema = z.string().trim().min(1).max(120)
 
 /**
  * Payload schema for album creation.
@@ -53,8 +54,31 @@ export const moveImageSchema = z.object({
 })
 
 /**
+ * Payload schema for moving multiple images between albums.
+ */
+export const moveImagesSchema = z.object({
+  objectKeys: z.array(z.string().min(1)).min(1),
+  targetAlbumId: albumIdSchema,
+})
+
+/**
  * Payload schema for deleting one image.
  */
 export const deleteImageSchema = z.object({
   objectKey: z.string().min(1),
+})
+
+/**
+ * Payload schema for deleting multiple images.
+ */
+export const deleteImagesSchema = z.object({
+  objectKeys: z.array(z.string().min(1)).min(1),
+})
+
+/**
+ * Payload schema for renaming one image.
+ */
+export const renameImageSchema = z.object({
+  objectKey: z.string().min(1),
+  name: imageNameSchema,
 })

@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import { DashboardTopbar } from '@/features/dashboard/components/DashboardTopbar'
+import { ImagesBulkActionsBar } from '@/features/dashboard/components/ImagesBulkActionsBar'
 import { ImagesTable } from '@/features/dashboard/components/ImagesTable'
 import { SidebarAlbums } from '@/features/dashboard/components/SidebarAlbums'
 import { UsageSummary } from '@/features/dashboard/components/UsageSummary'
 import { AlbumDialogs } from '@/features/dashboard/dialogs/AlbumDialogs'
 import { DeleteImageDialog, MoveImageDialog } from '@/features/dashboard/dialogs/MoveImageDialog'
+import { RenameImageDialog } from '@/features/dashboard/dialogs/RenameImageDialog'
 import { useDashboardData } from '@/features/dashboard/hooks/useDashboardData'
 import { useImagesTable } from '@/features/dashboard/hooks/useImagesTable'
 import { getCurrentUserFn } from '@/functions/auth'
@@ -38,6 +40,8 @@ function DashboardPage() {
     albumById,
     createAlbum,
     deleteImage,
+    bulkDeleteImages,
+    bulkMoveImages,
     images,
     imageUrlError,
     isUploading,
@@ -45,12 +49,15 @@ function DashboardPage() {
     mobileSidebarOpen,
     moveAlbum,
     moveImage,
+    renameImage,
+    renameImageObjectKey,
     moveImageObjectKey,
     pendingDeleteObjectKey,
     renameAlbum,
     selectedAlbumId,
     setDefaultAlbum,
     setMobileSidebarOpen,
+    setRenameImageObjectKey,
     setMoveImageObjectKey,
     setPendingDeleteObjectKey,
     setSelectedAlbumId,
@@ -58,9 +65,13 @@ function DashboardPage() {
   } = useDashboardData()
 
   const selectedAlbum = albumById.get(selectedAlbumId)
+  const renameImageTarget = images.find(image => image.objectKey === renameImageObjectKey) ?? null
 
-  const { search, setSearch, table } = useImagesTable({
+  const { clearSelection, search, selectedImagesOrdered, setSearch, table } = useImagesTable({
     images,
+    onRenameImage: (objectKey) => {
+      setRenameImageObjectKey(objectKey)
+    },
     onMoveImage: (objectKey) => {
       setMoveImageObjectKey(objectKey)
     },
@@ -153,6 +164,14 @@ function DashboardPage() {
               {imageUrlError}
             </p>
           )}
+          <ImagesBulkActionsBar
+            selectedImages={selectedImagesOrdered}
+            albums={albums}
+            selectedAlbumId={selectedAlbumId}
+            onBulkMoveImages={bulkMoveImages}
+            onBulkDeleteImages={bulkDeleteImages}
+            clearSelection={clearSelection}
+          />
           <ImagesTable table={table} />
         </CardContent>
       </Card>
@@ -163,6 +182,13 @@ function DashboardPage() {
         albums={albums}
         onMoveImage={moveImage}
         onClose={() => setMoveImageObjectKey(null)}
+      />
+
+      <RenameImageDialog
+        image={renameImageTarget}
+        open={renameImageObjectKey !== null}
+        onOpenChange={open => !open && setRenameImageObjectKey(null)}
+        onRenameImage={renameImage}
       />
 
       <DeleteImageDialog
