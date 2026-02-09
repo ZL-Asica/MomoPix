@@ -10,17 +10,18 @@ import { ImageActionsContextMenu } from '@/features/dashboard/components/ImageAc
 
 interface ImagesTableProps {
   table: TableInstance<AlbumImageListItem>
-  isLoading: boolean
+  isInitialLoading: boolean
+  hasLoadedOnce: boolean
 }
 
 const LOADING_ROW_COUNT = 6
 const LOADING_ROW_KEYS = Array.from({ length: LOADING_ROW_COUNT }, (_, index) => `loading-row-${index + 1}`)
 
-export function ImagesTable({ table, isLoading }: ImagesTableProps) {
+export function ImagesTable({ table, isInitialLoading, hasLoadedOnce }: ImagesTableProps) {
   const meta = table.options.meta as ImagesTableMeta | undefined
   const rowCount = Math.max(1, table.getVisibleLeafColumns().length)
 
-  if (!isLoading && table.getRowModel().rows.length === 0) {
+  if (!isInitialLoading && hasLoadedOnce && table.getRowModel().rows.length === 0) {
     return (
       <Empty>
         <EmptyHeader>
@@ -60,7 +61,7 @@ export function ImagesTable({ table, isLoading }: ImagesTableProps) {
         ))}
       </TableHeader>
       <TableBody>
-        {isLoading && table.getRowModel().rows.length === 0 && LOADING_ROW_KEYS.map(key => (
+        {isInitialLoading && table.getRowModel().rows.length === 0 && LOADING_ROW_KEYS.map(key => (
           <TableRow key={key}>
             <TableCell colSpan={rowCount}>
               <div className="flex items-center gap-3">

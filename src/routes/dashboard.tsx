@@ -3,6 +3,7 @@ import { ImageIcon } from 'lucide-react'
 import { useMemo, useRef, useState, useTransition } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { AlbumImagePagination } from '@/features/dashboard/components/AlbumImagePagination'
 import { BulkOptionsMenu } from '@/features/dashboard/components/BulkOptionsMenu'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
@@ -52,8 +53,8 @@ function DashboardPage() {
     hasNextPage,
     hasPreviousPage,
     images,
+    imagesStatus,
     imageUrlError,
-    isImagesLoading,
     isUploading,
     meta,
     mobileSidebarOpen,
@@ -71,7 +72,7 @@ function DashboardPage() {
     totalPages,
     isSearchMode,
     searchQuery,
-    setSearchQuery,
+    onSearchQueryChange,
     setDefaultAlbum,
     setMobileSidebarOpen,
     setRenameImageObjectKey,
@@ -133,6 +134,9 @@ function DashboardPage() {
               <CardTitle className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
                 {selectedAlbum?.name ?? 'Images'}
+                {imagesStatus.isFetching && !imagesStatus.isInitialLoading && (
+                  <Spinner className="h-4 w-4 text-muted-foreground" />
+                )}
               </CardTitle>
               <CardDescription>
                 {isSearchMode
@@ -172,7 +176,7 @@ function DashboardPage() {
 
           <DashboardTopbar
             search={searchQuery}
-            onSearchChange={setSearchQuery}
+            onSearchChange={onSearchQueryChange}
             fileInputRef={fileInputRef}
             onUploadClick={() => fileInputRef.current?.click()}
             onUploadChange={(files) => {
@@ -203,6 +207,13 @@ function DashboardPage() {
           />
         </CardHeader>
         <CardContent>
+          {imagesStatus.state === 'error' && imagesStatus.error !== null && (
+            <p role="alert" className="mb-3 text-sm text-destructive">
+              Failed to load images:
+              {' '}
+              {imagesStatus.error}
+            </p>
+          )}
           {imageUrlError !== null && (
             <p role="alert" className="mb-3 text-sm text-destructive">
               Image preview URL error:
@@ -210,7 +221,11 @@ function DashboardPage() {
               {imageUrlError}
             </p>
           )}
-          <ImagesTable table={table} isLoading={isImagesLoading} />
+          <ImagesTable
+            table={table}
+            isInitialLoading={imagesStatus.isInitialLoading}
+            hasLoadedOnce={imagesStatus.hasLoadedOnce}
+          />
           <div className="mt-4">
             <AlbumImagePagination
               pageIndex={pageIndex}
@@ -219,7 +234,7 @@ function DashboardPage() {
               pageSize={pageSize}
               hasPreviousPage={hasPreviousPage}
               hasNextPage={hasNextPage}
-              isLoading={isImagesLoading}
+              isLoading={imagesStatus.isFetching}
               onPageSizeChange={onPageSizeChange}
               onPreviousPage={goPrevPage}
               onNextPage={goNextPage}

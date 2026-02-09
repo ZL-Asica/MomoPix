@@ -65,6 +65,26 @@ Use React composition and shadcn/ui first.
   - Keep long imperative workflows inside JSX-heavy files.
   - Couple component rendering directly to Cloudflare bindings.
 
+### Loading vs Empty States
+
+- Do:
+  - Track list request lifecycle explicitly (`idle`, `loading`, `success`, `error`) instead of inferring from array length.
+  - Keep a loaded marker (`hasLoadedOnce` per view or album) and render empty states only after that marker is true.
+  - Use `useTransition` for user-triggered view changes (album/page/search/page-size), while still using explicit fetch lifecycle flags for data readiness.
+- Don't:
+  - Render “No items” just because `items.length === 0` before a fetch has completed.
+  - Treat `useTransition` pending state as the only source of truth for async fetch completion.
+
+Example:
+
+```tsx
+const showInitialSkeleton = !hasLoadedOnce && (status === 'idle' || status === 'loading')
+if (showInitialSkeleton) return <TableSkeleton />
+if (status === 'error') return <ErrorState />
+if (hasLoadedOnce && items.length === 0) return <EmptyState />
+return <ItemsTable rows={items} />
+```
+
 Example (thin route):
 
 ```tsx
