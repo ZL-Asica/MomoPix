@@ -14,7 +14,10 @@ export const STORAGE_KEYS = {
   albumPrefix: `${STORAGE_PREFIX}:album:`,
   imagePrefix: `${STORAGE_PREFIX}:image:`,
   albumImagePrefix: `${STORAGE_PREFIX}:album-image:`,
+  albumImageMigrationPrefix: `${STORAGE_PREFIX}:album-image-migrated:`,
 }
+
+const ALBUM_IMAGE_DESC_TS_MAX_MS = 9_999_999_999_999
 
 /**
  * Builds the KV key for an album metadata record.
@@ -31,10 +34,28 @@ export function imageKey(objectKey: string): string {
 }
 
 /**
- * Builds the album-scoped image index key.
+ * Builds the legacy album-scoped image index key.
  */
 export function albumImageKey(albumId: string, objectKey: string): string {
   return `${STORAGE_KEYS.albumImagePrefix}${albumId}:${objectKey}`
+}
+
+/**
+ * Encodes `createdAt` so ascending KV key order yields newest-first listings.
+ */
+export function albumImageDescTsToken(createdAt: string): string {
+  const createdAtMs = Date.parse(createdAt)
+  const safeMs = Number.isFinite(createdAtMs)
+    ? Math.min(Math.max(0, createdAtMs), ALBUM_IMAGE_DESC_TS_MAX_MS)
+    : 0
+  return String(ALBUM_IMAGE_DESC_TS_MAX_MS - safeMs).padStart(13, '0')
+}
+
+/**
+ * Builds the ordered album image index key used for cursor pagination.
+ */
+export function albumImageKeyV2(albumId: string, createdAt: string, objectKey: string): string {
+  return `${STORAGE_KEYS.albumImagePrefix}${albumId}:${albumImageDescTsToken(createdAt)}:${objectKey}`
 }
 
 /**
@@ -42,6 +63,48 @@ export function albumImageKey(albumId: string, objectKey: string): string {
  */
 export function albumImagePrefixForAlbum(albumId: string): string {
   return `${STORAGE_KEYS.albumImagePrefix}${albumId}:`
+}
+
+/**
+ * Returns the marker key used to track legacy album-index migration per album.
+ */
+export function albumImageMigrationKey(albumId: string): string {
+  return `${STORAGE_KEYS.albumImageMigrationPrefix}${albumId}`
+}
+
+/**
+ * Parses an album image index key, handling both legacy and ordered key layouts.
+ */
+export function parseAlbumImageIndexKey(
+  key: string,
+  albumId: string,
+): { objectKey: string, descTsToken: string | null } | null {
+  const prefix = albumImagePrefixForAlbum(albumId)
+  if (!key.startsWith(prefix)) {
+    return null
+  }
+
+  const suffix = key.slice(prefix.length)
+  const separatorIndex = suffix.indexOf(':')
+  if (separatorIndex < 0) {
+    return suffix.length > 0
+      ? { objectKey: suffix, descTsToken: null }
+      : null
+  }
+
+  const firstToken = suffix.slice(0, separatorIndex)
+  const rest = suffix.slice(separatorIndex + 1)
+  if (/^\d{13}$/.test(firstToken)) {
+    return {
+      objectKey: rest,
+      descTsToken: firstToken,
+    }
+  }
+
+  return {
+    objectKey: suffix,
+    descTsToken: null,
+  }
 }
 
 /**

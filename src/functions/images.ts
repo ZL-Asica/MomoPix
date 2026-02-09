@@ -1,4 +1,10 @@
-import type { AlbumImageListItem, AlbumImageRecord, ImageRecord, ImageSource } from '@/lib/storage/types'
+import type {
+  AlbumImageListItem,
+  AlbumImageRecord,
+  ImageRecord,
+  ImageSource,
+  ListAlbumImagesResult,
+} from '@/lib/storage/types'
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/guards'
@@ -9,7 +15,7 @@ import { getAlbumRecord } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
 import { deriveDefaultImageName, resolveImageName } from '@/lib/storage/imageName'
 import { deleteImageRecords, getImageRecord, listAlbumImages, moveImageRecords, putImageRecords, renameImageRecords } from '@/lib/storage/imagesRepo'
-import { albumImageKey } from '@/lib/storage/keys'
+import { albumImageKeyV2 } from '@/lib/storage/keys'
 import { buildR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
 import { adjustUsage, markNeedsRecount } from '@/lib/storage/usage'
 import {
@@ -69,7 +75,13 @@ export const listImagesFn = createServerFn({ method: 'POST' })
     if (!album) {
       throw new Error('Album not found')
     }
-    const images = await listAlbumImages(kv, data.albumId)
+    const pagedImages = await listAlbumImages(kv, {
+      albumId: data.albumId,
+      cursor: data.cursor ?? null,
+      pageSize: data.pageSize,
+      sort: data.sort,
+      query: data.query,
+    })
 
     let imageUrlError: string | null = null
     let publicDomain: string | null = null
@@ -81,7 +93,7 @@ export const listImagesFn = createServerFn({ method: 'POST' })
       console.error('[listImagesFn] Failed to resolve R2 public domain for image URLs:', error)
     }
 
-    const imagesWithUrl: AlbumImageListItem[] = images.map((image) => {
+    const items: AlbumImageListItem[] = pagedImages.items.map((image) => {
       const name = resolveImageName({
         name: image.name,
         objectKey: image.objectKey,
@@ -96,7 +108,17 @@ export const listImagesFn = createServerFn({ method: 'POST' })
       }
     })
 
-    return { images: imagesWithUrl, imageUrlError }
+    const payload: ListAlbumImagesResult & {
+      items: AlbumImageListItem[]
+      imageUrlError: string | null
+    } = {
+      ...pagedImages,
+      totalCount: pagedImages.query.length === 0 ? album.imageCount : null,
+      items,
+      imageUrlError,
+    }
+
+    return payload
   })
 
 /**
@@ -159,7 +181,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       source,
       albumIndexKey: '',
     }
-    image.albumIndexKey = albumImageKey(albumId, image.objectKey)
+    image.albumIndexKey = albumImageKeyV2(albumId, image.createdAt, image.objectKey)
 
     const albumImage: AlbumImageRecord = {
       objectKey: image.objectKey,

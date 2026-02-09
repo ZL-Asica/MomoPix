@@ -1,14 +1,12 @@
-import type { ColumnDef, RowSelectionState, SortingState, Table as TableInstance } from '@tanstack/react-table'
+import type { ColumnDef, RowSelectionState, Table as TableInstance } from '@tanstack/react-table'
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import {
-  flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { ImageActionsDropdownMenu } from '@/features/dashboard/components/ImageActionsMenu'
+import { LazyImage } from '@/features/dashboard/components/LazyImage'
 import { applyShiftRangeSelection } from '@/features/dashboard/lib/shiftRangeSelection'
 import { formatBytes } from '@/lib/storage/format'
 
@@ -26,7 +24,7 @@ export interface ImagesTableMeta {
 }
 
 /**
- * Configures TanStack Table state and columns for dashboard image browsing.
+ * Configures TanStack Table state and columns for paged dashboard image browsing.
  */
 export function useImagesTable({
   images,
@@ -34,8 +32,6 @@ export function useImagesTable({
   onMoveImage,
   onDeleteImage,
 }: UseImagesTableOptions) {
-  const [search, setSearch] = useState('')
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const lastAnchorRowIdRef = useRef<string | null>(null)
   const clearSelection = useCallback(() => {
@@ -122,7 +118,6 @@ export function useImagesTable({
         />
       ),
       enableSorting: false,
-      enableGlobalFilter: false,
     },
     {
       id: 'preview',
@@ -130,11 +125,10 @@ export function useImagesTable({
       cell: ({ row }) => (
         row.original.publicUrl !== null
           ? (
-              <img
+              <LazyImage
                 src={row.original.publicUrl}
                 alt={row.original.name}
                 className="h-12 w-12 rounded-md border object-cover"
-                loading="lazy"
               />
             )
           : (
@@ -144,7 +138,6 @@ export function useImagesTable({
             )
       ),
       enableSorting: false,
-      enableGlobalFilter: false,
     },
     {
       accessorKey: 'name',
@@ -152,11 +145,13 @@ export function useImagesTable({
       cell: ({ row }) => (
         <div className="max-w-60 truncate font-medium">{row.original.name}</div>
       ),
+      enableSorting: false,
     },
     {
       accessorKey: 'sizeBytes',
       header: 'Size',
       cell: ({ row }) => formatBytes(row.original.sizeBytes),
+      enableSorting: false,
     },
     {
       id: 'dimensions',
@@ -169,7 +164,6 @@ export function useImagesTable({
         return `${width} × ${height}`
       },
       enableSorting: false,
-      enableGlobalFilter: false,
     },
     {
       id: 'type',
@@ -179,18 +173,17 @@ export function useImagesTable({
         ?? row.original.mime.split('/').pop()?.toUpperCase()
         ?? 'Unknown',
       enableSorting: false,
-      enableGlobalFilter: false,
     },
     {
       accessorKey: 'createdAt',
       header: 'Created',
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+      enableSorting: false,
     },
     {
       id: 'actions',
       header: 'Actions',
       enableSorting: false,
-      enableGlobalFilter: false,
       cell: ({ row }) => (
         <div className="flex justify-end">
           <ImageActionsDropdownMenu
@@ -208,40 +201,24 @@ export function useImagesTable({
     data: images,
     columns,
     state: {
-      globalFilter: search,
       rowSelection,
-      sorting,
     },
-    onGlobalFilterChange: setSearch,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
     meta: {
       onRenameImage,
       onMoveImage,
       onDeleteImage,
     },
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    globalFilterFn: (row, _columnId, value) => {
-      const needle = String(value ?? '').toLowerCase().trim()
-      if (!needle) {
-        return true
-      }
-      return row.original.nameLower.includes(needle)
-    },
+    getRowId: row => row.objectKey,
   })
 
   const selectedImagesOrdered = table.getRowModel().rows.filter(row => row.getIsSelected()).map(row => row.original)
 
   return {
-    columns,
     clearSelection,
     setSelectionToObjectKeys,
-    flexRender,
     selectedImagesOrdered,
-    search,
-    setSearch,
     table,
   }
 }

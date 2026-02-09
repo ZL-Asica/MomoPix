@@ -135,6 +135,8 @@ Separate platform adapters from Momopix domain logic.
   - Keep `createServerFn` handlers minimal: auth check, validation, call service/repo functions, map response.
   - Validate inputs before mutations.
   - Treat `R2_PUBLIC_DOMAIN` as required for all runtimes (dev/prod) and build image URLs through shared helpers.
+  - Keep album image index keys in ordered format `album-image:<albumId>:<descTs>:<objectKey>` where `descTs` is derived from `createdAt` so KV lexicographic order is newest-first.
+  - Treat `ImageRecord.albumIndexKey` as the source of truth for deletes/moves/renames and preserve lazy migration support for legacy `album-image:<albumId>:<objectKey>` keys.
 - Don't:
   - Scatter raw `kv.get/put/list` and `bucket.get/put/delete` calls across UI/routes.
   - Encode domain naming/index rules in UI components.

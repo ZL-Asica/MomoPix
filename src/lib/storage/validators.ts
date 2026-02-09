@@ -43,6 +43,10 @@ export const setDefaultAlbumSchema = z.object({
  */
 export const listImagesSchema = z.object({
   albumId: albumIdSchema,
+  cursor: z.string().min(1).nullable().optional(),
+  pageSize: z.number().int().min(10).max(200).optional(),
+  sort: z.literal('createdAt-desc').optional(),
+  query: z.string().trim().max(120).optional(),
 })
 
 /**

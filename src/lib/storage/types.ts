@@ -16,6 +16,7 @@ export const ROOT_ALBUM_ID = 'alb_root' as const
 export type ISODateString = string
 
 export type ImageSource = 'index-compressed' | 'dashboard-upload'
+export type ImageListSort = 'createdAt-desc'
 
 /**
  * Global storage counters and defaults.
@@ -83,6 +84,30 @@ export interface AlbumImageRecord {
  */
 export interface AlbumImageListItem extends AlbumImageRecord {
   publicUrl: string | null
+}
+
+/**
+ * Request payload for paged album image listing.
+ */
+export interface ListAlbumImagesInput {
+  albumId: string
+  cursor?: string | null
+  pageSize?: number
+  sort?: ImageListSort
+  query?: string
+}
+
+/**
+ * Cursor-paged album image listing payload.
+ */
+export interface ListAlbumImagesResult {
+  items: AlbumImageRecord[]
+  nextCursor: string | null
+  hasNextPage: boolean
+  totalCount: number | null
+  pageSize: number
+  sort: ImageListSort
+  query: string
 }
 
 /**

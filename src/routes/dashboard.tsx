@@ -3,6 +3,7 @@ import { ImageIcon } from 'lucide-react'
 import { useMemo, useRef, useState, useTransition } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlbumImagePagination } from '@/features/dashboard/components/AlbumImagePagination'
 import { BulkOptionsMenu } from '@/features/dashboard/components/BulkOptionsMenu'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import { DashboardTopbar } from '@/features/dashboard/components/DashboardTopbar'
@@ -43,11 +44,21 @@ function DashboardPage() {
     deleteImage,
     bulkDeleteImages,
     bulkMoveImages,
+    goFirstPage,
+    goLastPage,
+    goNextPage,
+    onPageSizeChange,
+    goPrevPage,
+    hasNextPage,
+    hasPreviousPage,
     images,
     imageUrlError,
+    isImagesLoading,
     isUploading,
     meta,
     mobileSidebarOpen,
+    pageIndex,
+    pageSize,
     moveAlbum,
     moveImage,
     renameImage,
@@ -56,12 +67,17 @@ function DashboardPage() {
     pendingDeleteObjectKey,
     renameAlbum,
     selectedAlbumId,
+    totalCount,
+    totalPages,
+    isSearchMode,
+    searchQuery,
+    setSearchQuery,
     setDefaultAlbum,
     setMobileSidebarOpen,
     setRenameImageObjectKey,
     setMoveImageObjectKey,
     setPendingDeleteObjectKey,
-    setSelectedAlbumId,
+    selectAlbum,
     uploadFiles,
   } = useDashboardData()
 
@@ -70,7 +86,7 @@ function DashboardPage() {
   const moveImageTarget = images.find(image => image.objectKey === moveImageObjectKey) ?? null
   const moveImageTargets = moveImageTarget ? [moveImageTarget] : []
 
-  const { clearSelection, search, selectedImagesOrdered, setSearch, setSelectionToObjectKeys, table } = useImagesTable({
+  const { clearSelection, selectedImagesOrdered, setSelectionToObjectKeys, table } = useImagesTable({
     images,
     onRenameImage: (objectKey) => {
       setRenameImageObjectKey(objectKey)
@@ -90,7 +106,7 @@ function DashboardPage() {
         selectedAlbumId={selectedAlbumId}
         defaultAlbumId={meta?.defaultAlbumId ?? selectedAlbumId}
         onSelectAlbum={(albumId) => {
-          setSelectedAlbumId(albumId)
+          selectAlbum(albumId)
           setMobileSidebarOpen(false)
         }}
         onCreateAlbumClick={() => setCreateDialogOpen(true)}
@@ -100,7 +116,7 @@ function DashboardPage() {
       />
       <UsageSummary meta={meta} totalSpaceBytes={DEFAULT_TOTAL_SPACE_BYTES} />
     </div>
-  ), [albums, meta, selectedAlbumId, setDefaultAlbum, setMobileSidebarOpen, setSelectedAlbumId])
+  ), [albums, meta, selectedAlbumId, selectAlbum, setDefaultAlbum, setMobileSidebarOpen])
 
   return (
     <DashboardLayout
@@ -119,17 +135,44 @@ function DashboardPage() {
                 {selectedAlbum?.name ?? 'Images'}
               </CardTitle>
               <CardDescription>
-                {table.getRowModel().rows.length}
-                {' '}
-                item(s)
+                {isSearchMode
+                  ? (
+                      <>
+                        Page
+                        {' '}
+                        {pageIndex}
+                        {' '}
+                        search results
+                      </>
+                    )
+                  : (
+                      <>
+                        Page
+                        {' '}
+                        {pageIndex}
+                        {totalPages !== null && (
+                          <>
+                            {' '}
+                            of
+                            {' '}
+                            {totalPages}
+                          </>
+                        )}
+                        {' '}
+                        (
+                        {totalCount ?? 0}
+                        {' '}
+                        total images)
+                      </>
+                    )}
               </CardDescription>
             </div>
             <Badge variant="secondary">{formatBytes(selectedAlbum?.bytesUsed ?? 0)}</Badge>
           </div>
 
           <DashboardTopbar
-            search={search}
-            onSearchChange={setSearch}
+            search={searchQuery}
+            onSearchChange={setSearchQuery}
             fileInputRef={fileInputRef}
             onUploadClick={() => fileInputRef.current?.click()}
             onUploadChange={(files) => {
@@ -167,7 +210,23 @@ function DashboardPage() {
               {imageUrlError}
             </p>
           )}
-          <ImagesTable table={table} />
+          <ImagesTable table={table} isLoading={isImagesLoading} />
+          <div className="mt-4">
+            <AlbumImagePagination
+              pageIndex={pageIndex}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              pageSize={pageSize}
+              hasPreviousPage={hasPreviousPage}
+              hasNextPage={hasNextPage}
+              isLoading={isImagesLoading}
+              onPageSizeChange={onPageSizeChange}
+              onPreviousPage={goPrevPage}
+              onNextPage={goNextPage}
+              onFirstPage={goFirstPage}
+              onLastPage={goLastPage}
+            />
+          </div>
         </CardContent>
       </Card>
 
