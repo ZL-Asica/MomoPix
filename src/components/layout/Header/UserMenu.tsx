@@ -109,7 +109,7 @@ const UserMenu = ({
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
             <Link
-              to="/"
+              to="/dashboard"
               className="flex items-center gap-2"
               onClick={onClickHandler}
             >

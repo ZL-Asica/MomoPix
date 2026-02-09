@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
 import { useTheme } from '@zl-asica/react'
-import { House, Images, Moon, Sun } from 'lucide-react'
+import { House, LayoutDashboard, Moon, Sun } from 'lucide-react'
 import HeaderMenuButton from './HeaderMenuButton'
 import UserMenu from './UserMenu'
 
@@ -26,8 +26,7 @@ const HeaderMenu = ({
 
   const menuItems: MenuItem[] = [
     { href: '/', label: 'Home', icon: <House /> },
-    { href: '/', label: 'Images', icon: <Images /> },
-    // { href: '/images', label: 'Images', icon: <Images /> },
+    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
   ]
 
   return (

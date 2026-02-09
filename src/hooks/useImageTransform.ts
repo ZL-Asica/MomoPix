@@ -26,10 +26,10 @@ const useImageTransform = () => {
     setImages(prev => [...prev, ...newImages])
   }
 
-  const transformImages = async () => {
+  const transformImages = async (): Promise<ImageFile[] | null> => {
     if (images.length === 0) {
       toast.error('Please add some images first')
-      return
+      return null
     }
 
     setTransformedImageCount(0)
@@ -59,10 +59,12 @@ const useImageTransform = () => {
 
       setImages(updated)
       toast.success('Images transformed successfully')
+      return updated
     }
     catch (error: unknown) {
       const normalized = normalizeTransformError(error)
       toast.error('Failed to transform images', { description: normalized.message })
+      return null
     }
     finally {
       setIsProcessing(false)

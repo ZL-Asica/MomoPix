@@ -15,6 +15,7 @@ interface TransformControlsProps {
   hasImages: boolean
   useManualQuality: boolean
   setUseManualQuality: (value: boolean) => void
+  actionLabel?: string
 }
 
 const TransformControls = ({
@@ -27,6 +28,7 @@ const TransformControls = ({
   hasImages,
   useManualQuality,
   setUseManualQuality,
+  actionLabel = 'Transform images',
 }: TransformControlsProps) => {
   const isDisabled = isProcessing || !hasImages
   const showNoImagesHint = !hasImages && !isProcessing
@@ -91,7 +93,7 @@ const TransformControls = ({
             : (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Transform images
+                  {actionLabel}
                 </>
               )}
         </Button>

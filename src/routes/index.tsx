@@ -1,9 +1,17 @@
+import type { AlbumRecord } from '@/lib/storage/types'
 import { createFileRoute } from '@tanstack/react-router'
 import JSZip from 'jszip'
-import { useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { ImageList, ImageUploadArea, TransformControl } from '@/components/Home'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { listAlbumsFn } from '@/functions/albums'
+import { getCurrentUserFn } from '@/functions/auth'
+import { uploadImageFn } from '@/functions/images'
 import { useImageTransform } from '@/hooks'
+import { normalizeImageMime } from '@/lib/storage/format'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
@@ -24,6 +32,57 @@ function HomePage() {
     useManualQuality,
     setUseManualQuality,
   } = useImageTransform()
+  const [isAuthed, setIsAuthed] = useState(false)
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [albums, setAlbums] = useState<AlbumRecord[]>([])
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const currentUser = await getCurrentUserFn()
+        if (!currentUser) {
+          if (!cancelled) {
+            setIsAuthed(false)
+            setAlbums([])
+            setSelectedAlbumId('')
+          }
+          return
+        }
+
+        if (cancelled) {
+          return
+        }
+        setIsAuthed(true)
+
+        const payload = await listAlbumsFn()
+        if (!cancelled) {
+          setAlbums(payload.albums)
+          setSelectedAlbumId(payload.meta.defaultAlbumId)
+        }
+      }
+      catch (error) {
+        if (!cancelled) {
+          setIsAuthed(false)
+          toast.error('Failed to load account data', {
+            description: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+      finally {
+        if (!cancelled) {
+          setIsLoadingAuth(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleDownload = (image: ImageFile) => {
     if (!image.transformed) {
@@ -77,22 +136,94 @@ function HomePage() {
     })
   }
 
+  const handleTransformAction = async () => {
+    const transformed = await transformImages()
+    if (!transformed || !isAuthed) {
+      return
+    }
+    if (!selectedAlbumId) {
+      toast.error('Please choose an album before uploading.')
+      return
+    }
+
+    const uploadTargets = transformed.filter(image => image.transformed)
+    if (uploadTargets.length === 0) {
+      toast.error('No transformed images available to upload')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      for (const image of uploadTargets) {
+        const ext = image.targetFormat ?? targetFormat
+        const fileNameBase = image.file.name.split('.').slice(0, -1).join('.') || image.file.name
+        const fileName = `${fileNameBase}.${ext}`
+        const blob = image.transformed as Blob
+        const mime = normalizeImageMime(ext, blob.type)
+        const file = new File([blob], fileName, { type: mime })
+
+        const formData = new FormData()
+        formData.set('file', file)
+        formData.set('albumId', selectedAlbumId)
+        formData.set('source', 'index-compressed')
+        formData.set('originalName', image.file.name)
+
+        await uploadImageFn({ data: formData })
+      }
+
+      toast.success(`${uploadTargets.length} image(s) uploaded`)
+    }
+    catch (error) {
+      toast.error('Failed to upload transformed images', {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    }
+    finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <h1 className="text-2xl font-bold text-center">Image Transformer</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <ImageUploadArea onDrop={addImages} />
+          {!isLoadingAuth && isAuthed && (
+            <Card className="mt-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Upload Album</CardTitle>
+                <CardDescription>Compressed images will be stored in this album.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Label htmlFor="index-album-select">Album</Label>
+                <Select
+                  value={selectedAlbumId}
+                  onValueChange={value => setSelectedAlbumId(value)}
+                >
+                  <SelectTrigger id="index-album-select" className="w-full">
+                    <SelectValue placeholder="Choose album" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {albums.map(album => (
+                      <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+          )}
           <TransformControl
             targetFormat={targetFormat}
             setTargetFormat={setTargetFormat}
             quality={quality}
             setQuality={setQuality}
-            isProcessing={isProcessing}
-            onTransform={() => void transformImages()}
+            isProcessing={isProcessing || isUploading}
+            onTransform={() => void handleTransformAction()}
             hasImages={images.length > 0}
             useManualQuality={useManualQuality}
             setUseManualQuality={setUseManualQuality}
+            actionLabel={isAuthed ? 'Compress & Upload' : 'Compress'}
           />
         </div>
         <ImageList
