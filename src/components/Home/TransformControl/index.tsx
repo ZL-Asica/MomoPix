@@ -1,4 +1,5 @@
 import { Wand2 } from 'lucide-react'
+import { useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
@@ -11,7 +12,7 @@ interface TransformControlsProps {
   quality: number
   setQuality: (quality: number) => void
   isProcessing: boolean
-  onTransform: () => void
+  onTransform: () => Promise<void> | void
   hasImages: boolean
   useManualQuality: boolean
   setUseManualQuality: (value: boolean) => void
@@ -30,6 +31,7 @@ const TransformControls = ({
   setUseManualQuality,
   actionLabel = 'Transform images',
 }: TransformControlsProps) => {
+  const [, startTransformTransition] = useTransition()
   const isDisabled = isProcessing || !hasImages
   const showNoImagesHint = !hasImages && !isProcessing
 
@@ -79,7 +81,11 @@ const TransformControls = ({
       <div className="space-y-2">
         <Button
           className="w-full"
-          onClick={onTransform}
+          onClick={() => {
+            startTransformTransition(async () => {
+              await onTransform()
+            })
+          }}
           disabled={isDisabled}
           aria-busy={isProcessing}
         >

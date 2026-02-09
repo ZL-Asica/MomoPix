@@ -36,3 +36,16 @@ export interface BulkMoveImagesInput {
   objectKeys: string[]
   targetAlbumId: string
 }
+
+export interface BulkOperationFailure {
+  objectKey: string
+  reason: string
+}
+
+export interface BulkOperationResult {
+  total: number
+  succeeded: number
+  failed: number
+  succeededObjectKeys: string[]
+  failedItems: BulkOperationFailure[]
+}

@@ -1,5 +1,8 @@
+import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { LoadingButton } from '@/components/ui/loading-button'
 
 interface DeleteImageDialogProps {
   objectKey: string | null
@@ -8,6 +11,8 @@ interface DeleteImageDialogProps {
 }
 
 export function DeleteImageDialog({ objectKey, onDelete, onCancel }: DeleteImageDialogProps) {
+  const [isPending, startTransition] = useTransition()
+
   if (objectKey === null) {
     return null
   }
@@ -19,15 +24,26 @@ export function DeleteImageDialog({ objectKey, onDelete, onCancel }: DeleteImage
         <CardDescription>This image will be permanently removed from storage.</CardDescription>
       </CardHeader>
       <CardContent className="flex gap-2">
-        <Button
+        <LoadingButton
           variant="destructive"
+          loading={isPending}
+          loadingText="Deleting..."
           onClick={() => {
-            void onDelete(objectKey)
+            startTransition(async () => {
+              try {
+                await onDelete(objectKey)
+              }
+              catch (error) {
+                toast.error('Failed to delete image', {
+                  description: error instanceof Error ? error.message : String(error),
+                })
+              }
+            })
           }}
         >
           Delete
-        </Button>
-        <Button variant="outline" onClick={onCancel}>
+        </LoadingButton>
+        <Button variant="outline" onClick={onCancel} disabled={isPending}>
           Cancel
         </Button>
       </CardContent>

@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import { Code2, Link2, MoreHorizontal, MoveRight, Pencil, Trash2, UserRoundSearch } from 'lucide-react'
+import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -70,8 +71,10 @@ function ImageActionsContent({
   onDeleteImage,
   primitives,
 }: ImageActionsProps & { primitives: ImageActionsContentPrimitives }) {
+  const [isCopyPending, startCopyTransition] = useTransition()
   const { Item, Label, Separator } = primitives
   const hasPublicUrl = image.publicUrl !== null
+  const copyDisabled = !hasPublicUrl || isCopyPending
 
   return (
     <>
@@ -103,39 +106,45 @@ function ImageActionsContent({
       <Separator />
       <Label>Copy</Label>
       <Item
-        disabled={!hasPublicUrl}
+        disabled={copyDisabled}
         onSelect={() => {
           const lines = buildImageCopyLines([image], 'direct')
           if (lines.length === 0) {
             return
           }
-          void copyLinesWithToast(lines, 'Direct link copied')
+          startCopyTransition(async () => {
+            await copyLinesWithToast(lines, 'Direct link copied')
+          })
         }}
       >
         <Link2 className="mr-2 h-4 w-4" />
         Copy direct link
       </Item>
       <Item
-        disabled={!hasPublicUrl}
+        disabled={copyDisabled}
         onSelect={() => {
           const lines = buildImageCopyLines([image], 'html')
           if (lines.length === 0) {
             return
           }
-          void copyLinesWithToast(lines, 'HTML image tag copied')
+          startCopyTransition(async () => {
+            await copyLinesWithToast(lines, 'HTML image tag copied')
+          })
         }}
       >
         <Code2 className="mr-2 h-4 w-4" />
         Copy HTML &lt;img&gt;
       </Item>
       <Item
-        disabled={!hasPublicUrl}
+        disabled={copyDisabled}
         onSelect={() => {
           const lines = buildImageCopyLines([image], 'markdown')
           if (lines.length === 0) {
             return
           }
-          void copyLinesWithToast(lines, 'Markdown copied')
+          startCopyTransition(async () => {
+            await copyLinesWithToast(lines, 'Markdown copied')
+          })
         }}
       >
         <Code2 className="mr-2 h-4 w-4" />

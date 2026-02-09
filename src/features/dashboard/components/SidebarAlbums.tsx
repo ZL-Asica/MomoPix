@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react'
 import type { AlbumRecord } from '@/lib/storage/types'
-import { FolderTree, MoreHorizontal, MoveRight, PencilLine, Plus, Star } from 'lucide-react'
+import { FolderTree, Loader2, MoreHorizontal, MoveRight, PencilLine, Plus, Star } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -16,7 +18,7 @@ interface SidebarAlbumsProps {
   onCreateAlbumClick: () => void
   onRequestRename: (albumId: string) => void
   onRequestMove: (albumId: string) => void
-  onSetDefault: (albumId: string) => void
+  onSetDefault: (albumId: string) => Promise<void>
 }
 
 function displayAlbumName(album: AlbumRecord): string {
@@ -36,7 +38,26 @@ export function SidebarAlbums({
   onRequestMove,
   onSetDefault,
 }: SidebarAlbumsProps) {
+  const [isSettingDefaultPending, startSetDefaultTransition] = useTransition()
+  const [pendingDefaultAlbumId, setPendingDefaultAlbumId] = useState<string | null>(null)
   const { byParent, rootAlbums } = useAlbumTree(albums)
+
+  const handleSetDefault = (albumId: string) => {
+    startSetDefaultTransition(async () => {
+      setPendingDefaultAlbumId(albumId)
+      try {
+        await onSetDefault(albumId)
+      }
+      catch (error) {
+        toast.error('Failed to set default album', {
+          description: error instanceof Error ? error.message : String(error),
+        })
+      }
+      finally {
+        setPendingDefaultAlbumId(null)
+      }
+    })
+  }
 
   const renderAlbumNode = (album: AlbumRecord): ReactElement => {
     const children = byParent.get(album.id) ?? []
@@ -70,23 +91,26 @@ export function SidebarAlbums({
                     size="icon"
                     className="h-8 w-8 opacity-80 group-hover:opacity-100"
                     aria-label={`Album actions for ${displayAlbumName(album)}`}
+                    disabled={isSettingDefaultPending}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onRequestRename(album.id)}>
+                  <DropdownMenuItem onClick={() => onRequestRename(album.id)} disabled={isSettingDefaultPending}>
                     <PencilLine className="mr-2 h-4 w-4" />
                     Rename
                   </DropdownMenuItem>
                   {!isDefaultTarget && (
-                    <DropdownMenuItem onClick={() => onSetDefault(album.id)}>
-                      <Star className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem onClick={() => handleSetDefault(album.id)} disabled={isSettingDefaultPending}>
+                      {isSettingDefaultPending && pendingDefaultAlbumId === album.id
+                        ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        : <Star className="mr-2 h-4 w-4" />}
                       Set Default Upload
                     </DropdownMenuItem>
                   )}
                   {album.id !== ROOT_ALBUM_ID && (
-                    <DropdownMenuItem onClick={() => onRequestMove(album.id)}>
+                    <DropdownMenuItem onClick={() => onRequestMove(album.id)} disabled={isSettingDefaultPending}>
                       <MoveRight className="mr-2 h-4 w-4" />
                       Move
                     </DropdownMenuItem>
@@ -96,18 +120,20 @@ export function SidebarAlbums({
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onClick={() => onRequestRename(album.id)}>
+            <ContextMenuItem onClick={() => onRequestRename(album.id)} disabled={isSettingDefaultPending}>
               <PencilLine className="mr-2 h-4 w-4" />
               Rename
             </ContextMenuItem>
             {!isDefaultTarget && (
-              <ContextMenuItem onClick={() => onSetDefault(album.id)}>
-                <Star className="mr-2 h-4 w-4" />
+              <ContextMenuItem onClick={() => handleSetDefault(album.id)} disabled={isSettingDefaultPending}>
+                {isSettingDefaultPending && pendingDefaultAlbumId === album.id
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <Star className="mr-2 h-4 w-4" />}
                 Set Default Upload
               </ContextMenuItem>
             )}
             {album.id !== ROOT_ALBUM_ID && (
-              <ContextMenuItem onClick={() => onRequestMove(album.id)}>
+              <ContextMenuItem onClick={() => onRequestMove(album.id)} disabled={isSettingDefaultPending}>
                 <MoveRight className="mr-2 h-4 w-4" />
                 Move
               </ContextMenuItem>

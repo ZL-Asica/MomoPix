@@ -1,7 +1,8 @@
 import type { ImageCopyFormat } from '@/features/dashboard/lib/copyFormats'
+import type { BulkOperationFailure, BulkOperationResult } from '@/features/dashboard/types'
 import type { AlbumImageListItem, AlbumRecord } from '@/lib/storage/types'
 import { Copy, FolderOutput, Settings2, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,13 +16,10 @@ import {
 import { BulkDeleteImagesDialog } from '@/features/dashboard/dialogs/BulkDeleteImagesDialog'
 import { BulkMoveImagesDialog } from '@/features/dashboard/dialogs/BulkMoveImagesDialog'
 import { buildImageCopyLines } from '@/features/dashboard/lib/copyFormats'
+import { withTimeout } from '@/lib/bulk'
 import { copyLinesToClipboard } from '@/lib/clipboard'
 
-interface BulkOperationResult {
-  total: number
-  succeeded: number
-  failed: number
-}
+const BULK_REQUEST_TIMEOUT_MS = 60_000
 
 interface BulkOptionsMenuProps {
   selectedImages: AlbumImageListItem[]
@@ -30,6 +28,7 @@ interface BulkOptionsMenuProps {
   onBulkMoveImages: (input: { objectKeys: string[], targetAlbumId: string }) => Promise<BulkOperationResult>
   onBulkDeleteImages: (objectKeys: string[]) => Promise<BulkOperationResult>
   clearSelection: () => void
+  setSelectionToObjectKeys: (objectKeys: string[]) => void
 }
 
 function copyLabel(format: ImageCopyFormat): string {
@@ -50,17 +49,48 @@ export function BulkOptionsMenu({
   onBulkMoveImages,
   onBulkDeleteImages,
   clearSelection,
+  setSelectionToObjectKeys,
 }: BulkOptionsMenuProps) {
   const [moveOpen, setMoveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [isCopyPending, startCopyTransition] = useTransition()
 
   const selectedCount = selectedImages.length
   const selectedObjectKeys = useMemo(
     () => selectedImages.map(image => image.objectKey),
     [selectedImages],
   )
-  const disabled = selectedCount === 0 || busy
+  const selectedNameByKey = useMemo(() => (
+    new Map(selectedImages.map(image => [image.objectKey, image.name]))
+  ), [selectedImages])
+  const disabled = selectedCount === 0
+  const menuDisabled = disabled || isCopyPending
+
+  const formatFailureDetails = (failedItems: BulkOperationFailure[]) => {
+    if (failedItems.length === 0) {
+      return undefined
+    }
+
+    const preview = failedItems.slice(0, 3).map(({ objectKey, reason }) => {
+      const name = selectedNameByKey.get(objectKey)
+        ?? objectKey.split('/').at(-1)?.replace(/\.[^.]+$/, '')
+        ?? objectKey
+      return `${name}: ${reason}`
+    })
+    const hiddenCount = failedItems.length - preview.length
+    if (hiddenCount > 0) {
+      preview.push(`+${hiddenCount} more failure(s)`)
+    }
+    return preview.join('\n')
+  }
+
+  const applyBulkSelection = (result: BulkOperationResult) => {
+    if (result.failedItems.length > 0) {
+      setSelectionToObjectKeys(result.failedItems.map(item => item.objectKey))
+      return
+    }
+    clearSelection()
+  }
 
   const handleCopy = async (format: ImageCopyFormat) => {
     const lines = buildImageCopyLines(selectedImages, format)
@@ -80,46 +110,48 @@ export function BulkOptionsMenu({
     }
   }
 
-  const handleBulkMove = async (targetAlbumId: string) => {
-    setBusy(true)
-    try {
-      const result = await onBulkMoveImages({
-        objectKeys: selectedObjectKeys,
-        targetAlbumId,
-      })
-      if (result.succeeded > 0) {
-        clearSelection()
-      }
+  const handleBulkMove = async (targetAlbumId: string): Promise<boolean> => {
+    const result = await withTimeout(onBulkMoveImages({
+      objectKeys: selectedObjectKeys,
+      targetAlbumId,
+    }), BULK_REQUEST_TIMEOUT_MS, 'Bulk move timed out. Please retry.')
+    applyBulkSelection(result)
+
+    if (result.failed === 0) {
+      toast.success(`Moved ${result.succeeded} image(s)`)
+      return true
     }
-    finally {
-      setBusy(false)
-    }
+
+    toast.error(`Moved ${result.succeeded} image(s), ${result.failed} failed`, {
+      description: formatFailureDetails(result.failedItems),
+    })
+    return false
   }
 
-  const handleBulkDelete = async () => {
-    setBusy(true)
-    try {
-      const result = await onBulkDeleteImages(selectedObjectKeys)
-      if (result.succeeded > 0) {
-        clearSelection()
-      }
-      setDeleteOpen(false)
+  const handleBulkDelete = async (): Promise<boolean> => {
+    const result = await withTimeout(
+      onBulkDeleteImages(selectedObjectKeys),
+      BULK_REQUEST_TIMEOUT_MS,
+      'Bulk delete timed out. Please retry.',
+    )
+    applyBulkSelection(result)
+
+    if (result.failed === 0) {
+      toast.success(`Deleted ${result.succeeded} image(s)`)
+      return true
     }
-    catch (error) {
-      toast.error('Failed to delete selected images', {
-        description: error instanceof Error ? error.message : String(error),
-      })
-    }
-    finally {
-      setBusy(false)
-    }
+
+    toast.error(`Deleted ${result.succeeded} image(s), ${result.failed} failed`, {
+      description: formatFailureDetails(result.failedItems),
+    })
+    return false
   }
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" disabled={disabled}>
+          <Button variant="outline" disabled={menuDisabled}>
             <Settings2 className="mr-2 h-4 w-4" />
             Bulk options (
             {selectedCount}
@@ -128,9 +160,9 @@ export function BulkOptionsMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
-            disabled={disabled}
+            disabled={menuDisabled}
             onSelect={() => {
-              if (disabled) {
+              if (menuDisabled) {
                 return
               }
               setMoveOpen(true)
@@ -140,10 +172,10 @@ export function BulkOptionsMenu({
             Move...
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={disabled}
+            disabled={menuDisabled}
             className="text-destructive"
             onSelect={() => {
-              if (disabled) {
+              if (menuDisabled) {
                 return
               }
               setDeleteOpen(true)
@@ -155,15 +187,36 @@ export function BulkOptionsMenu({
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Copy</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={disabled} onClick={() => { void handleCopy('direct') }}>
+          <DropdownMenuItem
+            disabled={menuDisabled}
+            onSelect={() => {
+              startCopyTransition(async () => {
+                await handleCopy('direct')
+              })
+            }}
+          >
             <Copy className="mr-2 h-4 w-4" />
             Copy direct links
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={disabled} onClick={() => { void handleCopy('html') }}>
+          <DropdownMenuItem
+            disabled={menuDisabled}
+            onSelect={() => {
+              startCopyTransition(async () => {
+                await handleCopy('html')
+              })
+            }}
+          >
             <Copy className="mr-2 h-4 w-4" />
             Copy HTML &lt;img&gt;
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={disabled} onClick={() => { void handleCopy('markdown') }}>
+          <DropdownMenuItem
+            disabled={menuDisabled}
+            onSelect={() => {
+              startCopyTransition(async () => {
+                await handleCopy('markdown')
+              })
+            }}
+          >
             <Copy className="mr-2 h-4 w-4" />
             Copy Markdown
           </DropdownMenuItem>
@@ -183,9 +236,7 @@ export function BulkOptionsMenu({
         open={deleteOpen}
         selectedCount={selectedCount}
         onOpenChange={setDeleteOpen}
-        onConfirm={() => {
-          void handleBulkDelete()
-        }}
+        onConfirm={handleBulkDelete}
       />
     </>
   )

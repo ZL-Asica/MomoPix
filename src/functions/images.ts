@@ -2,6 +2,7 @@ import type { AlbumImageListItem, AlbumImageRecord, ImageRecord, ImageSource } f
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/guards'
+import { runBulkOperation } from '@/lib/bulk'
 import { getKVBinding, getR2Binding } from '@/lib/cloudflare/bindings'
 import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
 import { getAlbumRecord } from '@/lib/storage/albumsRepo'
@@ -19,6 +20,9 @@ import {
   moveImagesSchema,
   renameImageSchema,
 } from '@/lib/storage/validators'
+
+const BULK_OPERATION_CONCURRENCY = 4
+const BULK_OPERATION_TIMEOUT_MS = 20_000
 
 function parseNumberField(value: FormDataEntryValue | null): number | null {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -246,46 +250,49 @@ export const moveImagesFn = createServerFn({ method: 'POST' })
     }
 
     const objectKeys = [...new Set(data.objectKeys)]
-    let succeeded = 0
-    let failed = 0
-
-    for (const objectKey of objectKeys) {
-      try {
-        const image = await getImageRecord(kv, objectKey)
-        if (!image) {
-          throw new Error('Image not found')
-        }
-
-        if (image.albumId !== data.targetAlbumId) {
-          await moveImageRecords(kv, {
-            image,
-            targetAlbumId: data.targetAlbumId,
-          })
-          await adjustUsage(kv, {
-            albumId: image.albumId,
-            deltaBytes: -image.sizeBytes,
-            deltaCount: -1,
-          })
-          await adjustUsage(kv, {
-            albumId: data.targetAlbumId,
-            deltaBytes: image.sizeBytes,
-            deltaCount: 1,
-          })
-        }
-
-        succeeded += 1
+    const result = await runBulkOperation(objectKeys, async (objectKey) => {
+      const image = await getImageRecord(kv, objectKey)
+      if (!image) {
+        throw new Error('Image not found')
       }
-      catch (error) {
-        failed += 1
-        await markNeedsRecount(kv).catch(() => {})
-        console.error(`[moveImagesFn] Failed to move image ${objectKey}:`, error)
+
+      if (image.albumId !== data.targetAlbumId) {
+        await moveImageRecords(kv, {
+          image,
+          targetAlbumId: data.targetAlbumId,
+        })
+        await adjustUsage(kv, {
+          albumId: image.albumId,
+          deltaBytes: -image.sizeBytes,
+          deltaCount: -1,
+        })
+        await adjustUsage(kv, {
+          albumId: data.targetAlbumId,
+          deltaBytes: image.sizeBytes,
+          deltaCount: 1,
+        })
+      }
+    }, {
+      concurrency: BULK_OPERATION_CONCURRENCY,
+      timeoutMs: BULK_OPERATION_TIMEOUT_MS,
+    })
+
+    if (result.failed.length > 0) {
+      await markNeedsRecount(kv).catch(() => {})
+      for (const failure of result.failed) {
+        console.error(`[moveImagesFn] Failed to move image ${failure.item}:`, failure.error)
       }
     }
 
     return {
       total: objectKeys.length,
-      succeeded,
-      failed,
+      succeeded: result.ok.length,
+      failed: result.failed.length,
+      succeededObjectKeys: result.ok.map(item => item.item),
+      failedItems: result.failed.map(failure => ({
+        objectKey: failure.item,
+        reason: failure.error.message,
+      })),
     }
   })
 
@@ -347,35 +354,39 @@ export const deleteImagesFn = createServerFn({ method: 'POST' })
     const r2 = getR2Binding()
     const objectKeys = [...new Set(data.objectKeys)]
 
-    let succeeded = 0
-    let failed = 0
-
-    for (const objectKey of objectKeys) {
-      try {
-        const image = await getImageRecord(kv, objectKey)
-        if (!image) {
-          throw new Error('Image not found')
-        }
-
-        await deleteImageObject(r2, image.objectKey)
-        await deleteImageRecords(kv, image)
-        await adjustUsage(kv, {
-          albumId: image.albumId,
-          deltaBytes: -image.sizeBytes,
-          deltaCount: -1,
-        })
-        succeeded += 1
+    const result = await runBulkOperation(objectKeys, async (objectKey) => {
+      const image = await getImageRecord(kv, objectKey)
+      if (!image) {
+        throw new Error('Image not found')
       }
-      catch (error) {
-        failed += 1
-        await markNeedsRecount(kv).catch(() => {})
-        console.error(`[deleteImagesFn] Failed to delete image ${objectKey}:`, error)
+
+      await deleteImageObject(r2, image.objectKey)
+      await deleteImageRecords(kv, image)
+      await adjustUsage(kv, {
+        albumId: image.albumId,
+        deltaBytes: -image.sizeBytes,
+        deltaCount: -1,
+      })
+    }, {
+      concurrency: BULK_OPERATION_CONCURRENCY,
+      timeoutMs: BULK_OPERATION_TIMEOUT_MS,
+    })
+
+    if (result.failed.length > 0) {
+      await markNeedsRecount(kv).catch(() => {})
+      for (const failure of result.failed) {
+        console.error(`[deleteImagesFn] Failed to delete image ${failure.item}:`, failure.error)
       }
     }
 
     return {
       total: objectKeys.length,
-      succeeded,
-      failed,
+      succeeded: result.ok.length,
+      failed: result.failed.length,
+      succeededObjectKeys: result.ok.map(item => item.item),
+      failedItems: result.failed.map(failure => ({
+        objectKey: failure.item,
+        reason: failure.error.message,
+      })),
     }
   })

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Search, Upload } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { LoadingButton } from '@/components/ui/loading-button'
 
 interface DashboardTopbarProps {
   search: string
@@ -9,6 +9,7 @@ interface DashboardTopbarProps {
   onUploadClick: () => void
   onUploadChange: (files: FileList | null) => void
   uploadDisabled: boolean
+  uploadLoading: boolean
   fileInputRef: React.RefObject<HTMLInputElement | null>
   bulkOptions: ReactNode
 }
@@ -19,6 +20,7 @@ export function DashboardTopbar({
   onUploadClick,
   onUploadChange,
   uploadDisabled,
+  uploadLoading,
   fileInputRef,
   bulkOptions,
 }: DashboardTopbarProps) {
@@ -33,10 +35,15 @@ export function DashboardTopbar({
           onChange={event_ => onSearchChange(event_.target.value)}
         />
       </div>
-      <Button onClick={onUploadClick} disabled={uploadDisabled}>
+      <LoadingButton
+        onClick={onUploadClick}
+        disabled={uploadDisabled}
+        loading={uploadLoading}
+        loadingText="Uploading..."
+      >
         <Upload className="mr-2 h-4 w-4" />
         Upload
-      </Button>
+      </LoadingButton>
       <input
         ref={fileInputRef}
         type="file"

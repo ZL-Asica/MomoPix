@@ -1,10 +1,12 @@
 import type { AlbumRecord } from '@/lib/storage/types'
 import { useForm } from '@tanstack/react-form'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LoadingButton } from '@/components/ui/loading-button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
 
@@ -44,6 +46,9 @@ export function AlbumDialogs({
   onRenameAlbum,
   onMoveAlbum,
 }: AlbumDialogsProps) {
+  const [isCreatingPending, startCreateTransition] = useTransition()
+  const [isRenamingPending, startRenameTransition] = useTransition()
+  const [isMovingPending, startMoveTransition] = useTransition()
   const albumById = useMemo(() => new Map(albums.map(album => [album.id, album])), [albums])
 
   const createAlbumForm = useForm({
@@ -120,10 +125,35 @@ export function AlbumDialogs({
     moveAlbumForm.setFieldValue('parentId', target?.parentId ?? NO_PARENT_VALUE)
   }, [albumById, moveAlbumForm, moveAlbumId])
 
+  const handleCreateOpenChange = (open: boolean) => {
+    if (isCreatingPending) {
+      return
+    }
+    onCreateDialogOpenChange(open)
+  }
+
+  const handleRenameOpenChange = (open: boolean) => {
+    if (isRenamingPending) {
+      return
+    }
+    if (!open) {
+      onRenameAlbumIdChange(null)
+    }
+  }
+
+  const handleMoveOpenChange = (open: boolean) => {
+    if (isMovingPending) {
+      return
+    }
+    if (!open) {
+      onMoveAlbumIdChange(null)
+    }
+  }
+
   return (
     <>
-      <Dialog open={createDialogOpen} onOpenChange={onCreateDialogOpenChange}>
-        <DialogContent>
+      <Dialog open={createDialogOpen} onOpenChange={handleCreateOpenChange}>
+        <DialogContent showCloseButton={!isCreatingPending}>
           <DialogHeader>
             <DialogTitle>Create Album</DialogTitle>
             <DialogDescription>Add a top-level or nested album.</DialogDescription>
@@ -133,7 +163,16 @@ export function AlbumDialogs({
             className="space-y-4"
             onSubmit={(event_) => {
               event_.preventDefault()
-              void createAlbumForm.handleSubmit()
+              startCreateTransition(async () => {
+                try {
+                  await createAlbumForm.handleSubmit()
+                }
+                catch (error) {
+                  toast.error('Failed to create album', {
+                    description: error instanceof Error ? error.message : String(error),
+                  })
+                }
+              })
             }}
           >
             <createAlbumForm.Field
@@ -151,6 +190,7 @@ export function AlbumDialogs({
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={event_ => field.handleChange(event_.target.value)}
+                    disabled={isCreatingPending}
                   />
                   {field.state.meta.isTouched && !field.state.meta.isValid && (
                     <p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
@@ -163,7 +203,11 @@ export function AlbumDialogs({
               {field => (
                 <div className="space-y-2">
                   <Label>Parent Album</Label>
-                  <Select value={field.state.value} onValueChange={value => field.handleChange(value)}>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={value => field.handleChange(value)}
+                    disabled={isCreatingPending}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent" />
                     </SelectTrigger>
@@ -179,17 +223,24 @@ export function AlbumDialogs({
             </createAlbumForm.Field>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onCreateDialogOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleCreateOpenChange(false)}
+                disabled={isCreatingPending}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Create Album</Button>
+              <LoadingButton type="submit" loading={isCreatingPending} loadingText="Creating...">
+                Create Album
+              </LoadingButton>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={renameAlbumId !== null} onOpenChange={open => !open && onRenameAlbumIdChange(null)}>
-        <DialogContent>
+      <Dialog open={renameAlbumId !== null} onOpenChange={handleRenameOpenChange}>
+        <DialogContent showCloseButton={!isRenamingPending}>
           <DialogHeader>
             <DialogTitle>Rename Album</DialogTitle>
             <DialogDescription>Update the selected album name.</DialogDescription>
@@ -199,7 +250,16 @@ export function AlbumDialogs({
             className="space-y-4"
             onSubmit={(event_) => {
               event_.preventDefault()
-              void renameAlbumForm.handleSubmit()
+              startRenameTransition(async () => {
+                try {
+                  await renameAlbumForm.handleSubmit()
+                }
+                catch (error) {
+                  toast.error('Failed to rename album', {
+                    description: error instanceof Error ? error.message : String(error),
+                  })
+                }
+              })
             }}
           >
             <renameAlbumForm.Field
@@ -217,6 +277,7 @@ export function AlbumDialogs({
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={event_ => field.handleChange(event_.target.value)}
+                    disabled={isRenamingPending}
                   />
                   {field.state.meta.isTouched && !field.state.meta.isValid && (
                     <p className="text-sm text-destructive">{field.state.meta.errors.join(', ')}</p>
@@ -226,17 +287,24 @@ export function AlbumDialogs({
             </renameAlbumForm.Field>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onRenameAlbumIdChange(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleRenameOpenChange(false)}
+                disabled={isRenamingPending}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Rename</Button>
+              <LoadingButton type="submit" loading={isRenamingPending} loadingText="Saving...">
+                Rename
+              </LoadingButton>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={moveAlbumId !== null} onOpenChange={open => !open && onMoveAlbumIdChange(null)}>
-        <DialogContent>
+      <Dialog open={moveAlbumId !== null} onOpenChange={handleMoveOpenChange}>
+        <DialogContent showCloseButton={!isMovingPending}>
           <DialogHeader>
             <DialogTitle>Move Album</DialogTitle>
             <DialogDescription>Choose a new parent for this album.</DialogDescription>
@@ -246,14 +314,27 @@ export function AlbumDialogs({
             className="space-y-4"
             onSubmit={(event_) => {
               event_.preventDefault()
-              void moveAlbumForm.handleSubmit()
+              startMoveTransition(async () => {
+                try {
+                  await moveAlbumForm.handleSubmit()
+                }
+                catch (error) {
+                  toast.error('Failed to move album', {
+                    description: error instanceof Error ? error.message : String(error),
+                  })
+                }
+              })
             }}
           >
             <moveAlbumForm.Field name="parentId">
               {field => (
                 <div className="space-y-2">
                   <Label>New Parent</Label>
-                  <Select value={field.state.value} onValueChange={value => field.handleChange(value)}>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={value => field.handleChange(value)}
+                    disabled={isMovingPending}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select parent" />
                     </SelectTrigger>
@@ -269,10 +350,17 @@ export function AlbumDialogs({
             </moveAlbumForm.Field>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onMoveAlbumIdChange(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleMoveOpenChange(false)}
+                disabled={isMovingPending}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Move</Button>
+              <LoadingButton type="submit" loading={isMovingPending} loadingText="Moving...">
+                Move
+              </LoadingButton>
             </DialogFooter>
           </form>
         </DialogContent>

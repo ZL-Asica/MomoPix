@@ -1,4 +1,12 @@
-import type { BulkMoveImagesInput, CreateAlbumInput, MoveAlbumInput, MoveImageInput, RenameAlbumInput, RenameImageInput } from '@/features/dashboard/types'
+import type {
+  BulkMoveImagesInput,
+  BulkOperationResult,
+  CreateAlbumInput,
+  MoveAlbumInput,
+  MoveImageInput,
+  RenameAlbumInput,
+  RenameImageInput,
+} from '@/features/dashboard/types'
 import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -164,7 +172,7 @@ export function useDashboardData() {
     toast.success('Image deleted')
   }, [refreshAlbum, selectedAlbumId])
 
-  const bulkMoveImages = useCallback(async ({ objectKeys, targetAlbumId }: BulkMoveImagesInput) => {
+  const bulkMoveImages = useCallback(async ({ objectKeys, targetAlbumId }: BulkMoveImagesInput): Promise<BulkOperationResult> => {
     const result = await moveImagesFn({
       data: {
         objectKeys,
@@ -173,30 +181,16 @@ export function useDashboardData() {
     })
     await refreshAlbum(selectedAlbumId)
 
-    if (result.failed === 0) {
-      toast.success(`Moved ${result.succeeded} image(s)`)
-    }
-    else {
-      toast.error(`Moved ${result.succeeded} image(s), ${result.failed} failed`)
-    }
-
     return result
   }, [refreshAlbum, selectedAlbumId])
 
-  const bulkDeleteImages = useCallback(async (objectKeys: string[]) => {
+  const bulkDeleteImages = useCallback(async (objectKeys: string[]): Promise<BulkOperationResult> => {
     const result = await deleteImagesFn({
       data: {
         objectKeys,
       },
     })
     await refreshAlbum(selectedAlbumId)
-
-    if (result.failed === 0) {
-      toast.success(`Deleted ${result.succeeded} image(s)`)
-    }
-    else {
-      toast.error(`Deleted ${result.succeeded} image(s), ${result.failed} failed`)
-    }
 
     return result
   }, [refreshAlbum, selectedAlbumId])

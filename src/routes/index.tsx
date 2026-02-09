@@ -230,7 +230,7 @@ function HomePage() {
             quality={quality}
             setQuality={setQuality}
             isProcessing={isProcessing || isUploading}
-            onTransform={() => void handleTransformAction()}
+            onTransform={handleTransformAction}
             hasImages={images.length > 0}
             useManualQuality={useManualQuality}
             setUseManualQuality={setUseManualQuality}

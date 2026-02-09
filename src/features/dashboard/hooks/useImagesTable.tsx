@@ -43,6 +43,16 @@ export function useImagesTable({
     lastAnchorRowIdRef.current = null
   }, [])
 
+  const setSelectionToObjectKeys = useCallback((objectKeys: string[]) => {
+    const uniqueKeys = [...new Set(objectKeys)]
+    const nextSelection: RowSelectionState = {}
+    for (const objectKey of uniqueKeys) {
+      nextSelection[objectKey] = true
+    }
+    setRowSelection(nextSelection)
+    lastAnchorRowIdRef.current = uniqueKeys.at(-1) ?? null
+  }, [])
+
   const toggleRowSelection = useCallback((input: {
     rowId: string
     shiftKey: boolean
@@ -227,6 +237,7 @@ export function useImagesTable({
   return {
     columns,
     clearSelection,
+    setSelectionToObjectKeys,
     flexRender,
     selectedImagesOrdered,
     search,

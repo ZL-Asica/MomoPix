@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ImageIcon } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BulkOptionsMenu } from '@/features/dashboard/components/BulkOptionsMenu'
@@ -32,6 +31,7 @@ export const Route = createFileRoute('/dashboard')({
 const DEFAULT_TOTAL_SPACE_BYTES = 5 * 1024 * 1024 * 1024
 
 function DashboardPage() {
+  const [isUploadPending, startUploadTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [renameAlbumId, setRenameAlbumId] = useState<string | null>(null)
@@ -70,7 +70,7 @@ function DashboardPage() {
   const moveImageTarget = images.find(image => image.objectKey === moveImageObjectKey) ?? null
   const moveImageTargets = moveImageTarget ? [moveImageTarget] : []
 
-  const { clearSelection, search, selectedImagesOrdered, setSearch, table } = useImagesTable({
+  const { clearSelection, search, selectedImagesOrdered, setSearch, setSelectionToObjectKeys, table } = useImagesTable({
     images,
     onRenameImage: (objectKey) => {
       setRenameImageObjectKey(objectKey)
@@ -96,13 +96,7 @@ function DashboardPage() {
         onCreateAlbumClick={() => setCreateDialogOpen(true)}
         onRequestRename={setRenameAlbumId}
         onRequestMove={setMoveAlbumId}
-        onSetDefault={(albumId) => {
-          setDefaultAlbum(albumId).catch((error) => {
-            toast.error('Failed to set default album', {
-              description: error instanceof Error ? error.message : String(error),
-            })
-          })
-        }}
+        onSetDefault={setDefaultAlbum}
       />
       <UsageSummary meta={meta} totalSpaceBytes={DEFAULT_TOTAL_SPACE_BYTES} />
     </div>
@@ -139,13 +133,19 @@ function DashboardPage() {
             fileInputRef={fileInputRef}
             onUploadClick={() => fileInputRef.current?.click()}
             onUploadChange={(files) => {
-              void uploadFiles(files).finally(() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = ''
+              startUploadTransition(async () => {
+                try {
+                  await uploadFiles(files)
+                }
+                finally {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ''
+                  }
                 }
               })
             }}
-            uploadDisabled={isUploading || !selectedAlbumId}
+            uploadDisabled={isUploading || isUploadPending || !selectedAlbumId}
+            uploadLoading={isUploading || isUploadPending}
             bulkOptions={(
               <BulkOptionsMenu
                 selectedImages={selectedImagesOrdered}
@@ -154,6 +154,7 @@ function DashboardPage() {
                 onBulkMoveImages={bulkMoveImages}
                 onBulkDeleteImages={bulkDeleteImages}
                 clearSelection={clearSelection}
+                setSelectionToObjectKeys={setSelectionToObjectKeys}
               />
             )}
           />
@@ -178,12 +179,13 @@ function DashboardPage() {
         onOpenChange={open => !open && setMoveImageObjectKey(null)}
         onConfirm={async (targetAlbumId) => {
           if (moveImageTarget === null) {
-            return
+            return false
           }
           await moveImage({
             objectKey: moveImageTarget.objectKey,
             targetAlbumId,
           })
+          return true
         }}
       />
 

@@ -1,10 +1,11 @@
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import { useForm } from '@tanstack/react-form'
-import { useEffect } from 'react'
+import { useEffect, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { LoadingButton } from '@/components/ui/loading-button'
 
 interface RenameImageDialogProps {
   image: AlbumImageListItem | null
@@ -19,6 +20,8 @@ export function RenameImageDialog({
   onOpenChange,
   onRenameImage,
 }: RenameImageDialogProps) {
+  const [isPending, startTransition] = useTransition()
+
   const renameImageForm = useForm({
     defaultValues: {
       objectKey: image?.objectKey ?? '',
@@ -38,9 +41,16 @@ export function RenameImageDialog({
     renameImageForm.setFieldValue('name', image?.name ?? '')
   }, [image, renameImageForm])
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (isPending) {
+      return
+    }
+    onOpenChange(nextOpen)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent showCloseButton={!isPending}>
         <DialogHeader>
           <DialogTitle>Rename Image</DialogTitle>
           <DialogDescription>
@@ -53,10 +63,15 @@ export function RenameImageDialog({
           className="space-y-3"
           onSubmit={(event_) => {
             event_.preventDefault()
-            void renameImageForm.handleSubmit().catch((error) => {
-              toast.error('Failed to rename image', {
-                description: error instanceof Error ? error.message : String(error),
-              })
+            startTransition(async () => {
+              try {
+                await renameImageForm.handleSubmit()
+              }
+              catch (error) {
+                toast.error('Failed to rename image', {
+                  description: error instanceof Error ? error.message : String(error),
+                })
+              }
             })
           }}
         >
@@ -68,18 +83,25 @@ export function RenameImageDialog({
                 placeholder="Image name"
                 maxLength={120}
                 autoFocus
+                disabled={isPending}
               />
             )}
           </renameImageForm.Field>
         </form>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button type="submit" form="rename-image-form" disabled={image === null}>
+          <LoadingButton
+            type="submit"
+            form="rename-image-form"
+            disabled={image === null}
+            loading={isPending}
+            loadingText="Saving..."
+          >
             Save
-          </Button>
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
