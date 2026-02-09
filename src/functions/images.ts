@@ -209,7 +209,16 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       throw error
     }
 
-    return { image, albumImage }
+    let publicUrl: string | null = null
+    try {
+      const publicDomain = getR2PublicDomain()
+      publicUrl = buildPublicImageUrl(image.objectKey, publicDomain)
+    }
+    catch (error) {
+      console.error('[uploadImageFn] Failed to resolve R2 public domain for uploaded image URL:', error)
+    }
+
+    return { image, albumImage, publicUrl }
   })
 
 /**

@@ -1,6 +1,8 @@
-import type { AlbumImageListItem } from '@/lib/storage/types'
-
 export type ImageCopyFormat = 'direct' | 'html' | 'markdown'
+export interface ImageCopyRow {
+  name: string
+  publicUrl: string | null
+}
 
 function toMarkdownAlt(name: string): string {
   return name.replaceAll('[', '\\[').replaceAll(']', '\\]')
@@ -20,7 +22,7 @@ function toHtmlAlt(name: string): string {
  * Rows without a public URL are skipped.
  */
 export function buildImageCopyLines(
-  images: readonly AlbumImageListItem[],
+  images: readonly ImageCopyRow[],
   format: ImageCopyFormat,
 ): string[] {
   return images.flatMap((image) => {

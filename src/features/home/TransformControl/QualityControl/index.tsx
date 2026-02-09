@@ -1,5 +1,4 @@
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { LOSSY_FORMATS } from '@/lib/img/tranform-control'
 import QualityControlSlider from './QualityControlSlider'
 
@@ -53,11 +52,19 @@ const QualityControl = ({
                 </p>
               )}
         </div>
-        <Switch
+        {/* NOTE:
+         * Keep this as a native checkbox. Radix Switch can trigger a ref-driven
+         * update loop on React 19 during compress rerenders in this view.
+         */}
+        <input
           id="manual-quality"
+          type="checkbox"
+          role="switch"
+          aria-checked={isLossy && useManualQuality}
           checked={isLossy && useManualQuality}
-          onCheckedChange={handleQualityToggle}
+          onChange={event_ => handleQualityToggle(event_.target.checked)}
           disabled={!isLossy || isProcessing}
+          className="h-4 w-4 shrink-0 cursor-pointer rounded border border-input"
         />
       </div>
 

@@ -1,3 +1,8 @@
+export { HomeFeature } from './components/HomeFeature'
+export { ResultsList } from './components/ResultsList'
+export { TransformDropzone } from './components/TransformDropzone'
+export { UploadedLinksPanel } from './components/UploadedLinksPanel'
+export { UploadSelectedDialog } from './components/UploadSelectedDialog'
 export { default as ImageList } from './ImageList'
 export { default as ImageUploadArea } from './ImageUploadArea'
 export { default as TransformControl } from './TransformControl'

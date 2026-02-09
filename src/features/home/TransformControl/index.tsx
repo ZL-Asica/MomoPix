@@ -1,8 +1,7 @@
 import { Wand2 } from 'lucide-react'
 import { useTransition } from 'react'
-import { Button } from '@/components/ui/button'
+import { LoadingButton } from '@/components/ui/loading-button'
 import { Separator } from '@/components/ui/separator'
-import { Spinner } from '@/components/ui/spinner'
 import OutputFormat from './OutputFormat'
 import QualityControl from './QualityControl'
 
@@ -79,8 +78,10 @@ const TransformControls = ({
 
       {/* Actions */}
       <div className="space-y-2">
-        <Button
+        <LoadingButton
           className="w-full"
+          loading={isProcessing}
+          loadingText="Processing..."
           onClick={() => {
             startTransformTransition(async () => {
               await onTransform()
@@ -89,20 +90,9 @@ const TransformControls = ({
           disabled={isDisabled}
           aria-busy={isProcessing}
         >
-          {isProcessing
-            ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  Processing...
-                </>
-              )
-            : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                  {actionLabel}
-                </>
-              )}
-        </Button>
+          <Wand2 className="mr-2 h-4 w-4" aria-hidden="true" />
+          {actionLabel}
+        </LoadingButton>
 
         {showNoImagesHint && (
           <p className="text-center text-xs text-muted-foreground">
