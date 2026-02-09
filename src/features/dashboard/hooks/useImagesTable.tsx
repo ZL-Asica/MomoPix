@@ -170,10 +170,7 @@ export function useImagesTable({
     },
   })
 
-  const selectedImagesOrdered = useMemo(
-    () => table.getRowModel().rows.filter(row => row.getIsSelected()).map(row => row.original),
-    [table],
-  )
+  const selectedImagesOrdered = table.getRowModel().rows.filter(row => row.getIsSelected()).map(row => row.original)
 
   return {
     columns,

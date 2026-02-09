@@ -1,4 +1,5 @@
-import { Search, Settings, Upload } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Search, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -7,10 +8,9 @@ interface DashboardTopbarProps {
   onSearchChange: (value: string) => void
   onUploadClick: () => void
   onUploadChange: (files: FileList | null) => void
-  onSetDefault: () => void
   uploadDisabled: boolean
-  setDefaultDisabled: boolean
   fileInputRef: React.RefObject<HTMLInputElement | null>
+  bulkOptions: ReactNode
 }
 
 export function DashboardTopbar({
@@ -18,10 +18,9 @@ export function DashboardTopbar({
   onSearchChange,
   onUploadClick,
   onUploadChange,
-  onSetDefault,
   uploadDisabled,
-  setDefaultDisabled,
   fileInputRef,
+  bulkOptions,
 }: DashboardTopbarProps) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -46,10 +45,7 @@ export function DashboardTopbar({
         className="hidden"
         onChange={event_ => onUploadChange(event_.target.files)}
       />
-      <Button variant="outline" onClick={onSetDefault} disabled={setDefaultDisabled}>
-        <Settings className="mr-2 h-4 w-4" />
-        Set Default
-      </Button>
+      {bulkOptions}
     </div>
   )
 }

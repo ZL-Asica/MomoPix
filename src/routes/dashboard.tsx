@@ -4,14 +4,15 @@ import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { BulkOptionsMenu } from '@/features/dashboard/components/BulkOptionsMenu'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import { DashboardTopbar } from '@/features/dashboard/components/DashboardTopbar'
-import { ImagesBulkActionsBar } from '@/features/dashboard/components/ImagesBulkActionsBar'
 import { ImagesTable } from '@/features/dashboard/components/ImagesTable'
 import { SidebarAlbums } from '@/features/dashboard/components/SidebarAlbums'
 import { UsageSummary } from '@/features/dashboard/components/UsageSummary'
 import { AlbumDialogs } from '@/features/dashboard/dialogs/AlbumDialogs'
-import { DeleteImageDialog, MoveImageDialog } from '@/features/dashboard/dialogs/MoveImageDialog'
+import { BulkMoveImagesDialog } from '@/features/dashboard/dialogs/BulkMoveImagesDialog'
+import { DeleteImageDialog } from '@/features/dashboard/dialogs/MoveImageDialog'
 import { RenameImageDialog } from '@/features/dashboard/dialogs/RenameImageDialog'
 import { useDashboardData } from '@/features/dashboard/hooks/useDashboardData'
 import { useImagesTable } from '@/features/dashboard/hooks/useImagesTable'
@@ -66,6 +67,8 @@ function DashboardPage() {
 
   const selectedAlbum = albumById.get(selectedAlbumId)
   const renameImageTarget = images.find(image => image.objectKey === renameImageObjectKey) ?? null
+  const moveImageTarget = images.find(image => image.objectKey === moveImageObjectKey) ?? null
+  const moveImageTargets = moveImageTarget ? [moveImageTarget] : []
 
   const { clearSelection, search, selectedImagesOrdered, setSearch, table } = useImagesTable({
     images,
@@ -143,17 +146,16 @@ function DashboardPage() {
               })
             }}
             uploadDisabled={isUploading || !selectedAlbumId}
-            setDefaultDisabled={!selectedAlbumId}
-            onSetDefault={() => {
-              if (!selectedAlbumId) {
-                return
-              }
-              setDefaultAlbum(selectedAlbumId).catch((error) => {
-                toast.error('Failed to set default album', {
-                  description: error instanceof Error ? error.message : String(error),
-                })
-              })
-            }}
+            bulkOptions={(
+              <BulkOptionsMenu
+                selectedImages={selectedImagesOrdered}
+                albums={albums}
+                selectedAlbumId={selectedAlbumId}
+                onBulkMoveImages={bulkMoveImages}
+                onBulkDeleteImages={bulkDeleteImages}
+                clearSelection={clearSelection}
+              />
+            )}
           />
         </CardHeader>
         <CardContent>
@@ -164,24 +166,25 @@ function DashboardPage() {
               {imageUrlError}
             </p>
           )}
-          <ImagesBulkActionsBar
-            selectedImages={selectedImagesOrdered}
-            albums={albums}
-            selectedAlbumId={selectedAlbumId}
-            onBulkMoveImages={bulkMoveImages}
-            onBulkDeleteImages={bulkDeleteImages}
-            clearSelection={clearSelection}
-          />
           <ImagesTable table={table} />
         </CardContent>
       </Card>
 
-      <MoveImageDialog
-        objectKey={moveImageObjectKey}
-        selectedAlbumId={selectedAlbumId}
+      <BulkMoveImagesDialog
+        open={moveImageObjectKey !== null && moveImageTarget !== null}
+        selectedImages={moveImageTargets}
         albums={albums}
-        onMoveImage={moveImage}
-        onClose={() => setMoveImageObjectKey(null)}
+        selectedAlbumId={selectedAlbumId}
+        onOpenChange={open => !open && setMoveImageObjectKey(null)}
+        onConfirm={async (targetAlbumId) => {
+          if (moveImageTarget === null) {
+            return
+          }
+          await moveImage({
+            objectKey: moveImageTarget.objectKey,
+            targetAlbumId,
+          })
+        }}
       />
 
       <RenameImageDialog

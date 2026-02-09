@@ -1,6 +1,6 @@
 import type { ImageCopyFormat } from '@/features/dashboard/lib/copyFormats'
 import type { AlbumImageListItem, AlbumRecord } from '@/lib/storage/types'
-import { Copy, FolderOutput, Trash2 } from 'lucide-react'
+import { Copy, FolderOutput, Settings2, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,7 @@ interface BulkOperationResult {
   failed: number
 }
 
-interface ImagesBulkActionsBarProps {
+interface BulkOptionsMenuProps {
   selectedImages: AlbumImageListItem[]
   albums: AlbumRecord[]
   selectedAlbumId: string
@@ -32,7 +32,7 @@ interface ImagesBulkActionsBarProps {
   clearSelection: () => void
 }
 
-function formatLabel(format: ImageCopyFormat): string {
+function copyLabel(format: ImageCopyFormat): string {
   switch (format) {
     case 'direct':
       return 'direct links'
@@ -43,14 +43,14 @@ function formatLabel(format: ImageCopyFormat): string {
   }
 }
 
-export function ImagesBulkActionsBar({
+export function BulkOptionsMenu({
   selectedImages,
   albums,
   selectedAlbumId,
   onBulkMoveImages,
   onBulkDeleteImages,
   clearSelection,
-}: ImagesBulkActionsBarProps) {
+}: BulkOptionsMenuProps) {
   const [moveOpen, setMoveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -60,10 +60,7 @@ export function ImagesBulkActionsBar({
     () => selectedImages.map(image => image.objectKey),
     [selectedImages],
   )
-
-  if (selectedCount === 0) {
-    return null
-  }
+  const disabled = selectedCount === 0 || busy
 
   const handleCopy = async (format: ImageCopyFormat) => {
     const lines = buildImageCopyLines(selectedImages, format)
@@ -74,7 +71,7 @@ export function ImagesBulkActionsBar({
 
     try {
       await copyLinesToClipboard(lines)
-      toast.success(`Copied ${lines.length} ${formatLabel(format)} line(s)`)
+      toast.success(`Copied ${lines.length} ${copyLabel(format)} line(s)`)
     }
     catch (error) {
       toast.error('Failed to copy selected images', {
@@ -120,69 +117,62 @@ export function ImagesBulkActionsBar({
 
   return (
     <>
-      <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-2 rounded-lg border bg-background p-3">
-        <div className="text-sm font-medium">
-          {selectedCount}
-          {' '}
-          selected
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={busy}>
-              <Copy className="mr-2 h-4 w-4" />
-              Bulk Copy
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuLabel>Copy</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { void handleCopy('direct') }}>
-              Copy direct links
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { void handleCopy('html') }}>
-              Copy HTML &lt;img&gt;
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { void handleCopy('markdown') }}>
-              Copy Markdown
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => setMoveOpen(true)}
-        >
-          <FolderOutput className="mr-2 h-4 w-4" />
-          Bulk Move
-        </Button>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={busy}
-          onClick={() => setDeleteOpen(true)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Bulk Delete
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={clearSelection}
-          className="ml-auto"
-        >
-          Clear selection
-        </Button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" disabled={disabled}>
+            <Settings2 className="mr-2 h-4 w-4" />
+            Bulk options (
+            {selectedCount}
+            )
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() => {
+              if (disabled) {
+                return
+              }
+              setMoveOpen(true)
+            }}
+          >
+            <FolderOutput className="mr-2 h-4 w-4" />
+            Move...
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={disabled}
+            className="text-destructive"
+            onSelect={() => {
+              if (disabled) {
+                return
+              }
+              setDeleteOpen(true)
+            }}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete...
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Copy</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled={disabled} onClick={() => { void handleCopy('direct') }}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copy direct links
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={disabled} onClick={() => { void handleCopy('html') }}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copy HTML &lt;img&gt;
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={disabled} onClick={() => { void handleCopy('markdown') }}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copy Markdown
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <BulkMoveImagesDialog
         open={moveOpen}
-        selectedCount={selectedCount}
+        selectedImages={selectedImages}
         albums={albums}
         selectedAlbumId={selectedAlbumId}
         onOpenChange={setMoveOpen}

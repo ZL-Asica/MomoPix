@@ -1,4 +1,4 @@
-import type { AlbumRecord } from '@/lib/storage/types'
+import type { AlbumImageListItem, AlbumRecord } from '@/lib/storage/types'
 import { useForm } from '@tanstack/react-form'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface BulkMoveImagesDialogProps {
   open: boolean
-  selectedCount: number
+  selectedImages: AlbumImageListItem[]
   albums: AlbumRecord[]
   selectedAlbumId: string
   onOpenChange: (open: boolean) => void
@@ -17,12 +17,17 @@ interface BulkMoveImagesDialogProps {
 
 export function BulkMoveImagesDialog({
   open,
-  selectedCount,
+  selectedImages,
   albums,
   selectedAlbumId,
   onOpenChange,
   onConfirm,
 }: BulkMoveImagesDialogProps) {
+  const selectedCount = selectedImages.length
+  const moveDescription = selectedCount === 1
+    ? `Move "${selectedImages[0]?.name ?? 'image'}"`
+    : `Move ${selectedCount} images`
+
   const moveForm = useForm({
     defaultValues: {
       targetAlbumId: selectedAlbumId,
@@ -41,14 +46,8 @@ export function BulkMoveImagesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Move Selected Images</DialogTitle>
-          <DialogDescription>
-            Move
-            {' '}
-            {selectedCount}
-            {' '}
-            selected image(s) to another album.
-          </DialogDescription>
+          <DialogTitle>Move images</DialogTitle>
+          <DialogDescription>{moveDescription}</DialogDescription>
         </DialogHeader>
 
         <form
@@ -63,19 +62,34 @@ export function BulkMoveImagesDialog({
             })
           }}
         >
-          <moveForm.Field name="targetAlbumId">
-            {field => (
-              <Select value={field.state.value} onValueChange={value => field.handleChange(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Target album" />
-                </SelectTrigger>
-                <SelectContent>
-                  {albums.map(album => (
-                    <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+          <moveForm.Field
+            name="targetAlbumId"
+            validators={{
+              onSubmit: ({ value }) =>
+                value.trim().length === 0 ? 'Select a destination album' : undefined,
+            }}
+          >
+            {(field) => {
+              const error = field.state.meta.errors.find(item => typeof item === 'string')
+              return (
+                <div className="space-y-1">
+                  <Select
+                    value={field.state.value}
+                    onValueChange={value => field.handleChange(value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Target album" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {albums.map(album => (
+                        <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                </div>
+              )
+            }}
           </moveForm.Field>
         </form>
 
