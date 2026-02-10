@@ -10,8 +10,11 @@ changelog:
     - title: 🐛 Bug Fixes / 修复
       labels: [bug, fix]
 
-    - title: 🛠️ Improvements / 改进
-      labels: [refactor, optimization, performance]
+    - title: 🚜 Refactor / 重构
+      labels: [refactor]
+
+    - title: ⚡ Performance / 性能优化
+      labels: [performance, optimization]
 
     - title: 📦 Dependencies / 依赖更新
       labels: [dependencies]
@@ -22,11 +25,14 @@ changelog:
     - title: 🧰 Internal / 内部变更
       labels: [internal, ci, workflow, build]
 
-    - title: 💥 Breaking Changes / 破坏性变更
+    - title: 💥 BREAKING CHANGES / 破坏性变更
       labels: [breaking-change, Semver-Major]
 
     - title: 🎨 UI UX & Styling / UI UX & 样式
-      labels: [ui, ux, design]
+      labels: [ui, ux, design, styles]
 
-    - title: 🔄 Miscellaneous / 其他变更
+    - title: 🧪 Testing / 测试
+      labels: [test, testing]
+
+    - title: ⚙️ Miscellaneous / 其他变更
       labels: ['*']
