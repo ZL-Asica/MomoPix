@@ -2,7 +2,7 @@
 
 ## 1. Project Principles
 
-This repo runs on Cloudflare (Workers runtime + KV/R2) with TanStack Start and shadcn/ui.
+This repo runs on Cloudflare (Workers runtime + D1/R2) with TanStack Start and shadcn/ui.
 
 - Do:
   - Keep route files thin. Put UI, hooks, and domain logic in feature/lib modules.
@@ -44,8 +44,9 @@ src/
       services/               # feature-scoped domain orchestration
       types.ts
   lib/
-    cloudflare/               # runtime-generic adapters (KV/R2/bindings/errors/types)
+    cloudflare/               # runtime-generic adapters (D1/R2/bindings/errors/types)
     storage/                  # domain services for storage orchestration (albums/images/usage) and related types/validators
+    db/                       # Drizzle schema + D1 connection + cursor helpers
   components/
     ui/                       # shadcn/ui primitives
     layout/
@@ -147,9 +148,9 @@ Example:
 
 ```ts
 /**
- * Persists image metadata and updates related indexes.
+ * Persists image metadata row in D1.
  *
- * @param kv KV namespace binding.
+ * @param db D1 database binding.
  * @param image Canonical image record.
  */
 export async function putImageRecords(...) {}
@@ -160,15 +161,15 @@ export async function putImageRecords(...) {}
 Separate platform adapters from Momopix domain logic.
 
 - Do:
-  - Keep Cloudflare-generic helpers in `src/lib/cloudflare/*` (bindings, KV helpers, R2 helpers, runtime errors/types).
+  - Keep Cloudflare-generic helpers in `src/lib/cloudflare/*` (bindings, R2 helpers, runtime errors/types).
+  - Keep D1/Drizzle helpers in `src/lib/db/*` and domain orchestration in `src/lib/storage/*`.
   - Keep Momopix repositories/services in domain modules (`src/lib/storage/*` today; `src/lib/momopix/*` if introduced).
   - Keep `createServerFn` handlers minimal: auth check, validation, call service/repo functions, map response.
   - Validate inputs before mutations.
   - Treat `R2_PUBLIC_DOMAIN` as required for all runtimes (dev/prod) and build image URLs through shared helpers.
-  - Keep album image index keys in ordered format `album-image:<albumId>:<descTs>:<objectKey>` where `descTs` is derived from `createdAt` so KV lexicographic order is newest-first.
-  - Treat `ImageRecord.albumIndexKey` as the primary source of truth for deletes/moves/renames, and keep orphan-index cleanup for cases where canonical image rows are missing.
+  - Keep image listing cursor semantics keyset-based `(created_at DESC, id DESC)` for stable pagination.
 - Don't:
-  - Scatter raw `kv.get/put/list` and `bucket.get/put/delete` calls across UI/routes.
+  - Scatter raw D1 SQL and `bucket.get/put/delete` calls across UI/routes.
   - Encode domain naming/index rules in UI components.
   - Mix Cloudflare binding lookup and complex business logic in large route files.
 
@@ -179,8 +180,8 @@ export const updateThingFn = createServerFn({ method: 'POST' })
   .inputValidator(updateThingSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    return updateThing(kv, data)
+    const db = getD1Binding()
+    return updateThing(db, data)
   })
 ```
 
@@ -191,7 +192,7 @@ Policy: if you introduce breaking changes to architecture/contract patterns, upd
 Breaking changes (must update `AGENTS.md`):
 
 - Route or route-group renames that change navigation contracts for contributors.
-- Storage schema/key/index shape changes (KV/R2 metadata, record contracts, migration requirements).
+- Storage schema/key/index shape changes (D1/R2 metadata, record contracts, migration requirements).
 - New/renamed required environment variables or Cloudflare bindings.
 - Required UI architecture pattern shifts (for example replacing shadcn/TanStack Form/Table conventions).
 - Major folder boundary changes (for example moving domain layer from `src/lib/storage` to `src/lib/momopix`).

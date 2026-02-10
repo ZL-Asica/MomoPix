@@ -1,14 +1,4 @@
 /**
- * KV schema version for MomoPix storage metadata.
- */
-export const STORAGE_SCHEMA_VERSION = 1 as const
-
-/**
- * Single-user identifier used for key namespacing.
- */
-export const SINGLE_USER_ID = 'single-user' as const
-
-/**
  * Fixed id for the implicit root album node.
  */
 export const ROOT_ALBUM_ID = 'alb_root' as const
@@ -18,17 +8,13 @@ export type ISODateString = string
 export type ImageSource = 'index-compressed' | 'dashboard-upload'
 export type ImageListSort = 'createdAt-desc'
 
-/**
- * Global storage counters and defaults.
- */
+/** Global storage counters and defaults derived from D1 tables. */
 export interface StorageMeta {
-  schemaVersion: typeof STORAGE_SCHEMA_VERSION
   rootAlbumId: typeof ROOT_ALBUM_ID
   defaultAlbumId: string
   totalBytesUsed: number
   totalImageCount: number
   totalAlbumCount: number
-  needsRecount: boolean
   updatedAt: ISODateString
 }
 
@@ -61,7 +47,6 @@ export interface ImageRecord {
   createdAt: ISODateString
   updatedAt: ISODateString
   source: ImageSource
-  albumIndexKey: string
 }
 
 /**

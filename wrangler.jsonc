@@ -11,10 +11,12 @@
   "observability": {
     "enabled": true
   },
-  "kv_namespaces": [
+  "d1_databases": [
     {
-      "binding": "KV",
-      "id": "05115a2da85a46e3ace1fd77e0a0df8a",
+      "binding": "DB",
+      "database_name": "momopix",
+      "database_id": "0a3eaeeb-7334-4ec9-bc6c-d92bf6cb8d8d",
+      "migrations_dir": "migrations",
       "remote": true
     }
   ],

@@ -1,91 +1,74 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireAuth } from '@/lib/auth/guards'
-import { getKVBinding } from '@/lib/cloudflare/bindings'
+import { getD1Binding } from '@/lib/cloudflare/bindings'
 import { createAlbumRecord, ensureStorageBootstrap, listAlbumRecords, moveAlbumRecord, renameAlbumRecord, setDefaultAlbum } from '@/lib/storage/albumsRepo'
-import { recountUsage } from '@/lib/storage/usage'
 import { createAlbumSchema, moveAlbumSchema, renameAlbumSchema, setDefaultAlbumSchema } from '@/lib/storage/validators'
 
 /**
  * Returns the full album tree and storage meta for dashboard/index use.
- *
- * @returns Album tree and current storage metadata.
  */
 export const listAlbumsFn = createServerFn({ method: 'GET' })
   .handler(async () => {
     await requireAuth()
-    const kv = getKVBinding()
-    const { meta } = await ensureStorageBootstrap(kv)
-
-    if (meta.needsRecount) {
-      await recountUsage(kv)
-    }
-
-    const refreshed = await ensureStorageBootstrap(kv)
-    const albums = await listAlbumRecords(kv)
+    const db = getD1Binding()
+    const { meta } = await ensureStorageBootstrap(db)
+    const albums = await listAlbumRecords(db)
     return {
-      meta: refreshed.meta,
+      meta,
       albums,
     }
   })
 
 /**
  * Creates a new album under the requested parent and returns refreshed snapshots.
- *
- * @returns Created album plus refreshed album/meta snapshots.
  */
 export const createAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(createAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    const album = await createAlbumRecord(kv, data)
-    const albums = await listAlbumRecords(kv)
-    const { meta } = await ensureStorageBootstrap(kv)
+    const db = getD1Binding()
+    const album = await createAlbumRecord(db, data)
+    const albums = await listAlbumRecords(db)
+    const { meta } = await ensureStorageBootstrap(db)
     return { album, albums, meta }
   })
 
 /**
  * Renames an existing album and returns refreshed snapshots.
- *
- * @returns Renamed album plus refreshed album/meta snapshots.
  */
 export const renameAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(renameAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    const album = await renameAlbumRecord(kv, data)
-    const albums = await listAlbumRecords(kv)
-    const { meta } = await ensureStorageBootstrap(kv)
+    const db = getD1Binding()
+    const album = await renameAlbumRecord(db, data)
+    const albums = await listAlbumRecords(db)
+    const { meta } = await ensureStorageBootstrap(db)
     return { album, albums, meta }
   })
 
 /**
  * Moves an album in the tree and returns refreshed snapshots.
- *
- * @returns Moved album plus refreshed album/meta snapshots.
  */
 export const moveAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(moveAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    const movedAlbum = await moveAlbumRecord(kv, data)
-    const albums = await listAlbumRecords(kv)
-    const { meta } = await ensureStorageBootstrap(kv)
+    const db = getD1Binding()
+    const movedAlbum = await moveAlbumRecord(db, data)
+    const albums = await listAlbumRecords(db)
+    const { meta } = await ensureStorageBootstrap(db)
     return { movedAlbum, albums, meta }
   })
 
 /**
  * Updates the default upload destination album.
- *
- * @returns Updated storage metadata.
  */
 export const setDefaultAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(setDefaultAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    const meta = await setDefaultAlbum(kv, data)
+    const db = getD1Binding()
+    const meta = await setDefaultAlbum(db, data)
     return { meta }
   })

@@ -56,4 +56,3 @@ todos.json
 .dev.vars*
 
 .env
-/migrations

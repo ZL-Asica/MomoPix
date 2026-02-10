@@ -9,23 +9,20 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/guards'
 import { runBulkOperation } from '@/lib/bulk'
-import { getKVBinding, getR2Binding } from '@/lib/cloudflare/bindings'
+import { getD1Binding, getR2Binding } from '@/lib/cloudflare/bindings'
 import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
 import { getAlbumRecord } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
 import { deriveDefaultImageName, resolveImageName } from '@/lib/storage/imageName'
 import {
   deleteImageRecords,
-  deleteOrphanAlbumImageRows,
   getImageRecord,
   listAlbumImages,
   moveImageRecords,
   putImageRecords,
   renameImageRecords,
 } from '@/lib/storage/imagesRepo'
-import { albumImageKeyV2 } from '@/lib/storage/keys'
 import { buildR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
-import { adjustUsage, markNeedsRecount } from '@/lib/storage/usage'
 import {
   deleteImageSchema,
   deleteImagesSchema,
@@ -73,19 +70,18 @@ const uploadDashboardSchema = z.object({
 
 /**
  * Lists indexed images for one album.
- *
- * @returns Paged image rows with optional URL resolution error context.
  */
 export const listImagesFn = createServerFn({ method: 'POST' })
   .inputValidator(listImagesSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    const album = await getAlbumRecord(kv, data.albumId)
+    const db = getD1Binding()
+    const album = await getAlbumRecord(db, data.albumId)
     if (!album) {
       throw new Error('Album not found')
     }
-    const pagedImages = await listAlbumImages(kv, {
+
+    const pagedImages = await listAlbumImages(db, {
       albumId: data.albumId,
       cursor: data.cursor ?? null,
       pageSize: data.pageSize,
@@ -131,21 +127,19 @@ export const listImagesFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Uploads one image object, writes metadata rows, and adjusts usage counters.
- *
- * @returns Stored image metadata, album-index row, and optional public URL.
+ * Uploads one image object, writes metadata rows, and returns metadata.
  */
 export const uploadImageFn = createServerFn({ method: 'POST' })
   .inputValidator(validateUploadPayload)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
+    const db = getD1Binding()
     const r2 = getR2Binding()
 
     const albumId = String(data.get('albumId') ?? '').trim()
     uploadDashboardSchema.parse({ albumId })
 
-    const album = await getAlbumRecord(kv, albumId)
+    const album = await getAlbumRecord(db, albumId)
     if (!album) {
       throw new Error('Album not found')
     }
@@ -190,9 +184,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       createdAt: uploadedAt,
       updatedAt: uploadedAt,
       source,
-      albumIndexKey: '',
     }
-    image.albumIndexKey = albumImageKeyV2(albumId, image.createdAt, image.objectKey)
 
     const albumImage: AlbumImageRecord = {
       objectKey: image.objectKey,
@@ -207,16 +199,10 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     }
 
     try {
-      await putImageRecords(kv, image, albumImage)
-      await adjustUsage(kv, {
-        albumId,
-        deltaBytes: image.sizeBytes,
-        deltaCount: 1,
-      })
+      await putImageRecords(db, image, albumImage)
     }
     catch (error) {
       await deleteImageObject(r2, objectKey).catch(() => {})
-      await markNeedsRecount(kv).catch(() => {})
       throw error
     }
 
@@ -233,17 +219,15 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Moves one image between albums and updates usage counters for both sides.
- *
- * @returns Moved image metadata.
+ * Moves one image between albums.
  */
 export const moveImageFn = createServerFn({ method: 'POST' })
   .inputValidator(moveImageSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
+    const db = getD1Binding()
 
-    const image = await getImageRecord(kv, data.objectKey)
+    const image = await getImageRecord(db, data.objectKey)
     if (!image) {
       throw new Error('Image not found')
     }
@@ -251,71 +235,44 @@ export const moveImageFn = createServerFn({ method: 'POST' })
       return { image }
     }
 
-    const targetAlbum = await getAlbumRecord(kv, data.targetAlbumId)
+    const targetAlbum = await getAlbumRecord(db, data.targetAlbumId)
     if (!targetAlbum) {
       throw new Error('Target album not found')
     }
 
-    try {
-      const moved = await moveImageRecords(kv, {
-        image,
-        targetAlbumId: data.targetAlbumId,
-      })
-      await adjustUsage(kv, {
-        albumId: image.albumId,
-        deltaBytes: -image.sizeBytes,
-        deltaCount: -1,
-      })
-      await adjustUsage(kv, {
-        albumId: data.targetAlbumId,
-        deltaBytes: image.sizeBytes,
-        deltaCount: 1,
-      })
-      return { image: moved }
-    }
-    catch (error) {
-      await markNeedsRecount(kv).catch(() => {})
-      throw error
-    }
+    const moved = await moveImageRecords(db, {
+      image,
+      targetAlbumId: data.targetAlbumId,
+    })
+
+    return { image: moved }
   })
 
 /**
  * Moves multiple images between albums and reports success/failure counts.
- *
- * @returns Bulk move summary with per-item failure reasons.
  */
 export const moveImagesFn = createServerFn({ method: 'POST' })
   .inputValidator(moveImagesSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
+    const db = getD1Binding()
 
-    const targetAlbum = await getAlbumRecord(kv, data.targetAlbumId)
+    const targetAlbum = await getAlbumRecord(db, data.targetAlbumId)
     if (!targetAlbum) {
       throw new Error('Target album not found')
     }
 
     const objectKeys = [...new Set(data.objectKeys)]
     const result = await runBulkOperation(objectKeys, async (objectKey) => {
-      const image = await getImageRecord(kv, objectKey)
+      const image = await getImageRecord(db, objectKey)
       if (!image) {
         throw new Error('Image not found')
       }
 
       if (image.albumId !== data.targetAlbumId) {
-        await moveImageRecords(kv, {
+        await moveImageRecords(db, {
           image,
           targetAlbumId: data.targetAlbumId,
-        })
-        await adjustUsage(kv, {
-          albumId: image.albumId,
-          deltaBytes: -image.sizeBytes,
-          deltaCount: -1,
-        })
-        await adjustUsage(kv, {
-          albumId: data.targetAlbumId,
-          deltaBytes: image.sizeBytes,
-          deltaCount: 1,
         })
       }
     }, {
@@ -324,7 +281,6 @@ export const moveImagesFn = createServerFn({ method: 'POST' })
     })
 
     if (result.failed.length > 0) {
-      await markNeedsRecount(kv).catch(() => {})
       for (const failure of result.failed) {
         console.error(`[moveImagesFn] Failed to move image ${failure.item}:`, failure.error)
       }
@@ -344,15 +300,13 @@ export const moveImagesFn = createServerFn({ method: 'POST' })
 
 /**
  * Renames one image metadata record without changing its object key.
- *
- * @returns Renamed image metadata.
  */
 export const renameImageFn = createServerFn({ method: 'POST' })
   .inputValidator(renameImageSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
-    const image = await renameImageRecords(kv, {
+    const db = getD1Binding()
+    const image = await renameImageRecords(db, {
       objectKey: data.objectKey,
       name: data.name,
     })
@@ -360,90 +314,51 @@ export const renameImageFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Deletes an image from R2 and metadata indexes.
- *
- * @returns `true` when deletion succeeds.
+ * Deletes an image from R2 and metadata rows.
  */
 export const deleteImageFn = createServerFn({ method: 'POST' })
   .inputValidator(deleteImageSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
+    const db = getD1Binding()
     const r2 = getR2Binding()
-    const image = await getImageRecord(kv, data.objectKey)
+    const image = await getImageRecord(db, data.objectKey)
 
-    try {
-      await deleteImageObject(r2, data.objectKey)
-      if (image) {
-        await deleteImageRecords(kv, image)
-        await adjustUsage(kv, {
-          albumId: image.albumId,
-          deltaBytes: -image.sizeBytes,
-          deltaCount: -1,
-        })
-        return true
-      }
+    await deleteImageObject(r2, data.objectKey)
+    if (!image) {
+      throw new Error('Image not found')
+    }
 
-      const orphanDeleteResult = await deleteOrphanAlbumImageRows(kv, data.objectKey)
-      if (orphanDeleteResult === null) {
-        throw new Error('Image not found')
-      }
-      await adjustUsage(kv, {
-        albumId: orphanDeleteResult.albumId,
-        deltaBytes: -orphanDeleteResult.sizeBytes,
-        deltaCount: -1,
-      })
-      return true
-    }
-    catch (error) {
-      await markNeedsRecount(kv).catch(() => {})
-      throw error
-    }
+    await deleteImageRecords(db, image)
+    return true
   })
 
 /**
  * Deletes multiple images and reports success/failure counts.
- *
- * @returns Bulk delete summary with per-item failure reasons.
  */
 export const deleteImagesFn = createServerFn({ method: 'POST' })
   .inputValidator(deleteImagesSchema)
   .handler(async ({ data }) => {
     await requireAuth()
-    const kv = getKVBinding()
+    const db = getD1Binding()
     const r2 = getR2Binding()
     const objectKeys = [...new Set(data.objectKeys)]
 
     const result = await runBulkOperation(objectKeys, async (objectKey) => {
-      const image = await getImageRecord(kv, objectKey)
+      const image = await getImageRecord(db, objectKey)
 
       await deleteImageObject(r2, objectKey)
-      if (image) {
-        await deleteImageRecords(kv, image)
-        await adjustUsage(kv, {
-          albumId: image.albumId,
-          deltaBytes: -image.sizeBytes,
-          deltaCount: -1,
-        })
-        return
-      }
-
-      const orphanDeleteResult = await deleteOrphanAlbumImageRows(kv, objectKey)
-      if (orphanDeleteResult === null) {
+      if (!image) {
         throw new Error('Image not found')
       }
-      await adjustUsage(kv, {
-        albumId: orphanDeleteResult.albumId,
-        deltaBytes: -orphanDeleteResult.sizeBytes,
-        deltaCount: -1,
-      })
+
+      await deleteImageRecords(db, image)
     }, {
       concurrency: BULK_OPERATION_CONCURRENCY,
       timeoutMs: BULK_OPERATION_TIMEOUT_MS,
     })
 
     if (result.failed.length > 0) {
-      await markNeedsRecount(kv).catch(() => {})
       for (const failure of result.failed) {
         console.error(`[deleteImagesFn] Failed to delete image ${failure.item}:`, failure.error)
       }

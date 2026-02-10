@@ -2,12 +2,12 @@ import { env } from 'cloudflare:workers'
 import { assertBinding } from '@/lib/cloudflare/errors'
 
 /**
- * Returns the configured KV namespace used by MomoPix metadata storage.
+ * Returns the configured D1 database used by MomoPix metadata storage.
  *
- * @throws {MissingBindingError} When `KV` is not bound in Cloudflare runtime.
+ * @throws {MissingBindingError} When `DB` is not bound in Cloudflare runtime.
  */
-export function getKVBinding(): KVNamespace {
-  return assertBinding(env.KV, 'KV')
+export function getD1Binding(): D1Database {
+  return assertBinding(env.DB, 'DB')
 }
 
 /**
