@@ -1,5 +1,5 @@
 import type { HomeProcessedItem } from '@/features/home/types'
-import { AlertCircle, Download, RotateCcw, Trash2 } from 'lucide-react'
+import { AlertCircle, ArrowRight, Download, RotateCcw, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -21,6 +21,33 @@ interface ResultRowProps {
 function baseName(name: string): string {
   const value = name.split('.').slice(0, -1).join('.').trim()
   return value.length > 0 ? value : name
+}
+
+interface ConversionBadgeProps {
+  status: HomeProcessedItem['status']
+  originalFormat: HomeProcessedItem['originalFormat']
+  targetFormat: HomeProcessedItem['targetFormat']
+}
+
+function ConversionBadge({ status, originalFormat, targetFormat }: ConversionBadgeProps) {
+  return (
+    <div className="flex max-w-full flex-wrap items-center gap-1.5">
+      <Badge variant="outline" className="shrink-0">
+        {originalFormat.toUpperCase()}
+      </Badge>
+      {status === 'compressed' && (
+        <>
+          <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <Badge variant="outline" className="shrink-0 border-emerald-600 text-emerald-600">
+            {targetFormat.toUpperCase()}
+          </Badge>
+        </>
+      )}
+      {status === 'error' && (
+        <Badge variant="destructive" className="shrink-0">Error</Badge>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -49,8 +76,8 @@ export function ResultRow({
   const sizeLabelClass = savedPercent >= 0 ? 'text-emerald-600' : 'text-red-600'
 
   return (
-    <article className="rounded-lg border border-gray-100 p-4 dark:border-gray-800" role="listitem">
-      <div className="flex items-start gap-3">
+    <article className="min-w-0 overflow-hidden rounded-lg border border-gray-100 p-4 dark:border-gray-800" role="listitem">
+      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         {isAuthed && (
           <div className="pt-1">
             <Checkbox
@@ -58,11 +85,12 @@ export function ResultRow({
               checked={isSelected}
               disabled={selectionDisabled || !isSelectable}
               onCheckedChange={checked => onToggleSelected(checked === true)}
+              className="h-5 w-5 rounded-md"
             />
           </div>
         )}
 
-        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg sm:h-20 sm:w-20">
           <img
             src={item.originalPreviewUrl}
             alt={`Preview of ${item.originalName}`}
@@ -71,8 +99,8 @@ export function ResultRow({
         </div>
 
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 sm:flex-nowrap">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{baseName(item.originalName)}</p>
               <p className="text-xs text-muted-foreground">
                 {getHumanReadableFileSize(item.originalSize)}
@@ -87,7 +115,7 @@ export function ResultRow({
               </p>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1 self-start">
               {isCompressed && (
                 <Button
                   type="button"
@@ -95,6 +123,7 @@ export function ResultRow({
                   variant="ghost"
                   onClick={onDownload}
                   aria-label={`Download ${item.originalName}`}
+                  className="h-9 w-9"
                 >
                   <Download className="h-4 w-4" />
                 </Button>
@@ -107,6 +136,7 @@ export function ResultRow({
                   onClick={onRetryTransform}
                   disabled={actionDisabled}
                   aria-label={`Retry ${item.originalName}`}
+                  className="h-9 w-9"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -118,38 +148,39 @@ export function ResultRow({
                 onClick={onRemove}
                 disabled={actionDisabled}
                 aria-label={`Remove ${item.originalName}`}
+                className="h-9 w-9"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {item.status === 'idle' && <Badge variant="outline">Ready</Badge>}
+          <div className="flex max-w-full flex-wrap items-center gap-2 text-xs">
+            <ConversionBadge
+              status={item.status}
+              originalFormat={item.originalFormat}
+              targetFormat={item.targetFormat}
+            />
             {item.status === 'compressing' && (
               <Badge variant="outline" className="gap-1">
                 <Spinner className="h-3 w-3" />
-                Compressing
-              </Badge>
-            )}
-            {item.status === 'compressed' && <Badge variant="outline">Compressed</Badge>}
-            {item.status === 'error' && (
-              <Badge variant="destructive" className="gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Compression failed
+                Converting
               </Badge>
             )}
 
             {sizeLabel !== null && (
-              <span className={sizeLabelClass}>{sizeLabel}</span>
+              <span className={`wrap-break-word ${sizeLabelClass}`}>{sizeLabel}</span>
             )}
           </div>
 
           {item.transformError !== null && item.transformError.length > 0 && (
-            <p className="text-xs text-destructive">{item.transformError}</p>
+            <p className="flex items-start gap-1 text-xs text-destructive">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span className="wrap-break-word">{item.transformError}</span>
+            </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex max-w-full flex-wrap items-center gap-2 text-xs">
             {item.uploadStatus === 'uploading' && (
               <Badge variant="outline" className="gap-1">
                 <Spinner className="h-3 w-3" />
@@ -167,7 +198,7 @@ export function ResultRow({
           </div>
 
           {item.uploadError !== null && item.uploadError.length > 0 && (
-            <p className="text-xs text-destructive">{item.uploadError}</p>
+            <p className="wrap-break-word text-xs text-destructive">{item.uploadError}</p>
           )}
         </div>
       </div>

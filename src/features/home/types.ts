@@ -27,6 +27,7 @@ export interface HomeProcessedItem {
   originalName: string
   originalSize: number
   originalPreviewUrl: string
+  originalFormat: string
   targetFormat: SupportedFormat
   compressedBlob: Blob | null
   compressedFile: File | null

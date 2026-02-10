@@ -61,12 +61,14 @@ export function useImageTransformQueue() {
     for (const file of files) {
       try {
         const { name, originalSize } = checkImage(file)
+        const extension = name.split('.').slice(-1)[0]
         accepted.push({
           id: nanoid(8),
           originalFile: file,
           originalName: name,
           originalSize,
           originalPreviewUrl: URL.createObjectURL(file),
+          originalFormat: normalizeImageMime(extension, file.type).replace('image/', ''),
           targetFormat,
           compressedBlob: null,
           compressedFile: null,

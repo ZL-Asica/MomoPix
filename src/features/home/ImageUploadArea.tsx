@@ -27,10 +27,10 @@ const ImageUploadArea = ({ onDrop, disabled = false }: ImageUploadAreaProps) => 
   const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneOptions)
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors
+        className={`flex min-h-55 flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors sm:min-h-65 sm:p-10 md:min-h-75 md:p-12
           ${disabled
       ? 'cursor-not-allowed opacity-60 border-gray-200 dark:border-gray-700'
       : isDragActive

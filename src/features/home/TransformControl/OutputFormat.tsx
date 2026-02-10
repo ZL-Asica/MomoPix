@@ -36,7 +36,7 @@ const OutputFormat = ({
        * when compression starts and list state updates). Native inputs keep the same UX
        * without the ref churn that caused "Maximum update depth exceeded".
        */}
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Output format">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Output format">
         {(Object.keys(formatLabels) as SupportedFormat[]).map((format) => {
           const active = targetFormat === format
           const recommended = format === RECOMMENDED_DEFAULT
@@ -44,15 +44,15 @@ const OutputFormat = ({
             <Label
               key={format}
               className={[
-                'flex cursor-pointer flex-col rounded-md border px-3 py-2 text-xs transition-colors',
+                'flex min-w-0 cursor-pointer flex-col rounded-md border px-3 py-2 text-xs transition-colors',
                 isProcessing ? 'opacity-60' : '',
                 active
                   ? 'border-primary/70 bg-primary/5'
                   : 'border-border hover:bg-muted/60',
               ].join(' ')}
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <input
                     type="radio"
                     name="home-output-format"
@@ -62,14 +62,14 @@ const OutputFormat = ({
                     onChange={() => handleFormatChange(format)}
                     className="h-3.5 w-3.5"
                   />
-                  <span className="text-xs font-medium">
+                  <span className="truncate text-xs font-medium">
                     {formatLabels[format]}
                   </span>
                 </div>
                 {recommended && (
                   <Badge
                     variant={active ? 'default' : 'outline'}
-                    className={`px-1.5 py-0 text-[10px] ${
+                    className={`max-w-full shrink-0 px-1.5 py-0 text-[10px] ${
                       active
                         ? 'bg-primary text-primary-foreground'
                         : 'border-primary/40 text-primary'
@@ -79,7 +79,7 @@ const OutputFormat = ({
                   </Badge>
                 )}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 wrap-break-word text-xs text-muted-foreground">
                 {formatDescriptions[format]}
               </p>
             </Label>

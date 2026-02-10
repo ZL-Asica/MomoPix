@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { useCompressedDownloads } from '@/features/home/hooks/useCompressedDownloads'
 import { useCopyLinks } from '@/features/home/hooks/useCopyLinks'
 import { useHomeAuth } from '@/features/home/hooks/useHomeAuth'
@@ -16,7 +16,7 @@ import { UploadSelectedDialog } from './UploadSelectedDialog'
  * Stateful home page feature orchestrating compression, selection, upload, and copy flows.
  */
 export function HomeFeature() {
-  const { isAuthLoading, isAuthed } = useHomeAuth()
+  const { isAuthed } = useHomeAuth()
 
   const {
     items,
@@ -85,7 +85,7 @@ export function HomeFeature() {
     <div className="container mx-auto space-y-6 p-4">
       <h1 className="text-center text-2xl font-bold">Image Transformer</h1>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <TransformDropzone onDrop={addImages} disabled={isActionLocked} />
 
@@ -112,15 +112,6 @@ export function HomeFeature() {
             />
           )}
 
-          {!isAuthLoading && !isAuthed && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Optional upload</CardTitle>
-                <CardDescription>Log in to upload compressed results and copy hosted links.</CardDescription>
-              </CardHeader>
-            </Card>
-          )}
-
           {isAuthed && isLoadingAccountData && (
             <Card>
               <CardContent className="pt-6 text-sm text-muted-foreground">
@@ -130,53 +121,55 @@ export function HomeFeature() {
           )}
         </div>
 
-        <ResultsList
-          items={items}
-          isAuthed={isAuthed}
-          isCompressing={isCompressing}
-          compressionState={compressionState}
-          compressedCount={compressedCount}
-          isUploading={isUploading}
-          uploadState={uploadState}
-          uploadSummary={uploadSummary}
-          selectedIds={selection.selectedIds}
-          selectedCount={selection.selectedCount}
-          selectableCount={selection.selectableCount}
-          isAllSelected={selection.isAllSelected}
-          isIndeterminate={selection.isIndeterminate}
-          selectionDisabled={isActionLocked}
-          actionDisabled={isActionLocked}
-          downloadingAll={downloadingAll}
-          onToggleSelected={(id, selected) => {
-            if (isActionLocked) {
-              return
-            }
-            selection.toggleOne(id, selected)
-          }}
-          onToggleAll={(selected) => {
-            if (isActionLocked) {
-              return
-            }
-            selection.toggleAll(selected)
-          }}
-          onDownload={handleDownload}
-          onDownloadAll={handleDownloadAll}
-          onRemove={(id) => {
-            if (isActionLocked) {
-              return
-            }
-            removeItem(id)
-          }}
-          onRetryTransform={(id) => {
-            if (isActionLocked) {
-              return
-            }
-            void retryTransform(id)
-          }}
-          onUploadSelectedClick={() => {
-            setUploadDialogOpen(true)
-          }}
-        />
+        <div className="min-w-0">
+          <ResultsList
+            items={items}
+            isAuthed={isAuthed}
+            isCompressing={isCompressing}
+            compressionState={compressionState}
+            compressedCount={compressedCount}
+            isUploading={isUploading}
+            uploadState={uploadState}
+            uploadSummary={uploadSummary}
+            selectedIds={selection.selectedIds}
+            selectedCount={selection.selectedCount}
+            selectableCount={selection.selectableCount}
+            isAllSelected={selection.isAllSelected}
+            isIndeterminate={selection.isIndeterminate}
+            selectionDisabled={isActionLocked}
+            actionDisabled={isActionLocked}
+            downloadingAll={downloadingAll}
+            onToggleSelected={(id, selected) => {
+              if (isActionLocked) {
+                return
+              }
+              selection.toggleOne(id, selected)
+            }}
+            onToggleAll={(selected) => {
+              if (isActionLocked) {
+                return
+              }
+              selection.toggleAll(selected)
+            }}
+            onDownload={handleDownload}
+            onDownloadAll={handleDownloadAll}
+            onRemove={(id) => {
+              if (isActionLocked) {
+                return
+              }
+              removeItem(id)
+            }}
+            onRetryTransform={(id) => {
+              if (isActionLocked) {
+                return
+              }
+              void retryTransform(id)
+            }}
+            onUploadSelectedClick={() => {
+              setUploadDialogOpen(true)
+            }}
+          />
+        </div>
       </div>
 
       {isAuthed && (

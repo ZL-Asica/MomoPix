@@ -1,5 +1,5 @@
 import type { HomeProcessedItem } from '@/features/home/types'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 function isSelectable(item: HomeProcessedItem): boolean {
   return item.status === 'compressed' && item.compressedFile !== null
@@ -19,21 +19,74 @@ function isSameSelection(previous: Set<string>, nextIds: readonly string[]): boo
   return true
 }
 
+function addManyToSet(previous: Set<string>, ids: readonly string[]): Set<string> {
+  let changed = false
+  const next = new Set(previous)
+
+  for (const id of ids) {
+    if (!next.has(id)) {
+      next.add(id)
+      changed = true
+    }
+  }
+
+  return changed ? next : previous
+}
+
+function removeManyFromSet(previous: Set<string>, ids: readonly string[]): Set<string> {
+  let changed = false
+  const next = new Set(previous)
+
+  for (const id of ids) {
+    if (next.delete(id)) {
+      changed = true
+    }
+  }
+
+  return changed ? next : previous
+}
+
 /**
  * Tracks row selection for the home page result list.
  *
  * @param items Current home page rows.
  * @param enabled Whether selection interactions are allowed.
  * @returns Selection state and mutators scoped to selectable compressed rows.
+ *
+ * Invariant:
+ * - Newly converted rows auto-select once for logged-in users.
+ * - Rows explicitly deselected by the user are never auto-reselected.
  */
 export function useSelection(items: readonly HomeProcessedItem[], enabled: boolean) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [manuallyDeselectedIds, setManuallyDeselectedIds] = useState<Set<string>>(() => new Set())
+  const [autoSelectedOnceIds, setAutoSelectedOnceIds] = useState<Set<string>>(() => new Set())
 
   const selectableIds = useMemo(() => {
     return items.filter(isSelectable).map(item => item.id)
   }, [items])
 
   const selectableSet = useMemo(() => new Set(selectableIds), [selectableIds])
+
+  const autoSelectableIds = useMemo(() => {
+    if (!enabled) {
+      return []
+    }
+
+    return selectableIds.filter(id => !manuallyDeselectedIds.has(id) && !autoSelectedOnceIds.has(id))
+  }, [autoSelectedOnceIds, enabled, manuallyDeselectedIds, selectableIds])
+
+  useEffect(() => {
+    if (!enabled || autoSelectableIds.length === 0) {
+      return
+    }
+
+    // Auto-select is guarded and one-time per row to avoid setState feedback loops.
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+    setSelectedIds(previous => addManyToSet(previous, autoSelectableIds))
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+    setAutoSelectedOnceIds(previous => addManyToSet(previous, autoSelectableIds))
+  }, [autoSelectableIds, enabled])
 
   const visibleSelectedIds = useMemo(() => {
     if (!enabled) {
@@ -67,8 +120,9 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
       return
     }
 
+    const shouldSelect = selected ?? !visibleSelectedIds.has(id)
+
     setSelectedIds((previous) => {
-      const shouldSelect = selected ?? !previous.has(id)
       if (shouldSelect === previous.has(id)) {
         return previous
       }
@@ -82,7 +136,25 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
       }
       return next
     })
-  }, [enabled, selectableSet])
+
+    setManuallyDeselectedIds((previous) => {
+      if (shouldSelect) {
+        if (!previous.has(id)) {
+          return previous
+        }
+        const next = new Set(previous)
+        next.delete(id)
+        return next
+      }
+
+      if (previous.has(id)) {
+        return previous
+      }
+      const next = new Set(previous)
+      next.add(id)
+      return next
+    })
+  }, [enabled, selectableSet, visibleSelectedIds])
 
   const toggleAll = useCallback((selected: boolean) => {
     if (!enabled) {
@@ -91,6 +163,7 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
 
     if (!selected) {
       setSelectedIds(previous => (previous.size === 0 ? previous : new Set()))
+      setManuallyDeselectedIds(previous => addManyToSet(previous, selectableIds))
       return
     }
 
@@ -100,11 +173,13 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
       }
       return new Set(selectableIds)
     })
+    setManuallyDeselectedIds(previous => removeManyFromSet(previous, selectableIds))
   }, [enabled, selectableIds])
 
   const clearSelection = useCallback(() => {
     setSelectedIds(previous => (previous.size === 0 ? previous : new Set()))
-  }, [])
+    setManuallyDeselectedIds(previous => addManyToSet(previous, selectableIds))
+  }, [selectableIds])
 
   return {
     selectedIds: visibleSelectedIds,

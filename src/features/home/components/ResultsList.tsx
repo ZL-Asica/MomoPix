@@ -69,9 +69,9 @@ export function ResultsList({
   const hasDownloadables = transformedCount > 0
 
   return (
-    <section aria-label="Processed image list" className="space-y-3">
+    <section aria-label="Processed image list" className="min-w-0 space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-100 bg-muted/40 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
-        <div className="space-y-1 text-sm">
+        <div className="min-w-0 space-y-1 text-sm">
           <p className="font-medium">
             {items.length}
             {' '}
@@ -106,7 +106,7 @@ export function ResultsList({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Button
             type="button"
             size="sm"
