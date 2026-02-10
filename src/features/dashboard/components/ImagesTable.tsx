@@ -43,31 +43,39 @@ export function ImagesTable({ table, isInitialLoading, hasLoadedOnce }: ImagesTa
       <TableHeader>
         {table.getHeaderGroups().map(headerGroup => (
           <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map(header => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className={header.column.getCanSort() ? 'h-auto px-0 font-medium' : 'h-auto px-0 font-medium'}
-                        onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                        disabled={!header.column.getCanSort()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && (
-                          <>
-                            {header.column.getIsSorted() === 'asc' && <ArrowUp className="h-3 w-3 text-muted-foreground" />}
-                            {header.column.getIsSorted() === 'desc' && <ArrowDown className="h-3 w-3 text-muted-foreground" />}
-                            {header.column.getIsSorted() === false && <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
-                          </>
+            {headerGroup.headers.map((header) => {
+              const canSort = header.column.getCanSort()
+              const headerContent = flexRender(header.column.columnDef.header, header.getContext())
+
+              return (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : canSort
+                      ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto px-0 font-medium"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            <span className="flex items-center gap-1">
+                              {headerContent}
+                              {header.column.getIsSorted() === 'asc' && <ArrowUp className="h-3 w-3 text-muted-foreground" />}
+                              {header.column.getIsSorted() === 'desc' && <ArrowDown className="h-3 w-3 text-muted-foreground" />}
+                              {header.column.getIsSorted() === false && <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
+                            </span>
+                          </Button>
+                        )
+                      : (
+                          <div className="flex items-center gap-1 font-medium">
+                            {headerContent}
+                          </div>
                         )}
-                      </Button>
-                    )}
-              </TableHead>
-            ))}
+                </TableHead>
+              )
+            })}
           </TableRow>
         ))}
       </TableHeader>

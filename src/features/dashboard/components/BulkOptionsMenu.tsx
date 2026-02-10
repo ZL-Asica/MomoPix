@@ -176,7 +176,6 @@ export function BulkOptionsMenu({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Copy</DropdownMenuLabel>
-          <DropdownMenuSeparator />
           {IMAGE_COPY_FORMATS.map(({ format, copyActionLabel }) => (
             <DropdownMenuItem
               key={format}
