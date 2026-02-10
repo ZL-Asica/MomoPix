@@ -21,6 +21,10 @@ function objectKeyBaseName(objectKey: string): string {
  *
  * Falls back to the object key segment when a filename cannot produce
  * a non-empty base name.
+ *
+ * @param fileName Uploaded filename.
+ * @param objectKey Canonical object key fallback source.
+ * @returns Trimmed image display name.
  */
 export function deriveDefaultImageName(fileName: string, objectKey: string): string {
   const baseName = trimToMaxLength(withoutExtension(fileName))
@@ -33,6 +37,11 @@ export function deriveDefaultImageName(fileName: string, objectKey: string): str
 /**
  * Resolves the display name for image rows, including legacy records
  * where `name` may be absent.
+ *
+ * @param input Record name/object-key payload.
+ * @param input.name Optional existing display name from storage.
+ * @param input.objectKey Canonical object key fallback source.
+ * @returns Non-empty display name for UI and copy actions.
  */
 export function resolveImageName(input: { name?: string | null, objectKey: string }): string {
   const fromRecord = trimToMaxLength(input.name ?? '')

@@ -8,12 +8,19 @@ interface UseIntersectionObserverOptions {
 
 /**
  * Tracks element visibility and supports near-viewport prefetch margins.
+ *
+ * @param options Observer options.
+ * @param options.rootMargin Root margin passed to `IntersectionObserver`.
+ * @param options.threshold Intersection threshold passed to `IntersectionObserver`.
+ * @param options.freezeOnceVisible When true, observer stops after first intersection.
+ * @returns Ref setter and latest intersection status.
  */
-export function useIntersectionObserver<T extends Element>({
-  rootMargin = '500px 0px',
-  threshold = 0,
-  freezeOnceVisible = true,
-}: UseIntersectionObserverOptions = {}) {
+export function useIntersectionObserver<T extends Element>(options: UseIntersectionObserverOptions = {}) {
+  const {
+    rootMargin = '500px 0px',
+    threshold = 0,
+    freezeOnceVisible = true,
+  } = options
   const [node, setNode] = useState<T | null>(null)
   const [isIntersecting, setIsIntersecting] = useState(false)
 

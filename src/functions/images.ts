@@ -73,6 +73,8 @@ const uploadDashboardSchema = z.object({
 
 /**
  * Lists indexed images for one album.
+ *
+ * @returns Paged image rows with optional URL resolution error context.
  */
 export const listImagesFn = createServerFn({ method: 'POST' })
   .inputValidator(listImagesSchema)
@@ -130,6 +132,8 @@ export const listImagesFn = createServerFn({ method: 'POST' })
 
 /**
  * Uploads one image object, writes metadata rows, and adjusts usage counters.
+ *
+ * @returns Stored image metadata, album-index row, and optional public URL.
  */
 export const uploadImageFn = createServerFn({ method: 'POST' })
   .inputValidator(validateUploadPayload)
@@ -230,6 +234,8 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
 
 /**
  * Moves one image between albums and updates usage counters for both sides.
+ *
+ * @returns Moved image metadata.
  */
 export const moveImageFn = createServerFn({ method: 'POST' })
   .inputValidator(moveImageSchema)
@@ -275,6 +281,8 @@ export const moveImageFn = createServerFn({ method: 'POST' })
 
 /**
  * Moves multiple images between albums and reports success/failure counts.
+ *
+ * @returns Bulk move summary with per-item failure reasons.
  */
 export const moveImagesFn = createServerFn({ method: 'POST' })
   .inputValidator(moveImagesSchema)
@@ -336,6 +344,8 @@ export const moveImagesFn = createServerFn({ method: 'POST' })
 
 /**
  * Renames one image metadata record without changing its object key.
+ *
+ * @returns Renamed image metadata.
  */
 export const renameImageFn = createServerFn({ method: 'POST' })
   .inputValidator(renameImageSchema)
@@ -351,6 +361,8 @@ export const renameImageFn = createServerFn({ method: 'POST' })
 
 /**
  * Deletes an image from R2 and metadata indexes.
+ *
+ * @returns `true` when deletion succeeds.
  */
 export const deleteImageFn = createServerFn({ method: 'POST' })
   .inputValidator(deleteImageSchema)
@@ -391,6 +403,8 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
 
 /**
  * Deletes multiple images and reports success/failure counts.
+ *
+ * @returns Bulk delete summary with per-item failure reasons.
  */
 export const deleteImagesFn = createServerFn({ method: 'POST' })
   .inputValidator(deleteImagesSchema)

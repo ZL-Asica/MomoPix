@@ -7,6 +7,8 @@ import { createAlbumSchema, moveAlbumSchema, renameAlbumSchema, setDefaultAlbumS
 
 /**
  * Returns the full album tree and storage meta for dashboard/index use.
+ *
+ * @returns Album tree and current storage metadata.
  */
 export const listAlbumsFn = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -28,6 +30,8 @@ export const listAlbumsFn = createServerFn({ method: 'GET' })
 
 /**
  * Creates a new album under the requested parent and returns refreshed snapshots.
+ *
+ * @returns Created album plus refreshed album/meta snapshots.
  */
 export const createAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(createAlbumSchema)
@@ -42,6 +46,8 @@ export const createAlbumFn = createServerFn({ method: 'POST' })
 
 /**
  * Renames an existing album and returns refreshed snapshots.
+ *
+ * @returns Renamed album plus refreshed album/meta snapshots.
  */
 export const renameAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(renameAlbumSchema)
@@ -56,6 +62,8 @@ export const renameAlbumFn = createServerFn({ method: 'POST' })
 
 /**
  * Moves an album in the tree and returns refreshed snapshots.
+ *
+ * @returns Moved album plus refreshed album/meta snapshots.
  */
 export const moveAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(moveAlbumSchema)
@@ -70,6 +78,8 @@ export const moveAlbumFn = createServerFn({ method: 'POST' })
 
 /**
  * Updates the default upload destination album.
+ *
+ * @returns Updated storage metadata.
  */
 export const setDefaultAlbumFn = createServerFn({ method: 'POST' })
   .inputValidator(setDefaultAlbumSchema)

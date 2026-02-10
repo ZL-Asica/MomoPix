@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { buildImageCopyLines } from '@/features/dashboard/lib/copyFormats'
+import { buildImageCopyLines, getImageCopyFormatMeta } from '@/features/dashboard/lib/copyFormats'
 import { copyLinesToClipboard } from '@/lib/clipboard'
 
 interface ImageActionsCallbacks {
@@ -108,12 +108,13 @@ function ImageActionsContent({
       <Item
         disabled={copyDisabled}
         onSelect={() => {
-          const lines = buildImageCopyLines([image], 'direct')
+          const format = 'direct'
+          const lines = buildImageCopyLines([image], format)
           if (lines.length === 0) {
             return
           }
           startCopyTransition(async () => {
-            await copyLinesWithToast(lines, 'Direct link copied')
+            await copyLinesWithToast(lines, getImageCopyFormatMeta(format).singleItemToastMessage)
           })
         }}
       >
@@ -123,12 +124,13 @@ function ImageActionsContent({
       <Item
         disabled={copyDisabled}
         onSelect={() => {
-          const lines = buildImageCopyLines([image], 'html')
+          const format = 'html'
+          const lines = buildImageCopyLines([image], format)
           if (lines.length === 0) {
             return
           }
           startCopyTransition(async () => {
-            await copyLinesWithToast(lines, 'HTML image tag copied')
+            await copyLinesWithToast(lines, getImageCopyFormatMeta(format).singleItemToastMessage)
           })
         }}
       >
@@ -138,12 +140,13 @@ function ImageActionsContent({
       <Item
         disabled={copyDisabled}
         onSelect={() => {
-          const lines = buildImageCopyLines([image], 'markdown')
+          const format = 'markdown'
+          const lines = buildImageCopyLines([image], format)
           if (lines.length === 0) {
             return
           }
           startCopyTransition(async () => {
-            await copyLinesWithToast(lines, 'Markdown copied')
+            await copyLinesWithToast(lines, getImageCopyFormatMeta(format).singleItemToastMessage)
           })
         }}
       >

@@ -10,8 +10,14 @@ interface UseUploadOptions {
 
 /**
  * Handles dashboard upload flow and refresh behavior.
+ *
+ * @param options Upload dependencies.
+ * @param options.selectedAlbumId Album id receiving uploaded files.
+ * @param options.onUploaded Callback used to refresh dashboard data post-upload.
+ * @returns Pending state and file upload action for dashboard top bar.
  */
-export function useUpload({ selectedAlbumId, onUploaded }: UseUploadOptions) {
+export function useUpload(options: UseUploadOptions) {
+  const { selectedAlbumId, onUploaded } = options
   const [isUploading, setIsUploading] = useState(false)
 
   const uploadFiles = useCallback(async (files: FileList | null) => {

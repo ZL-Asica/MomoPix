@@ -69,6 +69,10 @@ interface OrphanAlbumImageDeleteResult {
  * Deletes orphaned album index rows when the canonical image record is missing.
  *
  * Returns minimal usage metadata when a matching index row exists.
+ *
+ * @param kv KV namespace binding.
+ * @param objectKey Canonical object key to delete from index rows.
+ * @returns Album usage delta info when an index row was found.
  */
 export async function deleteOrphanAlbumImageRows(
   kv: KVNamespace,
@@ -145,6 +149,10 @@ async function migrateLegacyAlbumIndexKeys(kv: KVNamespace, albumId: string): Pr
 
 /**
  * Loads the canonical image metadata row.
+ *
+ * @param kv KV namespace binding.
+ * @param objectKey Canonical object key.
+ * @returns Image metadata row or `null` when not found.
  */
 export async function getImageRecord(kv: KVNamespace, objectKey: string): Promise<ImageRecord | null> {
   return getJson<ImageRecord>(kv, imageKey(objectKey))
@@ -152,6 +160,11 @@ export async function getImageRecord(kv: KVNamespace, objectKey: string): Promis
 
 /**
  * Persists image metadata and its album index row.
+ *
+ * @param kv KV namespace binding.
+ * @param image Canonical image metadata.
+ * @param albumImage Album-scoped listing row.
+ * @returns Resolves when both rows are written.
  */
 export async function putImageRecords(
   kv: KVNamespace,
@@ -164,6 +177,10 @@ export async function putImageRecords(
 
 /**
  * Lists album-scoped image rows with cursor pagination and optional query filtering.
+ *
+ * @param kv KV namespace binding.
+ * @param input Album id, cursor, and filtering options.
+ * @returns Cursor-paged image rows for the requested album.
  */
 export async function listAlbumImages(
   kv: KVNamespace,
@@ -251,6 +268,10 @@ export async function listAlbumImages(
 
 /**
  * Deletes canonical and album-index rows for one image.
+ *
+ * @param kv KV namespace binding.
+ * @param image Canonical image metadata row.
+ * @returns Resolves when canonical/index rows are removed.
  */
 export async function deleteImageRecords(kv: KVNamespace, image: ImageRecord): Promise<void> {
   await deleteKey(kv, imageKey(image.objectKey))
@@ -261,6 +282,12 @@ export async function deleteImageRecords(kv: KVNamespace, image: ImageRecord): P
 
 /**
  * Moves an image between albums by rewriting metadata and index keys.
+ *
+ * @param kv KV namespace binding.
+ * @param input Current image row and destination album id.
+ * @param input.image Existing canonical image row.
+ * @param input.targetAlbumId Destination album identifier.
+ * @returns Updated canonical image record.
  */
 export async function moveImageRecords(
   kv: KVNamespace,
@@ -304,6 +331,12 @@ export async function moveImageRecords(
  * Renames one image while preserving its object key and binary object.
  *
  * This updates both the canonical image row and the album index row.
+ *
+ * @param kv KV namespace binding.
+ * @param input Object key and next display name.
+ * @param input.objectKey Canonical object key.
+ * @param input.name Next display name.
+ * @returns Updated canonical image record.
  */
 export async function renameImageRecords(
   kv: KVNamespace,
@@ -349,6 +382,9 @@ export async function renameImageRecords(
 
 /**
  * Lists all canonical image rows across albums.
+ *
+ * @param kv KV namespace binding.
+ * @returns All image metadata rows.
  */
 export async function listAllImageRecords(kv: KVNamespace): Promise<ImageRecord[]> {
   const keys = await listKeysWithPrefix(kv, STORAGE_KEYS.imagePrefix)

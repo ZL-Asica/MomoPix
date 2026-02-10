@@ -2,6 +2,7 @@ import type { HomeProcessedItem } from '@/features/home/types'
 import { AlertCircle, Download, RotateCcw, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
 import { getHumanReadableFileSize } from '@/utils/converter'
 
@@ -52,12 +53,11 @@ export function ResultRow({
       <div className="flex items-start gap-3">
         {isAuthed && (
           <div className="pt-1">
-            <input
-              type="checkbox"
+            <Checkbox
               aria-label={`Select ${item.originalName}`}
               checked={isSelected}
               disabled={selectionDisabled || !isSelectable}
-              onChange={event_ => onToggleSelected(event_.target.checked)}
+              onCheckedChange={checked => onToggleSelected(checked === true)}
             />
           </div>
         )}

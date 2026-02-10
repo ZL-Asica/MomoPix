@@ -37,6 +37,9 @@ function createDefaultMeta(timestamp: string): StorageMeta {
 
 /**
  * Reads global storage metadata.
+ *
+ * @param kv KV namespace binding.
+ * @returns Storage metadata or `null` when uninitialized.
  */
 export async function getStorageMeta(kv: KVNamespace): Promise<StorageMeta | null> {
   return getJson<StorageMeta>(kv, STORAGE_KEYS.meta)
@@ -44,6 +47,10 @@ export async function getStorageMeta(kv: KVNamespace): Promise<StorageMeta | nul
 
 /**
  * Persists global storage metadata.
+ *
+ * @param kv KV namespace binding.
+ * @param meta Next metadata snapshot.
+ * @returns Resolves when metadata write completes.
  */
 export async function putStorageMeta(kv: KVNamespace, meta: StorageMeta): Promise<void> {
   await putJson(kv, STORAGE_KEYS.meta, meta)
@@ -52,6 +59,9 @@ export async function putStorageMeta(kv: KVNamespace, meta: StorageMeta): Promis
 /**
  * Updates storage metadata through an atomic read/modify/write callback.
  *
+ * @param kv KV namespace binding.
+ * @param updater Pure updater for the current metadata snapshot.
+ * @returns Updated metadata snapshot.
  * @throws {Error} When metadata has not been initialized.
  */
 export async function updateStorageMeta(
@@ -69,6 +79,10 @@ export async function updateStorageMeta(
 
 /**
  * Loads an album record by id.
+ *
+ * @param kv KV namespace binding.
+ * @param albumId Album identifier.
+ * @returns Album row or `null` when not found.
  */
 export async function getAlbumRecord(kv: KVNamespace, albumId: string): Promise<AlbumRecord | null> {
   return getJson<AlbumRecord>(kv, albumKey(albumId))
@@ -76,6 +90,10 @@ export async function getAlbumRecord(kv: KVNamespace, albumId: string): Promise<
 
 /**
  * Writes one album record.
+ *
+ * @param kv KV namespace binding.
+ * @param album Album row to persist.
+ * @returns Resolves when write completes.
  */
 export async function putAlbumRecord(kv: KVNamespace, album: AlbumRecord): Promise<void> {
   await putJson(kv, albumKey(album.id), album)
@@ -83,6 +101,9 @@ export async function putAlbumRecord(kv: KVNamespace, album: AlbumRecord): Promi
 
 /**
  * Lists all albums sorted by depth then name for stable tree rendering.
+ *
+ * @param kv KV namespace binding.
+ * @returns Sorted flat album list.
  */
 export async function listAlbumRecords(kv: KVNamespace): Promise<AlbumRecord[]> {
   const keys = await listKeysWithPrefix(kv, STORAGE_KEYS.albumPrefix)
@@ -100,6 +121,9 @@ export async function listAlbumRecords(kv: KVNamespace): Promise<AlbumRecord[]> 
 
 /**
  * Ensures the root album and metadata records exist.
+ *
+ * @param kv KV namespace binding.
+ * @returns Current metadata and root-album records.
  */
 export async function ensureStorageBootstrap(kv: KVNamespace): Promise<StorageBootstrapResult> {
   const timestamp = nowISO()
@@ -131,6 +155,11 @@ export async function ensureStorageBootstrap(kv: KVNamespace): Promise<StorageBo
 /**
  * Creates a child album under `parentId`.
  *
+ * @param kv KV namespace binding.
+ * @param input Album creation payload.
+ * @param input.name Album display name.
+ * @param input.parentId Parent album id or `null` for top-level.
+ * @returns Created album record.
  * @throws {Error} When parent album does not exist.
  */
 export async function createAlbumRecord(
@@ -174,6 +203,11 @@ export async function createAlbumRecord(
 /**
  * Renames an existing album.
  *
+ * @param kv KV namespace binding.
+ * @param input Album id and next name.
+ * @param input.albumId Album identifier.
+ * @param input.name Next album display name.
+ * @returns Renamed album record.
  * @throws {Error} When album does not exist.
  */
 export async function renameAlbumRecord(
@@ -199,6 +233,10 @@ export async function renameAlbumRecord(
 /**
  * Sets the default destination album for uploads.
  *
+ * @param kv KV namespace binding.
+ * @param input Album id to set as default.
+ * @param input.albumId Album identifier.
+ * @returns Updated storage metadata.
  * @throws {Error} When album does not exist.
  */
 export async function setDefaultAlbum(
@@ -221,6 +259,11 @@ export async function setDefaultAlbum(
 /**
  * Moves an album and rewrites descendant `path`/`depth` values.
  *
+ * @param kv KV namespace binding.
+ * @param input Source album id and target parent id.
+ * @param input.albumId Source album identifier.
+ * @param input.parentId Destination parent album id or `null`.
+ * @returns Moved album record.
  * @throws {Error} For root/self/descendant-invalid move attempts.
  */
 export async function moveAlbumRecord(
@@ -291,6 +334,13 @@ export async function moveAlbumRecord(
 
 /**
  * Applies usage counter deltas to a specific album.
+ *
+ * @param kv KV namespace binding.
+ * @param input Delta payload applied to one album.
+ * @param input.albumId Album identifier.
+ * @param input.deltaBytes Byte-count delta.
+ * @param input.deltaCount Image-count delta.
+ * @returns Updated album record.
  */
 export async function updateAlbumUsage(
   kv: KVNamespace,

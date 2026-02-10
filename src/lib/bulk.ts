@@ -22,6 +22,12 @@ function toError(value: unknown): Error {
 
 /**
  * Rejects when `promise` does not settle within `timeoutMs`.
+ *
+ * @param promise Task promise to monitor.
+ * @param timeoutMs Timeout threshold in milliseconds.
+ * @param message Error message used when the timeout is hit.
+ * @returns Original promise result when it resolves in time.
+ * @throws {Error} When timeout expires before settlement.
  */
 export async function withTimeout<T>(
   promise: Promise<T>,
@@ -51,6 +57,11 @@ export async function withTimeout<T>(
 
 /**
  * Runs async work for items with bounded concurrency, collecting success and failure results.
+ *
+ * @param items Input items to process.
+ * @param worker Async worker for each item.
+ * @param options Concurrency/timeout controls.
+ * @returns Ordered success and failure rows matching input order.
  */
 export async function runBulkOperation<TItem, TResult>(
   items: readonly TItem[],

@@ -12,6 +12,9 @@ interface ShiftRangeSelectionInput {
  * Applies contiguous range selection using the current row-model order.
  *
  * Rows outside the computed range keep their previous selection state.
+ *
+ * @param input Current row ids, selection state, and shift-anchor bounds.
+ * @returns Next TanStack row-selection state.
  */
 export function applyShiftRangeSelection(input: ShiftRangeSelectionInput): RowSelectionState {
   const { rowIds, rowSelection, anchorIndex, targetIndex, nextSelected } = input

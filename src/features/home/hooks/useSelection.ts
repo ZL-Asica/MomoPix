@@ -24,6 +24,7 @@ function isSameSelection(previous: Set<string>, nextIds: readonly string[]): boo
  *
  * @param items Current home page rows.
  * @param enabled Whether selection interactions are allowed.
+ * @returns Selection state and mutators scoped to selectable compressed rows.
  */
 export function useSelection(items: readonly HomeProcessedItem[], enabled: boolean) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())

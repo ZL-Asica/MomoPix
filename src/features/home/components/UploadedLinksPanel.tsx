@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { IMAGE_COPY_FORMATS } from '@/features/dashboard/lib/copyFormats'
 
 interface UploadedLinksPanelProps {
   uploadedCount: number
@@ -60,9 +61,11 @@ export function UploadedLinksPanel({
           <DropdownMenuContent align="start">
             <DropdownMenuLabel>Format</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => { void onCopySelected('direct') }}>Direct URL</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => { void onCopySelected('html') }}>HTML &lt;img&gt;</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => { void onCopySelected('markdown') }}>Markdown</DropdownMenuItem>
+            {IMAGE_COPY_FORMATS.map(({ format, menuLabel }) => (
+              <DropdownMenuItem key={format} onSelect={() => { void onCopySelected(format) }}>
+                {menuLabel}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -76,9 +79,11 @@ export function UploadedLinksPanel({
           <DropdownMenuContent align="start">
             <DropdownMenuLabel>Format</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => { void onCopyAll('direct') }}>Direct URL</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => { void onCopyAll('html') }}>HTML &lt;img&gt;</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => { void onCopyAll('markdown') }}>Markdown</DropdownMenuItem>
+            {IMAGE_COPY_FORMATS.map(({ format, menuLabel }) => (
+              <DropdownMenuItem key={format} onSelect={() => { void onCopyAll(format) }}>
+                {menuLabel}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </CardContent>

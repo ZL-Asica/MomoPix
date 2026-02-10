@@ -22,6 +22,9 @@ const MIME_TO_EXT: Record<string, string> = {
 
 /**
  * Extracts the file extension from a filename.
+ *
+ * @param name Input filename.
+ * @returns Lowercased extension without dot or `null` when absent.
  */
 export function extractExtension(name: string): string | null {
   const segments = name.trim().split('.')
@@ -38,6 +41,10 @@ export function extractExtension(name: string): string | null {
 
 /**
  * Resolves a normalized extension from name or mime hints.
+ *
+ * @param name Source filename.
+ * @param mimeType Optional MIME type hint.
+ * @returns Normalized extension used by storage naming.
  */
 export function normalizeImageExt(name: string, mimeType?: string | null): string {
   const hasMime = mimeType !== null && mimeType !== undefined && mimeType.trim().length > 0
@@ -59,6 +66,10 @@ export function normalizeImageExt(name: string, mimeType?: string | null): strin
 
 /**
  * Resolves a normalized mime type from extension or provided mime.
+ *
+ * @param ext Source file extension.
+ * @param mimeType Optional MIME type override.
+ * @returns Normalized MIME type.
  */
 export function normalizeImageMime(ext: string, mimeType?: string | null): string {
   if (mimeType !== null && mimeType !== undefined && mimeType.trim().length > 0) {
@@ -67,6 +78,12 @@ export function normalizeImageMime(ext: string, mimeType?: string | null): strin
   return EXT_TO_MIME[ext.toLowerCase()] ?? 'application/octet-stream'
 }
 
+/**
+ * Removes the last extension segment from a filename.
+ *
+ * @param name Source filename.
+ * @returns Filename without trailing extension.
+ */
 export function withoutExtension(name: string): string {
   const segments = name.split('.')
   if (segments.length <= 1) {
@@ -77,6 +94,10 @@ export function withoutExtension(name: string): string {
 
 /**
  * Builds the storage/display filename while preserving base name.
+ *
+ * @param originalName Original uploaded filename.
+ * @param ext Normalized output extension.
+ * @returns Storage-safe filename with normalized extension.
  */
 export function toStoredName(originalName: string, ext: string): string {
   const base = withoutExtension(originalName).trim()
@@ -86,6 +107,9 @@ export function toStoredName(originalName: string, ext: string): string {
 
 /**
  * Formats bytes to a compact human-readable value.
+ *
+ * @param bytes Raw byte count.
+ * @returns Human-readable byte label.
  */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) {

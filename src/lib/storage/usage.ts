@@ -9,6 +9,13 @@ function nowISO(): string {
 
 /**
  * Applies byte/image deltas to album and global usage counters.
+ *
+ * @param kv KV namespace binding.
+ * @param input Usage delta payload.
+ * @param input.albumId Album identifier.
+ * @param input.deltaBytes Byte-count delta.
+ * @param input.deltaCount Image-count delta.
+ * @returns Updated album and global metadata records.
  */
 export async function adjustUsage(
   kv: KVNamespace,
@@ -35,6 +42,9 @@ export async function adjustUsage(
 
 /**
  * Marks storage metadata for a full recount after partial-failure scenarios.
+ *
+ * @param kv KV namespace binding.
+ * @returns Resolves when metadata flag is updated.
  */
 export async function markNeedsRecount(kv: KVNamespace): Promise<void> {
   await ensureStorageBootstrap(kv)
@@ -51,6 +61,9 @@ export async function markNeedsRecount(kv: KVNamespace): Promise<void> {
 
 /**
  * Recomputes usage counters by scanning canonical image rows.
+ *
+ * @param kv KV namespace binding.
+ * @returns Recounted storage metadata snapshot.
  */
 export async function recountUsage(kv: KVNamespace): Promise<StorageMeta> {
   const { meta } = await ensureStorageBootstrap(kv)
@@ -106,6 +119,10 @@ export async function recountUsage(kv: KVNamespace): Promise<StorageMeta> {
 
 /**
  * Checks whether a canonical image metadata row exists.
+ *
+ * @param kv KV namespace binding.
+ * @param objectKey Canonical object key.
+ * @returns `true` when the image metadata row exists.
  */
 export async function hasImageRecord(kv: KVNamespace, objectKey: string): Promise<boolean> {
   const key = imageKey(objectKey)

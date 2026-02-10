@@ -3,6 +3,7 @@ import type { ImagesTableMeta } from '@/features/dashboard/hooks/useImagesTable'
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import { flexRender } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown, ImageIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -47,10 +48,13 @@ export function ImagesTable({ table, isInitialLoading, hasLoadedOnce }: ImagesTa
                 {header.isPlaceholder
                   ? null
                   : (
-                      <button
+                      <Button
                         type="button"
-                        className={header.column.getCanSort() ? 'inline-flex cursor-pointer select-none items-center gap-1' : ''}
-                        onClick={header.column.getToggleSortingHandler()}
+                        variant="ghost"
+                        size="sm"
+                        className={header.column.getCanSort() ? 'h-auto px-0 font-medium' : 'h-auto px-0 font-medium'}
+                        onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                        disabled={!header.column.getCanSort()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {header.column.getCanSort() && (
@@ -60,7 +64,7 @@ export function ImagesTable({ table, isInitialLoading, hasLoadedOnce }: ImagesTa
                             {header.column.getIsSorted() === false && <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
                           </>
                         )}
-                      </button>
+                      </Button>
                     )}
               </TableHead>
             ))}

@@ -1,6 +1,7 @@
 import type { HomeProcessedItem, UploadState } from '@/features/home/types'
 import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Spinner } from '@/components/ui/spinner'
 import EmptyImageListState from '@/features/home/ImageList/EmptyImageListState'
@@ -120,18 +121,11 @@ export function ResultsList({
           {isAuthed && (
             <>
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
+                <Checkbox
                   aria-label="Select all compressed rows"
-                  checked={isAllSelected}
+                  checked={isIndeterminate ? 'indeterminate' : isAllSelected}
                   disabled={selectionDisabled || selectableCount === 0}
-                  ref={(element) => {
-                    if (!element) {
-                      return
-                    }
-                    element.indeterminate = isIndeterminate
-                  }}
-                  onChange={event_ => onToggleAll(event_.target.checked)}
+                  onCheckedChange={checked => onToggleAll(checked === true)}
                 />
                 Select all
               </label>

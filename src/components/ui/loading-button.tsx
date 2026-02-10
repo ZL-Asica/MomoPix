@@ -12,6 +12,10 @@ type LoadingButtonProps = React.ComponentProps<typeof Button> & {
 
 /**
  * Button variant that displays a spinner and disables interaction while pending.
+ *
+ * @param loading When true, shows spinner state and disables the button.
+ * @param loadingText Optional text override while pending.
+ * @returns Rendered button that mirrors shadcn button props.
  */
 const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
   ({ loading, loadingText, disabled, children, ...props }, ref) => {

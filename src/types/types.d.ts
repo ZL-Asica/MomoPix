@@ -29,20 +29,6 @@ interface ImageStats {
   savedClassName: string
 }
 
-interface ImageListSummary {
-  totalCount: number
-  transformedCount: number
-  totalOriginalSize: number // Only calculate converted part
-  totalCompressedSize: number // Only calculate converted part
-  savedPercent: number // Based on the overall saved percentage of converted images
-  hasTransformed: boolean
-  progressDone: number
-  showProgress: boolean
-  progressPercent: number
-  ringPercent: number
-  ringPositive: boolean
-}
-
 interface QualityPreset {
   min: number
   max: number

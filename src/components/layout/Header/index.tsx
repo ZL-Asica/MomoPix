@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useClickOutside, useHideOnScrollDown, useToggle } from '@zl-asica/react'
 import { Menu } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
 import HeaderMenu from './HeaderMenu'
 
 const Header = () => {
@@ -48,16 +49,18 @@ const Header = () => {
         </Link>
 
         {/* Mobile Menu Button */}
-        <button
+        <Button
           type="button"
-          className="transition-transform-300 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-foretext-foreground text-2xl bg-foreground text-background shadow-md hover:scale-110 md:hidden"
+          variant="default"
+          size="icon"
+          className="transition-transform-300 z-50 h-12 w-12 rounded-full text-2xl shadow-md hover:scale-110 md:hidden"
           onClick={toggleOpen}
           aria-label="Toggle menu"
           aria-expanded={isOpen ? 'true' : 'false'}
           aria-controls="mobile-menu"
         >
           {!isOpen && <Menu strokeWidth={2.5} />}
-        </button>
+        </Button>
 
         {/* Mobile Menu */}
         <div

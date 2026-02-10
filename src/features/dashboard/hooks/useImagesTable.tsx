@@ -15,6 +15,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ImageActionsDropdownMenu } from '@/features/dashboard/components/ImageActionsMenu'
 import { LazyImage } from '@/features/dashboard/components/LazyImage'
 import { applyShiftRangeSelection } from '@/features/dashboard/lib/shiftRangeSelection'
@@ -30,6 +31,9 @@ interface UseImagesTableOptions {
   onDeleteImage: (objectKey: string) => void
 }
 
+/**
+ * Table metadata passed to row/context action menus.
+ */
 export interface ImagesTableMeta {
   onRenameImage: (objectKey: string) => void
   onMoveImage: (objectKey: string) => void
@@ -38,16 +42,27 @@ export interface ImagesTableMeta {
 
 /**
  * Configures TanStack Table state and columns for dashboard image browsing.
+ *
+ * @param options Table configuration inputs.
+ * @param options.images Full image dataset for table rows.
+ * @param options.pageIndex Current zero-based page index.
+ * @param options.pageSize Current page size.
+ * @param options.onPageIndexChange Callback for page index updates.
+ * @param options.onRenameImage Callback for row rename action.
+ * @param options.onMoveImage Callback for row move action.
+ * @param options.onDeleteImage Callback for row delete action.
+ * @returns Table instance plus ordered selection helpers for bulk actions.
  */
-export function useImagesTable({
-  images,
-  pageIndex,
-  pageSize,
-  onPageIndexChange,
-  onRenameImage,
-  onMoveImage,
-  onDeleteImage,
-}: UseImagesTableOptions) {
+export function useImagesTable(options: UseImagesTableOptions) {
+  const {
+    images,
+    pageIndex,
+    pageSize,
+    onPageIndexChange,
+    onRenameImage,
+    onMoveImage,
+    onDeleteImage,
+  } = options
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -117,20 +132,18 @@ export function useImagesTable({
     {
       id: 'select',
       header: ({ table }) => (
-        <input
-          type="checkbox"
+        <Checkbox
           aria-label="Select all rows"
-          checked={table.getIsAllPageRowsSelected()}
-          onChange={event_ => table.toggleAllPageRowsSelected(event_.target.checked)}
+          checked={table.getIsSomePageRowsSelected() ? 'indeterminate' : table.getIsAllPageRowsSelected()}
+          onCheckedChange={checked => table.toggleAllPageRowsSelected(checked === true)}
         />
       ),
       cell: ({ row, table }) => (
-        <input
-          type="checkbox"
+        <Checkbox
           aria-label={`Select ${row.original.name}`}
           checked={row.getIsSelected()}
-          readOnly
           onClick={(event_) => {
+            event_.preventDefault()
             toggleRowSelection({
               rowId: row.id,
               shiftKey: event_.shiftKey,

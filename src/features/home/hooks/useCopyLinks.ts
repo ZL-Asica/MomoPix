@@ -2,22 +2,14 @@ import type { ImageCopyFormat } from '@/features/dashboard/lib/copyFormats'
 import type { HomeProcessedItem } from '@/features/home/types'
 import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { buildImageCopyLines } from '@/features/dashboard/lib/copyFormats'
+import { buildImageCopyLines, getImageCopyFormatMeta } from '@/features/dashboard/lib/copyFormats'
 import { copyLinesToClipboard } from '@/lib/clipboard'
-
-function copyLabel(format: ImageCopyFormat): string {
-  switch (format) {
-    case 'direct':
-      return 'direct links'
-    case 'html':
-      return 'HTML <img>'
-    case 'markdown':
-      return 'Markdown'
-  }
-}
 
 /**
  * Provides copy actions for uploaded home-page rows using dashboard copy format helpers.
+ *
+ * @param items Home rows that may include uploaded URLs.
+ * @returns Copy status and handlers for selected/all uploaded rows.
  */
 export function useCopyLinks(items: readonly HomeProcessedItem[]) {
   const [isCopyLifecyclePending, setIsCopyLifecyclePending] = useState(false)
@@ -49,7 +41,8 @@ export function useCopyLinks(items: readonly HomeProcessedItem[]) {
     setIsCopyLifecyclePending(true)
     try {
       await copyLinesToClipboard(lines)
-      toast.success(`Copied ${lines.length} ${copyLabel(format)} line(s)`)
+      const label = getImageCopyFormatMeta(format).multilineToastLabel
+      toast.success(`Copied ${lines.length} ${label} line(s)`)
     }
     catch (error) {
       toast.error('Failed to copy uploaded links', {

@@ -1,31 +1,22 @@
-import type { HomeProcessedItem } from '@/features/home/types'
-import JSZip from 'jszip'
-import { useEffect, useMemo, useState, useTransition } from 'react'
-import { toast } from 'sonner'
+import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useCompressedDownloads } from '@/features/home/hooks/useCompressedDownloads'
 import { useCopyLinks } from '@/features/home/hooks/useCopyLinks'
+import { useHomeAuth } from '@/features/home/hooks/useHomeAuth'
 import { useImageTransformQueue } from '@/features/home/hooks/useImageTransformQueue'
 import { useSelection } from '@/features/home/hooks/useSelection'
 import { useUploadSelected } from '@/features/home/hooks/useUploadSelected'
 import TransformControl from '@/features/home/TransformControl'
-import { getCurrentUserFn } from '@/functions/auth'
 import { ResultsList } from './ResultsList'
 import { TransformDropzone } from './TransformDropzone'
 import { UploadedLinksPanel } from './UploadedLinksPanel'
 import { UploadSelectedDialog } from './UploadSelectedDialog'
 
-function fileBaseName(name: string): string {
-  const value = name.split('.').slice(0, -1).join('.').trim()
-  return value.length > 0 ? value : name
-}
-
 /**
  * Stateful home page feature orchestrating compression, selection, upload, and copy flows.
  */
 export function HomeFeature() {
-  const [isAuthLoading, setIsAuthLoading] = useState(true)
-  const [isAuthed, setIsAuthed] = useState(false)
-  const [downloadingAll, startDownloadingAll] = useTransition()
+  const { isAuthLoading, isAuthed } = useHomeAuth()
 
   const {
     items,
@@ -84,83 +75,11 @@ export function HomeFeature() {
     copyAllUploaded,
   } = useCopyLinks(copyItems)
 
-  useEffect(() => {
-    let cancelled = false
-
-    void (async () => {
-      try {
-        const currentUser = await getCurrentUserFn()
-        if (!cancelled) {
-          setIsAuthed(currentUser !== null)
-        }
-      }
-      catch (error) {
-        if (!cancelled) {
-          setIsAuthed(false)
-          toast.error('Failed to load account data', {
-            description: error instanceof Error ? error.message : String(error),
-          })
-        }
-      }
-      finally {
-        if (!cancelled) {
-          setIsAuthLoading(false)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const handleDownload = (item: HomeProcessedItem) => {
-    if (item.compressedBlob === null) {
-      return
-    }
-
-    const url = URL.createObjectURL(item.compressedBlob)
-    const ext = item.targetFormat
-    const fileName = `${fileBaseName(item.originalName)}.${ext}`
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    toast.success(`Downloaded ${fileName}`)
-  }
-
-  const handleDownloadAll = () => {
-    startDownloadingAll(async () => {
-      const transformed = items.filter(item => item.compressedBlob !== null)
-      if (transformed.length === 0) {
-        toast.error('No compressed images available to download')
-        return
-      }
-
-      const zip = new JSZip()
-      for (const item of transformed) {
-        if (!item.compressedBlob) {
-          continue
-        }
-        const fileName = `${fileBaseName(item.originalName)}.${item.targetFormat}`
-        zip.file(fileName, item.compressedBlob)
-      }
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
-      const url = URL.createObjectURL(zipBlob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `images-${new Date().toISOString().slice(0, 10)}.zip`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-      toast.success('Downloaded compressed image zip')
-    })
-  }
+  const {
+    downloadingAll,
+    downloadOne: handleDownload,
+    downloadAll: handleDownloadAll,
+  } = useCompressedDownloads(items)
 
   return (
     <div className="container mx-auto space-y-6 p-4">

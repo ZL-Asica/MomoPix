@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers'
 /**
  * Returns the configured public base URL used for direct R2 image access.
  *
+ * @returns Normalized absolute base URL without trailing slash.
  * @throws Error when `R2_PUBLIC_DOMAIN` is unset or blank.
  */
 export function getR2PublicDomain(): string {
@@ -24,6 +25,10 @@ export function getR2PublicDomain(): string {
 
 /**
  * Builds a public image URL from the configured R2 public domain and object key.
+ *
+ * @param objectKey R2 object key for one image.
+ * @param domain Optional explicit public domain override.
+ * @returns Absolute URL for direct image access.
  */
 export function buildPublicImageUrl(objectKey: string, domain = getR2PublicDomain()): string {
   const normalizedKey = objectKey

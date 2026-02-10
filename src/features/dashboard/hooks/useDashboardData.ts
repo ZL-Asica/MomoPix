@@ -15,14 +15,25 @@ import { createAlbumFn, listAlbumsFn, moveAlbumFn, renameAlbumFn, setDefaultAlbu
 import { deleteImageFn, deleteImagesFn, listImagesFn, moveImageFn, moveImagesFn, renameImageFn } from '@/functions/images'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
 
+/**
+ * Default client page size for dashboard table pagination.
+ */
 const DEFAULT_IMAGE_PAGE_SIZE = 50
+/**
+ * Batch size used while aggregating the full image set from cursor pages.
+ */
 const IMAGE_FETCH_BATCH_SIZE = 200
+/**
+ * Delay used before applying search queries to server fetches.
+ */
 const SEARCH_DEBOUNCE_MS = 250
 
 type ImagesState = 'idle' | 'loading' | 'success' | 'error'
 
 /**
  * Central dashboard data orchestration for albums, full image datasets, and mutations.
+ *
+ * @returns Dashboard datasets, pagination/search state, and mutation handlers.
  */
 export function useDashboardData() {
   const [albums, setAlbums] = useState<AlbumRecord[]>([])

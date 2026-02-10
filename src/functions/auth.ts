@@ -23,6 +23,8 @@ const loginInputSchema = z.object({
 
 /**
  * Returns the single local user when a valid auth session exists.
+ *
+ * @returns Authenticated user descriptor or `null` when not signed in.
  */
 export const getCurrentUserFn = createServerFn({ method: 'GET' })
   .handler(async (): Promise<SingleUser | null> => {
@@ -39,6 +41,8 @@ export const getCurrentUserFn = createServerFn({ method: 'GET' })
 
 /**
  * Returns whether login is enabled and which required env vars are missing.
+ *
+ * @returns Auth toggle state and missing configuration keys.
  */
 export const getAuthConfigFn = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -51,6 +55,8 @@ export const getAuthConfigFn = createServerFn({ method: 'GET' })
 
 /**
  * Logs in using shared token + Turnstile verification.
+ *
+ * @returns `true` on success or an error payload when verification/auth fails.
  */
 export const loginFn = createServerFn({ method: 'POST' })
   .inputValidator(loginInputSchema)
@@ -87,6 +93,8 @@ export const loginFn = createServerFn({ method: 'POST' })
 
 /**
  * Clears the current login session.
+ *
+ * @returns `true` on success or an error payload when session teardown fails.
  */
 export const logoutFn = createServerFn({ method: 'POST' })
   .handler(async () => {

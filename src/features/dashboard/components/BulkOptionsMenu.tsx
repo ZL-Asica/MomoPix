@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { BulkDeleteImagesDialog } from '@/features/dashboard/dialogs/BulkDeleteImagesDialog'
 import { BulkMoveImagesDialog } from '@/features/dashboard/dialogs/BulkMoveImagesDialog'
-import { buildImageCopyLines } from '@/features/dashboard/lib/copyFormats'
+import { buildImageCopyLines, getImageCopyFormatMeta, IMAGE_COPY_FORMATS } from '@/features/dashboard/lib/copyFormats'
 import { withTimeout } from '@/lib/bulk'
 import { copyLinesToClipboard } from '@/lib/clipboard'
 
@@ -29,17 +29,6 @@ interface BulkOptionsMenuProps {
   onBulkDeleteImages: (objectKeys: string[]) => Promise<BulkOperationResult>
   clearSelection: () => void
   setSelectionToObjectKeys: (objectKeys: string[]) => void
-}
-
-function copyLabel(format: ImageCopyFormat): string {
-  switch (format) {
-    case 'direct':
-      return 'direct links'
-    case 'html':
-      return 'HTML <img>'
-    case 'markdown':
-      return 'Markdown'
-  }
 }
 
 export function BulkOptionsMenu({
@@ -101,7 +90,8 @@ export function BulkOptionsMenu({
 
     try {
       await copyLinesToClipboard(lines)
-      toast.success(`Copied ${lines.length} ${copyLabel(format)} line(s)`)
+      const label = getImageCopyFormatMeta(format).multilineToastLabel
+      toast.success(`Copied ${lines.length} ${label} line(s)`)
     }
     catch (error) {
       toast.error('Failed to copy selected images', {
@@ -187,39 +177,20 @@ export function BulkOptionsMenu({
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Copy</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            disabled={menuDisabled}
-            onSelect={() => {
-              startCopyTransition(async () => {
-                await handleCopy('direct')
-              })
-            }}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Copy direct links
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={menuDisabled}
-            onSelect={() => {
-              startCopyTransition(async () => {
-                await handleCopy('html')
-              })
-            }}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Copy HTML &lt;img&gt;
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={menuDisabled}
-            onSelect={() => {
-              startCopyTransition(async () => {
-                await handleCopy('markdown')
-              })
-            }}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Copy Markdown
-          </DropdownMenuItem>
+          {IMAGE_COPY_FORMATS.map(({ format, copyActionLabel }) => (
+            <DropdownMenuItem
+              key={format}
+              disabled={menuDisabled}
+              onSelect={() => {
+                startCopyTransition(async () => {
+                  await handleCopy(format)
+                })
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              {copyActionLabel}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
 

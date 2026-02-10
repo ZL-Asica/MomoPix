@@ -1,5 +1,6 @@
+export { useCompressedDownloads } from './useCompressedDownloads'
 export { useCopyLinks } from './useCopyLinks'
-export { default as useImageTransform } from './useImageTransform'
+export { useHomeAuth } from './useHomeAuth'
 export { useImageTransformQueue } from './useImageTransformQueue'
 export { useSelection } from './useSelection'
 export { useUploadSelected } from './useUploadSelected'

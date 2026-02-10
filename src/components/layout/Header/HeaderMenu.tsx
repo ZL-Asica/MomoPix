@@ -1,6 +1,7 @@
 import { useLocation } from '@tanstack/react-router'
 import { useTheme } from '@zl-asica/react'
 import { House, LayoutDashboard, Moon, Sun } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import HeaderMenuButton from './HeaderMenuButton'
 import UserMenu from './UserMenu'
 
@@ -50,9 +51,11 @@ const HeaderMenu = ({
 
       {/* Theme Switch */}
       <li className={`${isMobile ? 'mt-4 flex w-full justify-around' : 'flex justify-center gap-4'}`}>
-        <button
+        <Button
           type="button"
-          className="text-hover-primary transition-all-300 group flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:text-gray-300 hover:bg-gray-200 hover:cursor-pointer dark:bg-gray-800 dark:hover:bg-gray-700"
+          variant="ghost"
+          size="icon"
+          className="text-hover-primary transition-all-300 group h-12 w-12 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           aria-label="Toggle Theme"
           onClick={() => {
             toggleTheme()
@@ -62,7 +65,7 @@ const HeaderMenu = ({
           <span className="flex h-6 w-6 items-center justify-center transition-all-300 group-hover:scale-125 ">
             {isDarkTheme ? <Sun className="h-full w-full" /> : <Moon className="h-full w-full" />}
           </span>
-        </button>
+        </Button>
       </li>
     </ul>
   )

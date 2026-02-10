@@ -14,6 +14,7 @@ function now(): Date {
  * @param input Key builder input.
  * @param input.ext Normalized file extension for the image.
  * @param input.date Optional date source for deterministic tests.
+ * @returns Stable date-prefixed object key.
  */
 export function buildR2ObjectKey(input: { ext: string, date?: Date }): string {
   const { ext } = input
@@ -27,6 +28,16 @@ export function buildR2ObjectKey(input: { ext: string, date?: Date }): string {
 
 /**
  * Stores the final image object in R2 with content type and tracing metadata.
+ *
+ * @param bucket R2 bucket binding.
+ * @param input Object bytes and metadata payload.
+ * @param input.key Canonical object key.
+ * @param input.bytes Object bytes.
+ * @param input.mime Content MIME type.
+ * @param input.albumId Album identifier for tracing.
+ * @param input.source Upload source classifier.
+ * @param input.uploadedAt ISO timestamp for upload time.
+ * @returns Resolves when object write completes.
  */
 export async function putImageObject(
   bucket: R2Bucket,
@@ -52,6 +63,13 @@ export async function putImageObject(
   })
 }
 
+/**
+ * Deletes one image object from R2 by key.
+ *
+ * @param bucket R2 bucket binding.
+ * @param key Canonical object key.
+ * @returns Resolves when delete request completes.
+ */
 export async function deleteImageObject(bucket: R2Bucket, key: string): Promise<void> {
   await deleteObject(bucket, key)
 }

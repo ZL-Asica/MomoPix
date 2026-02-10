@@ -27,14 +27,23 @@ interface UseUploadSelectedInput {
 
 /**
  * Handles post-compression upload flow, album defaults, and upload progress state.
+ *
+ * @param input Upload dependencies.
+ * @param input.enabled Enables account-bound upload behaviors.
+ * @param input.items Current home queue rows.
+ * @param input.selectedIds Selected row ids eligible for upload.
+ * @param input.patchItem Per-row patch helper from transform queue.
+ * @param input.clearSelection Clears UI selection after successful uploads.
+ * @returns Upload dialog state, album choices, progress summary, and submit action.
  */
-export function useUploadSelected({
-  enabled,
-  items,
-  selectedIds,
-  patchItem,
-  clearSelection,
-}: UseUploadSelectedInput) {
+export function useUploadSelected(input: UseUploadSelectedInput) {
+  const {
+    enabled,
+    items,
+    selectedIds,
+    patchItem,
+    clearSelection,
+  } = input
   const [albums, setAlbums] = useState<AlbumRecord[]>([])
   const [defaultAlbumId, setDefaultAlbumId] = useState<string | null>(null)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)

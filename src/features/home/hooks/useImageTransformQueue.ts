@@ -27,6 +27,8 @@ function toCompressedFile(input: {
  * Side effects:
  * - Creates and revokes object URLs for local previews.
  * - Shows transform lifecycle toasts.
+ *
+ * @returns Queue rows, transform controls, and mutation handlers.
  */
 export function useImageTransformQueue() {
   const [items, setItems] = useState<HomeProcessedItem[]>([])

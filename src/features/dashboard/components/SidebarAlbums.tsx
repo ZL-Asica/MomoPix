@@ -71,10 +71,11 @@ export function SidebarAlbums({
             <div
               className={`group flex items-center gap-1 rounded-md px-2 py-1 ${isSelected ? 'bg-primary/10' : 'hover:bg-muted/70'}`}
             >
-              <button
+              <Button
                 type="button"
-                className={`h-10 flex-1 rounded-md px-2 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
-                  isSelected ? 'bg-primary text-primary-foreground' : ''
+                variant={isSelected ? 'default' : 'ghost'}
+                className={`h-10 flex-1 justify-start rounded-md px-2 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+                  isSelected ? 'hover:bg-primary/90' : ''
                 }`}
                 onClick={() => onSelectAlbum(album.id)}
               >
@@ -82,7 +83,7 @@ export function SidebarAlbums({
                   <span className="truncate">{displayAlbumName(album)}</span>
                   {isDefaultTarget && <Star className="h-3.5 w-3.5 text-amber-500" />}
                 </span>
-              </button>
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
