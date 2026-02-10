@@ -104,7 +104,6 @@ export interface ListAlbumImagesResult {
   items: AlbumImageRecord[]
   nextCursor: string | null
   hasNextPage: boolean
-  totalCount: number | null
   pageSize: number
   sort: ImageListSort
   query: string

@@ -16,12 +16,13 @@ import { deleteImageFn, deleteImagesFn, listImagesFn, moveImageFn, moveImagesFn,
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
 
 const DEFAULT_IMAGE_PAGE_SIZE = 50
+const IMAGE_FETCH_BATCH_SIZE = 200
 const SEARCH_DEBOUNCE_MS = 250
 
 type ImagesState = 'idle' | 'loading' | 'success' | 'error'
 
 /**
- * Central dashboard data orchestration for albums, paged images, and mutations.
+ * Central dashboard data orchestration for albums, full image datasets, and mutations.
  */
 export function useDashboardData() {
   const [albums, setAlbums] = useState<AlbumRecord[]>([])
@@ -32,17 +33,12 @@ export function useDashboardData() {
   const [imagesState, setImagesState] = useState<ImagesState>('idle')
   const [imagesError, setImagesError] = useState<string | null>(null)
   const [isImagesFetching, setIsImagesFetching] = useState(false)
-  const [hasNextPage, setHasNextPage] = useState(false)
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const [pageCursors, setPageCursors] = useState<Array<string | null>>([null])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_IMAGE_PAGE_SIZE)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [imagesReloadToken, setImagesReloadToken] = useState(0)
   const [isAlbumsLoaded, setIsAlbumsLoaded] = useState(false)
-  const [isLastPageResolving, setIsLastPageResolving] = useState(false)
-  const [currentTotalCount, setCurrentTotalCount] = useState<number | null>(null)
   const [loadedViewKeys, setLoadedViewKeys] = useState<Set<string>>(() => new Set())
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [renameImageObjectKey, setRenameImageObjectKey] = useState<string | null>(null)
@@ -51,20 +47,21 @@ export function useDashboardData() {
   const [isViewTransitionPending, startViewTransition] = useTransition()
   const imageRequestIdRef = useRef(0)
   const selectedAlbumIdRef = useRef(selectedAlbumId)
-  const pageCursorsRef = useRef(pageCursors)
   const loadedViewKeysRef = useRef(loadedViewKeys)
 
   const albumById = useMemo(() => new Map(albums.map(album => [album.id, album])), [albums])
   const selectedAlbum = albumById.get(selectedAlbumId) ?? null
-  const currentCursor = pageCursors.at(pageIndex) ?? null
-  const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}|${pageSize}|${currentCursor ?? 'start'}`
+  const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}`
   const hasLoadedCurrentView = loadedViewKeys.has(currentViewKey)
   const hasLoadedAnyView = loadedViewKeys.size > 0
-  const hasPreviousPage = pageIndex > 0
   const isSearchMode = debouncedSearchQuery.length > 0
-  const totalCount = isSearchMode ? null : (currentTotalCount ?? selectedAlbum?.imageCount ?? 0)
+  const totalCount = hasLoadedCurrentView
+    ? images.length
+    : (isSearchMode ? null : (selectedAlbum?.imageCount ?? 0))
   const totalPages = totalCount === null ? null : Math.max(1, Math.ceil(totalCount / pageSize))
-  const isFetching = isImagesFetching || isLastPageResolving || isViewTransitionPending
+  const hasPreviousPage = pageIndex > 0
+  const hasNextPage = totalPages !== null && pageIndex < totalPages - 1
+  const isFetching = isImagesFetching || isViewTransitionPending
   const isInitialLoading = !hasLoadedCurrentView && images.length === 0 && (!hasLoadedAnyView || imagesState === 'loading' || isImagesFetching)
   const isPaginationBusy = isFetching
 
@@ -73,37 +70,19 @@ export function useDashboardData() {
   }, [selectedAlbumId])
 
   useEffect(() => {
-    pageCursorsRef.current = pageCursors
-  }, [pageCursors])
-
-  useEffect(() => {
     loadedViewKeysRef.current = loadedViewKeys
   }, [loadedViewKeys])
-
-  const resetPaging = useCallback(() => {
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setPageCursors([null])
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setPageIndex(0)
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setHasNextPage(false)
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setNextCursor(null)
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setCurrentTotalCount(null)
-  }, [])
 
   const fetchImagesPage = useCallback(async (input: {
     albumId: string
     cursor: string | null
     query: string
-    pageSize: number
   }) => {
     return listImagesFn({
       data: {
         albumId: input.albumId,
         cursor: input.cursor,
-        pageSize: input.pageSize,
+        pageSize: IMAGE_FETCH_BATCH_SIZE,
         sort: 'createdAt-desc',
         query: input.query,
       },
@@ -126,9 +105,7 @@ export function useDashboardData() {
 
   const loadImages = useCallback(async (input: {
     albumId: string
-    cursor: string | null
     query: string
-    pageSize: number
     viewKey: string
   }) => {
     const requestId = imageRequestIdRef.current + 1
@@ -142,16 +119,38 @@ export function useDashboardData() {
     }
 
     try {
-      const payload = await fetchImagesPage(input)
-      if (requestId !== imageRequestIdRef.current) {
-        return
-      }
+      const items: AlbumImageListItem[] = []
+      let cursor: string | null = null
+      let viewImageUrlError: string | null = null
 
-      setImages(payload.items)
-      setImageUrlError(payload.imageUrlError ?? null)
-      setHasNextPage(payload.hasNextPage)
-      setNextCursor(payload.nextCursor)
-      setCurrentTotalCount(payload.totalCount ?? null)
+      do {
+        const payload = await fetchImagesPage({
+          albumId: input.albumId,
+          cursor,
+          query: input.query,
+        })
+
+        if (requestId !== imageRequestIdRef.current) {
+          return
+        }
+
+        items.push(...payload.items)
+        if (viewImageUrlError === null && payload.imageUrlError !== null) {
+          viewImageUrlError = payload.imageUrlError
+        }
+
+        if (!payload.hasNextPage || payload.nextCursor === null) {
+          break
+        }
+
+        cursor = payload.nextCursor
+      } while (true)
+
+      const nextPageCount = Math.max(1, Math.ceil(items.length / pageSize))
+      const nextLastPageIndex = Math.max(0, nextPageCount - 1)
+      setPageIndex(previous => Math.min(previous, nextLastPageIndex))
+      setImages(items)
+      setImageUrlError(viewImageUrlError)
       setImagesState('success')
       setLoadedViewKeys((previous) => {
         if (previous.has(input.viewKey)) {
@@ -175,13 +174,13 @@ export function useDashboardData() {
         setIsImagesFetching(false)
       }
     }
-  }, [fetchImagesPage])
+  }, [fetchImagesPage, pageSize])
 
   const refreshAlbum = useCallback(async (albumId: string) => {
     await loadAlbums(albumId)
-    resetPaging()
+    setPageIndex(0)
     setImagesReloadToken(token => token + 1)
-  }, [loadAlbums, resetPaging])
+  }, [loadAlbums])
 
   const { isUploading, uploadFiles } = useUpload({
     selectedAlbumId,
@@ -221,26 +220,20 @@ export function useDashboardData() {
   }, [loadAlbums])
 
   useEffect(() => {
-    resetPaging()
-  }, [debouncedSearchQuery, pageSize, resetPaging, selectedAlbumId])
-
-  useEffect(() => {
     if (!isAlbumsLoaded || !selectedAlbumId) {
       return
     }
 
     void loadImages({
       albumId: selectedAlbumId,
-      cursor: currentCursor,
       query: debouncedSearchQuery,
-      pageSize,
       viewKey: currentViewKey,
     }).catch((error) => {
       toast.error('Failed to load images', {
         description: error instanceof Error ? error.message : String(error),
       })
     })
-  }, [currentCursor, currentViewKey, debouncedSearchQuery, imagesReloadToken, isAlbumsLoaded, loadImages, pageSize, selectedAlbumId])
+  }, [currentViewKey, debouncedSearchQuery, imagesReloadToken, isAlbumsLoaded, loadImages, selectedAlbumId])
 
   const createAlbum = useCallback(async ({ name, parentId }: CreateAlbumInput) => {
     const payload = await createAlbumFn({
@@ -340,83 +333,41 @@ export function useDashboardData() {
   }, [refreshAlbum, selectedAlbumId])
 
   const goNextPage = useCallback(() => {
-    if (isPaginationBusy || !hasNextPage || nextCursor === null) {
+    if (isPaginationBusy || !hasNextPage) {
       return
     }
 
     startViewTransition(() => {
-      setPageCursors(previous => [...previous.slice(0, pageIndex + 1), nextCursor])
       setPageIndex(previous => previous + 1)
     })
-  }, [hasNextPage, isPaginationBusy, nextCursor, pageIndex, startViewTransition])
+  }, [hasNextPage, isPaginationBusy, startViewTransition])
 
   const goPrevPage = useCallback(() => {
-    if (isPaginationBusy) {
+    if (isPaginationBusy || !hasPreviousPage) {
       return
     }
     startViewTransition(() => {
       setPageIndex(previous => Math.max(0, previous - 1))
     })
-  }, [isPaginationBusy, startViewTransition])
+  }, [hasPreviousPage, isPaginationBusy, startViewTransition])
 
   const goFirstPage = useCallback(() => {
-    if (isPaginationBusy) {
+    if (isPaginationBusy || pageIndex === 0) {
       return
     }
     startViewTransition(() => {
       setPageIndex(0)
     })
-  }, [isPaginationBusy, startViewTransition])
+  }, [isPaginationBusy, pageIndex, startViewTransition])
 
   const goLastPage = useCallback(() => {
     if (isPaginationBusy || totalPages === null) {
       return
     }
-    const targetIndex = Math.max(0, totalPages - 1)
-    if (targetIndex <= pageIndex) {
-      startViewTransition(() => {
-        setPageIndex(targetIndex)
-      })
-      return
-    }
-    if (!selectedAlbumIdRef.current) {
-      return
-    }
-
-    void (async () => {
-      setIsLastPageResolving(true)
-      try {
-        let cursors = [...pageCursorsRef.current]
-
-        while (cursors.length <= targetIndex) {
-          const cursor = cursors.at(-1) ?? null
-          const payload = await fetchImagesPage({
-            albumId: selectedAlbumIdRef.current,
-            cursor,
-            query: debouncedSearchQuery,
-            pageSize,
-          })
-          if (!payload.hasNextPage || payload.nextCursor === null) {
-            break
-          }
-          cursors = [...cursors, payload.nextCursor]
-        }
-
-        startViewTransition(() => {
-          setPageCursors(cursors)
-          setPageIndex(Math.min(targetIndex, Math.max(0, cursors.length - 1)))
-        })
-      }
-      catch (error) {
-        toast.error('Failed to jump to last page', {
-          description: error instanceof Error ? error.message : String(error),
-        })
-      }
-      finally {
-        setIsLastPageResolving(false)
-      }
-    })()
-  }, [debouncedSearchQuery, fetchImagesPage, isPaginationBusy, pageIndex, pageSize, startViewTransition, totalPages])
+    startViewTransition(() => {
+      setPageIndex(Math.max(0, totalPages - 1))
+    })
+  }, [isPaginationBusy, startViewTransition, totalPages])
 
   const onPageSizeChange = useCallback((value: number) => {
     if (!Number.isFinite(value) || value <= 0) {
@@ -424,18 +375,30 @@ export function useDashboardData() {
     }
     startViewTransition(() => {
       setPageSize(Math.trunc(value))
+      setPageIndex(0)
     })
   }, [startViewTransition])
 
   const onSearchQueryChange = useCallback((value: string) => {
     startViewTransition(() => {
       setSearchQuery(value)
+      setPageIndex(0)
     })
   }, [startViewTransition])
 
   const selectAlbum = useCallback((albumId: string) => {
     startViewTransition(() => {
       setSelectedAlbumId(albumId)
+      setPageIndex(0)
+    })
+  }, [startViewTransition])
+
+  const onTablePageIndexChange = useCallback((nextPageIndex: number) => {
+    if (!Number.isFinite(nextPageIndex)) {
+      return
+    }
+    startViewTransition(() => {
+      setPageIndex(Math.max(0, Math.trunc(nextPageIndex)))
     })
   }, [startViewTransition])
 
@@ -469,6 +432,7 @@ export function useDashboardData() {
     searchQuery,
     onSearchQueryChange,
     pageIndex: pageIndex + 1,
+    pageIndexZeroBased: pageIndex,
     pageSize,
     totalCount,
     totalPages,
@@ -480,6 +444,7 @@ export function useDashboardData() {
     goFirstPage,
     goLastPage,
     onPageSizeChange,
+    onTablePageIndexChange,
     imagesStatus: {
       state: imagesState,
       isFetching,

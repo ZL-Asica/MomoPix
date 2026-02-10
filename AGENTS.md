@@ -85,6 +85,16 @@ if (hasLoadedOnce && items.length === 0) return <EmptyState />
 return <ItemsTable rows={items} />
 ```
 
+### Dashboard Data Semantics
+
+- Do:
+  - For `/dashboard` image browsing, aggregate the full album/query metadata set before table rendering, then apply TanStack client-side sorting and pagination slices.
+  - Keep server cursor pagination as a transport mechanism for aggregation loops, not as table page semantics.
+  - Reset page index on query/sort/page-size changes so displayed slices stay consistent with user intent.
+- Don't:
+  - Pre-slice server results and pass only one page into the table when header sorting must operate across the full result set.
+  - Couple empty-state rendering to `items.length` without explicit fetch lifecycle state (`hasLoadedOnce`, `isFetching`, `status`).
+
 Example (thin route):
 
 ```tsx
@@ -156,7 +166,7 @@ Separate platform adapters from Momopix domain logic.
   - Validate inputs before mutations.
   - Treat `R2_PUBLIC_DOMAIN` as required for all runtimes (dev/prod) and build image URLs through shared helpers.
   - Keep album image index keys in ordered format `album-image:<albumId>:<descTs>:<objectKey>` where `descTs` is derived from `createdAt` so KV lexicographic order is newest-first.
-  - Treat `ImageRecord.albumIndexKey` as the source of truth for deletes/moves/renames and preserve lazy migration support for legacy `album-image:<albumId>:<objectKey>` keys.
+  - Treat `ImageRecord.albumIndexKey` as the primary source of truth for deletes/moves/renames, and keep orphan-index cleanup for cases where canonical image rows are missing.
 - Don't:
   - Scatter raw `kv.get/put/list` and `bucket.get/put/delete` calls across UI/routes.
   - Encode domain naming/index rules in UI components.

@@ -37,7 +37,7 @@ function disabledLinkClass(disabled: boolean): string {
 }
 
 /**
- * Cursor-based pagination control for album image listings.
+ * Client-side pagination control for album image listings.
  */
 export function AlbumImagePagination({
   pageIndex,

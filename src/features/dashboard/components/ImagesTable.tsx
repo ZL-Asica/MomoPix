@@ -2,7 +2,7 @@ import type { Table as TableInstance } from '@tanstack/react-table'
 import type { ImagesTableMeta } from '@/features/dashboard/hooks/useImagesTable'
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import { flexRender } from '@tanstack/react-table'
-import { ImageIcon } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ImageIcon } from 'lucide-react'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -49,10 +49,17 @@ export function ImagesTable({ table, isInitialLoading, hasLoadedOnce }: ImagesTa
                   : (
                       <button
                         type="button"
-                        className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                        className={header.column.getCanSort() ? 'inline-flex cursor-pointer select-none items-center gap-1' : ''}
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <>
+                            {header.column.getIsSorted() === 'asc' && <ArrowUp className="h-3 w-3 text-muted-foreground" />}
+                            {header.column.getIsSorted() === 'desc' && <ArrowDown className="h-3 w-3 text-muted-foreground" />}
+                            {header.column.getIsSorted() === false && <ArrowUpDown className="h-3 w-3 text-muted-foreground" />}
+                          </>
+                        )}
                       </button>
                     )}
               </TableHead>

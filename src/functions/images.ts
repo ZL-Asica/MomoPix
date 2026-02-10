@@ -14,7 +14,15 @@ import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicU
 import { getAlbumRecord } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
 import { deriveDefaultImageName, resolveImageName } from '@/lib/storage/imageName'
-import { deleteImageRecords, getImageRecord, listAlbumImages, moveImageRecords, putImageRecords, renameImageRecords } from '@/lib/storage/imagesRepo'
+import {
+  deleteImageRecords,
+  deleteOrphanAlbumImageRows,
+  getImageRecord,
+  listAlbumImages,
+  moveImageRecords,
+  putImageRecords,
+  renameImageRecords,
+} from '@/lib/storage/imagesRepo'
 import { albumImageKeyV2 } from '@/lib/storage/keys'
 import { buildR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
 import { adjustUsage, markNeedsRecount } from '@/lib/storage/usage'
@@ -113,7 +121,6 @@ export const listImagesFn = createServerFn({ method: 'POST' })
       imageUrlError: string | null
     } = {
       ...pagedImages,
-      totalCount: pagedImages.query.length === 0 ? album.imageCount : null,
       items,
       imageUrlError,
     }
@@ -353,17 +360,25 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
     const r2 = getR2Binding()
     const image = await getImageRecord(kv, data.objectKey)
 
-    if (!image) {
-      throw new Error('Image not found')
-    }
-
-    await deleteImageObject(r2, image.objectKey)
-
     try {
-      await deleteImageRecords(kv, image)
+      await deleteImageObject(r2, data.objectKey)
+      if (image) {
+        await deleteImageRecords(kv, image)
+        await adjustUsage(kv, {
+          albumId: image.albumId,
+          deltaBytes: -image.sizeBytes,
+          deltaCount: -1,
+        })
+        return true
+      }
+
+      const orphanDeleteResult = await deleteOrphanAlbumImageRows(kv, data.objectKey)
+      if (orphanDeleteResult === null) {
+        throw new Error('Image not found')
+      }
       await adjustUsage(kv, {
-        albumId: image.albumId,
-        deltaBytes: -image.sizeBytes,
+        albumId: orphanDeleteResult.albumId,
+        deltaBytes: -orphanDeleteResult.sizeBytes,
         deltaCount: -1,
       })
       return true
@@ -387,15 +402,25 @@ export const deleteImagesFn = createServerFn({ method: 'POST' })
 
     const result = await runBulkOperation(objectKeys, async (objectKey) => {
       const image = await getImageRecord(kv, objectKey)
-      if (!image) {
-        throw new Error('Image not found')
+
+      await deleteImageObject(r2, objectKey)
+      if (image) {
+        await deleteImageRecords(kv, image)
+        await adjustUsage(kv, {
+          albumId: image.albumId,
+          deltaBytes: -image.sizeBytes,
+          deltaCount: -1,
+        })
+        return
       }
 
-      await deleteImageObject(r2, image.objectKey)
-      await deleteImageRecords(kv, image)
+      const orphanDeleteResult = await deleteOrphanAlbumImageRows(kv, objectKey)
+      if (orphanDeleteResult === null) {
+        throw new Error('Image not found')
+      }
       await adjustUsage(kv, {
-        albumId: image.albumId,
-        deltaBytes: -image.sizeBytes,
+        albumId: orphanDeleteResult.albumId,
+        deltaBytes: -orphanDeleteResult.sizeBytes,
         deltaCount: -1,
       })
     }, {

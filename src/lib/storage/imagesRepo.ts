@@ -45,14 +45,54 @@ function safeCursor(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
-function buildAlbumIndexCandidates(image: ImageRecord): string[] {
+function safeAlbumIndexKey(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function buildAlbumIndexCandidates(image: Pick<ImageRecord, 'albumId' | 'createdAt' | 'objectKey'> & { albumIndexKey?: unknown }): string[] {
   const candidates = new Set<string>()
-  if (image.albumIndexKey.trim().length > 0) {
-    candidates.add(image.albumIndexKey)
+  const albumIndexKey = safeAlbumIndexKey(image.albumIndexKey)
+  if (albumIndexKey.length > 0) {
+    candidates.add(albumIndexKey)
   }
   candidates.add(albumImageKeyV2(image.albumId, image.createdAt, image.objectKey))
   candidates.add(albumImageKey(image.albumId, image.objectKey))
   return [...candidates]
+}
+
+interface OrphanAlbumImageDeleteResult {
+  albumId: string
+  sizeBytes: number
+}
+
+/**
+ * Deletes orphaned album index rows when the canonical image record is missing.
+ *
+ * Returns minimal usage metadata when a matching index row exists.
+ */
+export async function deleteOrphanAlbumImageRows(
+  kv: KVNamespace,
+  objectKey: string,
+): Promise<OrphanAlbumImageDeleteResult | null> {
+  const allAlbumIndexKeys = await listKeysWithPrefix(kv, STORAGE_KEYS.albumImagePrefix)
+  const matchingKeys = allAlbumIndexKeys.filter(key => key.endsWith(`:${objectKey}`))
+  if (matchingKeys.length === 0) {
+    return null
+  }
+
+  const indexRows = await Promise.all(matchingKeys.map(async key => getJson<AlbumImageRecord>(kv, key)))
+  const firstValidRow = indexRows.find((row): row is AlbumImageRecord => row !== null && row.objectKey === objectKey) ?? null
+
+  await Promise.all(matchingKeys.map(async key => deleteKey(kv, key)))
+
+  if (firstValidRow === null) {
+    return null
+  }
+
+  return {
+    albumId: firstValidRow.albumId,
+    sizeBytes: firstValidRow.sizeBytes,
+  }
 }
 
 async function migrateLegacyAlbumIndexKeys(kv: KVNamespace, albumId: string): Promise<void> {
@@ -151,7 +191,6 @@ export async function listAlbumImages(
       items,
       nextCursor: page.list_complete ? null : pageCursor ?? null,
       hasNextPage: !page.list_complete,
-      totalCount: null,
       pageSize,
       sort,
       query,
@@ -204,7 +243,6 @@ export async function listAlbumImages(
     items,
     nextCursor,
     hasNextPage,
-    totalCount: null,
     pageSize,
     sort,
     query,

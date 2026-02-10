@@ -49,6 +49,7 @@ function DashboardPage() {
     goLastPage,
     goNextPage,
     onPageSizeChange,
+    onTablePageIndexChange,
     goPrevPage,
     hasNextPage,
     hasPreviousPage,
@@ -59,6 +60,7 @@ function DashboardPage() {
     meta,
     mobileSidebarOpen,
     pageIndex,
+    pageIndexZeroBased,
     pageSize,
     moveAlbum,
     moveImage,
@@ -89,6 +91,9 @@ function DashboardPage() {
 
   const { clearSelection, selectedImagesOrdered, setSelectionToObjectKeys, table } = useImagesTable({
     images,
+    pageIndex: pageIndexZeroBased,
+    pageSize,
+    onPageIndexChange: onTablePageIndexChange,
     onRenameImage: (objectKey) => {
       setRenameImageObjectKey(objectKey)
     },
@@ -139,14 +144,21 @@ function DashboardPage() {
                 )}
               </CardTitle>
               <CardDescription>
-                {isSearchMode
+                {totalPages !== null
                   ? (
                       <>
                         Page
                         {' '}
                         {pageIndex}
                         {' '}
-                        search results
+                        of
+                        {' '}
+                        {totalPages}
+                        {' '}
+                        (
+                        {totalCount ?? 0}
+                        {' '}
+                        total images)
                       </>
                     )
                   : (
@@ -154,19 +166,7 @@ function DashboardPage() {
                         Page
                         {' '}
                         {pageIndex}
-                        {totalPages !== null && (
-                          <>
-                            {' '}
-                            of
-                            {' '}
-                            {totalPages}
-                          </>
-                        )}
-                        {' '}
-                        (
-                        {totalCount ?? 0}
-                        {' '}
-                        total images)
+                        {isSearchMode && ' search results'}
                       </>
                     )}
               </CardDescription>
