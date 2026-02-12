@@ -5,7 +5,6 @@ export default antfu({
     'eslint.config.mjs',
     'src/routeTree.gen.ts',
     'src/components/ui/**.tsx',
-    'AGENTS.md',
   ],
   typescript: {
     tsconfigPath: 'tsconfig.json',
@@ -22,4 +21,9 @@ export default antfu({
   rules: {
     'react-refresh/only-export-components': 'off',
   },
+}, {
+  files: ['src/**/*.test.{ts,tsx}'],
+  rules:{
+    'ts/no-unsafe-assignment': 'off',
+  }
 })
