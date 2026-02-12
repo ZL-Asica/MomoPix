@@ -5,7 +5,7 @@
 
 [![GitHub License][license-badge]][license-link] [![Latest Release][release-badge]][release-link]
 
-[![Node.js][node-badge]][node-link] [![pnpm Version][pnpm-badge]][pnpm-link] | [![Tailwind CSS][tailwind-badge]][tailwind-link] | [![Cloudflare][cloudflare-badge]][cloudflare-link] [![Eslint][eslint-badge]][eslint-link] [![Prettier]
+[![Node.js][node-badge]][node-link] [![pnpm Version][pnpm-badge]][pnpm-link] | [![Tailwind CSS][tailwind-badge]][tailwind-link] | [![Cloudflare][cloudflare-badge]][cloudflare-link] [![Eslint][eslint-badge]][eslint-link]
 
 > 🚧 **本项目仍在开发中（重构中），部署文档尚未编写完成，请暂时勿用于生产环境。**
 
