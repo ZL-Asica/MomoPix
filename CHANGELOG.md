@@ -2,7 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased](https://github.com/ZL-Asica/MomoPix/compare/v1.0.0-beta.1...HEAD)
 
 ## [1.0.0-beta.1] - 2026-02-10
 
@@ -51,3 +54,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Migrated frontend from React SPA structure to Next.js (OpenNext on Cloudflare) for the first hosted release architecture.
 
 [0.1.0]: https://github.com/ZL-Asica/MomoPix/releases/tag/v0.1.0
+[1.0.0-beta.1]: https://github.com/ZL-Asica/MomoPix/compare/v0.1.0...v1.0.0-beta.1

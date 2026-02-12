@@ -1,23 +1,29 @@
 changelog:
   exclude:
-    labels: [ignore-for-release, wip, dependencies]
+    labels: [ignore-for-release, wip]
     authors: ['dependabot[bot]', renovate-bot]
 
   categories:
+    - title: 💥 BREAKING CHANGES / 破坏性变更
+      labels: [breaking-change, Semver-Major]
+
     - title: 🚀 Features / 新功能
       labels: [feature, enhancement]
 
     - title: 🐛 Bug Fixes / 修复
       labels: [bug, fix]
 
-    - title: 🚜 Refactor / 重构
-      labels: [refactor]
-
     - title: ⚡ Performance / 性能优化
       labels: [performance, optimization]
 
-    - title: 📦 Dependencies / 依赖更新
-      labels: [dependencies]
+    - title: 🚜 Refactor / 重构
+      labels: [refactor]
+
+    - title: 🎨 UI UX & Styling / UI UX & 样式
+      labels: [ui, ux, design, styles]
+
+    - title: 🧪 Testing / 测试
+      labels: [test, testing]
 
     - title: 📖 Documentation / 文档更新
       labels: [docs]
@@ -25,14 +31,8 @@ changelog:
     - title: 🧰 Internal / 内部变更
       labels: [internal, ci, workflow, build]
 
-    - title: 💥 BREAKING CHANGES / 破坏性变更
-      labels: [breaking-change, Semver-Major]
-
-    - title: 🎨 UI UX & Styling / UI UX & 样式
-      labels: [ui, ux, design, styles]
-
-    - title: 🧪 Testing / 测试
-      labels: [test, testing]
+    - title: 📦 Dependencies / 依赖更新
+      labels: [dependencies]
 
     - title: ⚙️ Miscellaneous / 其他变更
       labels: ['*']

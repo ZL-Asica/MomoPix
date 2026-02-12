@@ -1,236 +1,272 @@
 # AGENTS.md
 
-## 1. Project Principles
+## 1) Project Overview and Goals
 
-This repo runs on Cloudflare (Workers runtime + D1/R2) with TanStack Start and shadcn/ui.
+Momopix is a TanStack Start + Cloudflare Workers app for hosting and managing personal images/albums. It stores image binaries in **R2** and canonical metadata/state in **D1 (via Drizzle)**.
 
-- Do:
-  - Keep route files thin. Put UI, hooks, and domain logic in feature/lib modules.
-  - Build from composition: small components, focused hooks, explicit boundaries.
-  - Prefer existing repo patterns over one-off abstractions.
-  - Keep Cloudflare adapters generic and domain services explicit.
-- Don't:
-  - Put storage details directly into route components.
-  - Mix UI state management with persistence logic in the same module.
-  - Create parallel patterns when existing helpers/components already fit.
+Primary goals:
 
-Short target: routes orchestrate, features render, services execute, adapters talk to platform.
+- Reliable, fast image browsing and management (albums, search/filter/sort, bulk actions).
+- Clear separation: **routes orchestrate**, **features render**, **services execute**, **adapters talk to Cloudflare**.
+- Keep metadata consistent and queryable in **D1**; keep binaries and derived assets in **R2**.
+- Provide a polished, accessible UI using **shadcn/ui** and TanStack primitives (Router/Start, Table, Form).
 
-## 2. Code Organization
+Key concepts:
 
-Use feature-oriented folders plus clear library boundaries.
+- **Original vs converted/derived assets** (e.g., WebP variants) are first-class and must be represented consistently in metadata + UI.
+- **Usage/accounting** (bytes used, image counts, album counts) must be correct and resilient to partial failures.
 
-- Do:
-  - Keep cross-feature/platform utilities in `src/lib/*`.
-  - Keep feature behavior in dedicated domain services (currently `src/lib/storage/*`).
-  - Keep shadcn/ui primitives in `src/components/ui/*`.
-  - Keep shared app-level shells in `src/components/layout/*`.
-  - Keep route modules as entrypoints only (`src/routes/*`).
-- Don't:
-  - Use `src/lib` or `src/features` as a dumping ground.
-  - Hide domain writes/reads in random component files.
-  - Add broad "utils" files with unrelated helpers.
+## 2) Tech Stack and Package Rules
 
-Preferred layout (adapt to existing structure):
+Primary stack:
+
+- TanStack Start (`@tanstack/react-start`) + TanStack Router.
+- React + TypeScript + Vite.
+- Cloudflare Workers runtime via Wrangler (`nodejs_compat`).
+- Storage:
+  - **D1** for metadata/state (Drizzle schema + migrations).
+  - **R2** for image objects and derivatives.
+- UI:
+  - shadcn/ui primitives in `src/components/ui/*`
+  - TanStack Table (`@tanstack/react-table`) for data grids
+  - TanStack Form (`@tanstack/react-form`) for complex forms
+- Validation:
+  - Prefer Zod at all server/API boundaries.
+- Tooling:
+  - ESLint + TypeScript checks
+  - Vitest for unit tests (keep runtime assumptions explicit)
+
+Rules:
+
+- Use only what is needed for the change.
+- Prefer existing repo patterns/helpers over new abstractions.
+- Keep platform bindings (D1/R2/env) out of UI components.
+- Validate inputs before any D1 writes or R2 mutations.
+
+## 3) Development Workflow
+
+Use the scripts in `package.json` (names may vary; follow repo truth). Common expectations:
+
+- `pnpm dev`: local dev
+- `pnpm build`: production build
+- `pnpm lint` / `pnpm lint:fix`
+- `pnpm test` (Vitest)
+- `pnpm deploy`: Wrangler deploy
+- `pnpm cf-typegen`: regenerate Cloudflare bindings/types
+
+Compatibility/runtime notes:
+
+- Respect pinned Node + pnpm versions if the repo provides `.node-version` and `packageManager`.
+- If Wrangler local state becomes flaky (e.g., `.wrangler` permission errors), restart dev processes and clear `.wrangler/` as a last resort.
+- Keep `R2_PUBLIC_DOMAIN` (or equivalent) treated as required and build public URLs via shared helpers.
+
+## 4) UI Architecture and Code Organization Standards
+
+File size guidance:
+
+- Target: under ~250 LOC for normal files.
+- Soft limit: ~300–350 LOC (extract helpers/components).
+- Hard limit: ~450 LOC (except generated files).
+
+Separation of concerns:
+
+- **Route files stay thin**: routing, loader wiring, composition only.
+- **Business logic lives in** `src/features/**`, `src/functions/**`, and `src/lib/**`.
+- **Presentational components** should be mostly declarative.
+
+Preferred folder layout (adapt to current structure):
 
 ```text
 src/
-  routes/
-    *.tsx                     # thin route orchestration
+  routes/                      # thin entrypoints + route wiring
   features/
     <feature>/
       components/
       hooks/
-      services/               # feature-scoped domain orchestration
+      libs/                    # feature-scoped orchestration
       types.ts
   lib/
-    cloudflare/               # runtime-generic adapters (D1/R2/bindings/errors/types)
-    storage/                  # domain services for storage orchestration (albums/images/usage) and related types/validators
-    db/                       # Drizzle schema + D1 connection + cursor helpers
+    cloudflare/                # bindings, env helpers, R2 helpers, runtime errors/types
+    db/                        # Drizzle schema + D1 connection + query helpers
+    storage/                   # domain services: albums/images/usage; D1+R2 orchestration
+    schemas/                   # boundary schemas/validators (if used)
   components/
-    ui/                       # shadcn/ui primitives
-    layout/
+    ui/                        # shadcn/ui primitives
+    layout/                    # app shells/layout components
 ```
 
-## 3. React & UI Conventions
+New UI component rule:
 
-Use React composition and shadcn/ui first.
+- First check `src/components/ui/*`.
+- If missing, add via shadcn tooling (install only what you need).
+- Don’t introduce broad UI libraries when a shadcn/Radix pattern fits.
 
-- Do:
-  - Prefer shadcn/ui components from `src/components/ui/*` before creating new primitives.
-  - Keep container logic in hooks/services and keep presentational components mostly declarative.
-  - Co-locate feature hooks with their feature (`src/features/<feature>/hooks/*`).
-  - Include accessible labels/roles and keyboard-friendly interactions.
-- Don't:
-  - Rebuild button/input/table/dialog primitives without a clear gap.
-  - Keep long imperative workflows inside JSX-heavy files.
-  - Couple component rendering directly to Cloudflare bindings.
+## 5) Forms & Tables
 
-### Loading vs Empty States
+Forms:
 
-- Do:
-  - Track list request lifecycle explicitly (`idle`, `loading`, `success`, `error`) instead of inferring from array length.
-  - Keep a loaded marker (`hasLoadedOnce` per view or album) and render empty states only after that marker is true.
-  - Use `useTransition` for user-triggered view changes (album/page/search/page-size), while still using explicit fetch lifecycle flags for data readiness.
-- Don't:
-  - Render “No items” just because `items.length === 0` before a fetch has completed.
-  - Treat `useTransition` pending state as the only source of truth for async fetch completion.
+- Use **TanStack Form** for complex forms (settings, upload flows, album edit, bulk actions).
+- Keep validation schemas close to boundary handlers/services.
+- Avoid ad-hoc form state when TanStack Form fits cleanly.
 
-Example:
+Tables:
 
-```tsx
-const showInitialSkeleton = !hasLoadedOnce && (status === 'idle' || status === 'loading')
-if (showInitialSkeleton) return <TableSkeleton />
-if (status === 'error') return <ErrorState />
-if (hasLoadedOnce && items.length === 0) return <EmptyState />
-return <ItemsTable rows={items} />
-```
+- Use **TanStack Table** for image grids/lists where sorting/filtering/pagination matters.
+- Keep column definitions in hooks/modules (not in route files).
+- Prefer client-side sorting/pagination over “server-page = table-page” when header sorting must operate over the full result set.
 
-### Dashboard Data Semantics
+Loading vs empty-state rule:
 
-- Do:
-  - For `/dashboard` image browsing, aggregate the full album/query metadata set before table rendering, then apply TanStack client-side sorting and pagination slices.
-  - Keep server cursor pagination as a transport mechanism for aggregation loops, not as table page semantics.
-  - Reset page index on query/sort/page-size changes so displayed slices stay consistent with user intent.
-- Don't:
-  - Pre-slice server results and pass only one page into the table when header sorting must operate across the full result set.
-  - Couple empty-state rendering to `items.length` without explicit fetch lifecycle state (`hasLoadedOnce`, `isFetching`, `status`).
+- Track lifecycle explicitly (`idle/loading/success/error`) plus a `hasLoadedOnce` marker.
+- Do not render “No items” until you know the request completed successfully.
 
-Example (thin route):
+## 6) Cloudflare Runtime, D1/R2 Access, and Boundary Patterns
 
-```tsx
-export const Route = createFileRoute('/example')({
-  component: ExampleRoute,
-})
+Boundary pattern (server functions / handlers):
 
-function ExampleRoute() {
-  return <ExampleFeature />
-}
-```
+- Keep handlers minimal:
+  - auth check
+  - input validation
+  - call service/repo function
+  - map/return response
 
-## 4. Forms & Tables
+Data access rules:
 
-TanStack Form for forms, TanStack Table for tabular data.
+- **D1 is the source of truth** for metadata/state.
+- **R2 is the source of truth** for binary objects.
+- Do not scatter raw D1 SQL or `bucket.get/put/delete` calls across routes/components.
+- Centralize:
+  - D1 connection + Drizzle in `src/lib/db/*`
+  - R2 helpers (key building, public URL building, content-type helpers) in `src/lib/cloudflare/*` or equivalent
+  - domain orchestration (album/image/usage) in `src/lib/storage/*`
 
-- Do:
-  - Build forms with `@tanstack/react-form` for state, validation flow, and submission wiring.
-  - Build data grids/lists with `@tanstack/react-table` and keep column definitions in hooks/modules.
-  - Keep form schemas and validators close to server/domain boundaries.
-- Don't:
-  - Introduce ad-hoc form state patterns for complex forms where TanStack Form fits.
-  - Put table column/business logic directly in route files.
+Pagination invariants:
 
-Example (table setup in hook):
+- Use stable, deterministic ordering for listings (keyset pagination preferred).
+- Keep cursor semantics consistent across endpoints (document the ordering key and tie-break).
 
-```tsx
-export function useItemsTable(data: ItemRow[]) {
-  return useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  })
-}
-```
+Image URL invariants:
 
-## 5. Documentation (TSDoc) Standards
+- Build public URLs through shared helpers (single source of truth).
+- Never hardcode public domains in components.
 
-Add TSDoc/JSDoc for important exported APIs.
+## 7) Comments, TSDoc, and Readability
 
-- Do:
-  - Document exported/public functions, types, and constants that are reused or non-trivial.
-  - Cover purpose, key params, return shape, and side effects when relevant.
-  - Keep comments concise and behavior-focused.
-- Don't:
-  - Add noisy comments for obvious code.
-  - Leave critical exported logic undocumented.
+TSDoc requirements:
 
-Example:
+- Add TSDoc for exported functions/types in `src/lib/**` and domain services.
+- Document:
+  - inputs/outputs
+  - invariants/assumptions
+  - error cases / partial-failure behavior (especially for D1+R2 multi-step ops)
 
-```ts
-/**
- * Persists image metadata row in D1.
- *
- * @param db D1 database binding.
- * @param image Canonical image record.
- */
-export async function putImageRecords(...) {}
-```
+Comment requirements:
 
-## 6. Cloudflare Runtime & Data Access
+- Add concise “why” comments for tricky logic, especially:
+  - multi-step writes (D1 insert + R2 put + derived generation)
+  - retry/backoff or idempotency keys
+  - usage recount / reconciliation logic
+  - cursor pagination ordering and tie-break rules
 
-Separate platform adapters from Momopix domain logic.
+Readability:
 
-- Do:
-  - Keep Cloudflare-generic helpers in `src/lib/cloudflare/*` (bindings, R2 helpers, runtime errors/types).
-  - Keep D1/Drizzle helpers in `src/lib/db/*` and domain orchestration in `src/lib/storage/*`.
-  - Keep Momopix repositories/services in domain modules (`src/lib/storage/*` today; `src/lib/momopix/*` if introduced).
-  - Keep `createServerFn` handlers minimal: auth check, validation, call service/repo functions, map response.
-  - Validate inputs before mutations.
-  - Treat `R2_PUBLIC_DOMAIN` as required for all runtimes (dev/prod) and build image URLs through shared helpers.
-  - Keep image listing cursor semantics keyset-based `(created_at DESC, id DESC)` for stable pagination.
-- Don't:
-  - Scatter raw D1 SQL and `bucket.get/put/delete` calls across UI/routes.
-  - Encode domain naming/index rules in UI components.
-  - Mix Cloudflare binding lookup and complex business logic in large route files.
+- Prefer small helpers over long inline branches.
+- Keep boundary validation at the edges; keep internals strongly typed.
 
-Example (minimal server function):
+## 8) Testing Guidance (Critical)
 
-```ts
-export const updateThingFn = createServerFn({ method: 'POST' })
-  .inputValidator(updateThingSchema)
-  .handler(async ({ data }) => {
-    await requireAuth()
-    const db = getD1Binding()
-    return updateThing(db, data)
-  })
-```
+Testing priorities:
 
-## 7. Change Management & AGENTS.md Auto-Updates
+- Unit test pure logic in `src/lib/**` (validators, key builders, reducers, cursor helpers).
+- Keep tests deterministic and fast.
+- Prefer structural assertions over brittle snapshots.
 
-Policy: if you introduce breaking changes to architecture/contract patterns, update this file in the same PR/commit.
+Cloudflare + Vitest constraints:
 
-Breaking changes (must update `AGENTS.md`):
+- Default to `node` environment unless the repo explicitly sets up a Workers test runtime.
+- Mock boundaries:
+  - D1/Drizzle calls (or wrap them behind repo interfaces and mock those)
+  - R2 operations
+  - Auth/session boundaries
 
-- Route or route-group renames that change navigation contracts for contributors.
-- Storage schema/key/index shape changes (D1/R2 metadata, record contracts, migration requirements).
-- New/renamed required environment variables or Cloudflare bindings.
-- Required UI architecture pattern shifts (for example replacing shadcn/TanStack Form/Table conventions).
-- Major folder boundary changes (for example moving domain layer from `src/lib/storage` to `src/lib/momopix`).
+- Avoid tests that require live Wrangler runtime, real D1, real R2, or network calls.
 
-Non-breaking changes (usually no `AGENTS.md` update):
+## 9) Tooling and MCP Usage Rules
 
-- Internal refactors with unchanged external contracts.
-- Styling/layout polish without changing architectural conventions.
-- Bug fixes within existing module boundaries.
-- Additive UI components following current patterns.
+TanStack:
 
-Template snippet for updates (paste into PR description and update this file as needed):
+- If unsure about TanStack Start/Router/Form/Table patterns, consult official TanStack docs first.
+- Follow existing route/layout patterns in `src/routes/**`.
+
+shadcn:
+
+- Use shadcn tooling to add missing primitives.
+- Install only what is required for the current change.
+
+Sources:
+
+- Prefer primary sources (official docs) and existing in-repo patterns.
+- Don’t introduce patterns that conflict with TanStack Start + Cloudflare constraints.
+
+## 10) Planning and Change Management
+
+Planning rule for non-trivial work:
+
+- Create a plan doc first under `/docs/`.
+- Keep `/docs/` out of git-tracked user docs (prefer it in `.gitignore`).
+
+Commit hygiene:
+
+- Prefer phased, logically scoped commits.
+- Use Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `style:`, `perf:`, `ci:`, `docs:`, `chore:`).
+- Keep subject short; use commit body for rationale, details, or/and migration steps.
+
+AGENTS.md updates:
+
+- Update this file when you change:
+  - required env vars / bindings
+  - storage schema/indexes/migrations
+  - route contracts that affect contributors
+  - core UI architecture conventions
+
+PR snippet (copy into PR/description when relevant):
 
 ```md
 ### AGENTS.md Update
 
-- Updated: <architecture/storage/runtime guideline>
+- Updated: <guideline / contract>
 - Breaking: Yes/No
 - Migration: <required steps, if any>
 - New env var/binding: <name or N/A>
-- Deprecated pattern: <old pattern> -> <new pattern>
+- Deprecated pattern: <old> -> <new>
 ```
 
-## 8. Pre-merge Checklist
+## 11) Key Invariants and Do-Not-Break Rules
 
-Before merging, all items below should pass.
+Auth + tenancy:
 
-- Do:
-  - Run gates: `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`.
-  - Keep route files thin and move reusable logic into feature/lib modules.
-  - Check file-size guardrails:
-    - Preferred: keep files under ~250 lines, no mix of UI + domain logic.
-    - Hard warning: if a file grows past ~400 lines, split by responsibility.
-  - Enforce folder hygiene:
-    - If a folder exceeds ~10-15 files, create subfolders by role (`components`, `hooks`, `services`, `types`).
-  - Extract duplicated logic when similar logic appears 2+ times.
-  - Ensure important exported APIs include TSDoc.
-- Don't:
-  - Merge when any gate fails.
-  - Add new storage/platform access paths without shared helpers.
-  - Leave mixed concerns (UI + storage + runtime bindings) in one large file.
+- All reads/writes must be scoped to the authenticated user.
+- Never leak cross-user objects through D1 queries, R2 keys, or public URLs.
+
+D1/R2 consistency:
+
+- Multi-step operations must be resilient:
+  - If D1 write succeeds but R2 fails (or vice versa), the system must recover (cleanup, retry, or mark for reconciliation).
+
+- Avoid “best-effort silently wrong” states; prefer explicit error surfaces + repair paths.
+
+Metadata correctness:
+
+- Width/height, mime/type, and derived/original relationships must be accurate.
+- If migrating legacy fields or backfilling dimensions, prefer idempotent jobs and safe re-runs.
+
+Usage/accounting:
+
+- `totalBytesUsed`, `totalImageCount`, and related counters must be consistent with canonical data.
+- If using cached counters, provide a recount/reconcile path and document when it runs.
+
+UI invariants:
+
+- Keep routes thin; don’t embed D1/R2 calls in components.
+- Keep tables/forms using TanStack Table/Form patterns (no parallel state systems for the same feature).
+- Don’t show empty states until you have an explicit “loaded” marker.

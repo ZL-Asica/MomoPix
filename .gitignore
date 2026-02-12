@@ -56,3 +56,4 @@ todos.json
 .dev.vars*
 
 .env
+docs/
