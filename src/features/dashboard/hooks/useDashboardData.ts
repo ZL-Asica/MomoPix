@@ -11,6 +11,7 @@ import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useUpload } from '@/features/dashboard/hooks/useUpload'
+import { getIsInitialImagesLoading, getRenderableImages } from '@/features/dashboard/lib/imagesViewState'
 import { createAlbumFn, listAlbumsFn, moveAlbumFn, renameAlbumFn, setDefaultAlbumFn } from '@/functions/albums'
 import { deleteImageFn, deleteImagesFn, listImagesFn, moveImageFn, moveImagesFn, renameImageFn } from '@/functions/images'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
@@ -64,7 +65,6 @@ export function useDashboardData() {
   const selectedAlbum = albumById.get(selectedAlbumId) ?? null
   const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}`
   const hasLoadedCurrentView = loadedViewKeys.has(currentViewKey)
-  const hasLoadedAnyView = loadedViewKeys.size > 0
   const isSearchMode = debouncedSearchQuery.length > 0
   const totalCount = hasLoadedCurrentView
     ? images.length
@@ -73,7 +73,15 @@ export function useDashboardData() {
   const hasPreviousPage = pageIndex > 0
   const hasNextPage = totalPages !== null && pageIndex < totalPages - 1
   const isFetching = isImagesFetching || isViewTransitionPending
-  const isInitialLoading = !hasLoadedCurrentView && images.length === 0 && (!hasLoadedAnyView || imagesState === 'loading' || isImagesFetching)
+  const renderableImages = useMemo(() => getRenderableImages({
+    images,
+    hasLoadedCurrentView,
+  }), [hasLoadedCurrentView, images])
+  const isInitialLoading = getIsInitialImagesLoading({
+    hasLoadedCurrentView,
+    isFetching,
+    imagesState,
+  })
   const isPaginationBusy = isFetching
 
   useEffect(() => {
@@ -127,6 +135,7 @@ export function useDashboardData() {
     setImagesError(null)
     if (!hadLoadedView) {
       setImagesState('loading')
+      setImageUrlError(null)
     }
 
     try {
@@ -416,7 +425,7 @@ export function useDashboardData() {
   return {
     albums,
     albumById,
-    images,
+    images: renderableImages,
     imageUrlError,
     meta,
     selectedAlbumId,
