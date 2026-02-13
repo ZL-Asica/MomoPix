@@ -217,9 +217,22 @@ Planning rule for non-trivial work:
 
 Commit hygiene:
 
-- Prefer phased, logically scoped commits.
-- Use Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `style:`, `perf:`, `ci:`, `docs:`, `chore:`).
-- Keep subject short; use commit body for rationale, details, or/and migration steps.
+- Prefer phased, logically scoped commits (one logical change per commit).
+- Use Conventional Commits only (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `style:`, `perf:`, `chore:`).
+- Keep the commit subject short, direct, and descriptive:
+  - Imperative mood ("add", "fix", "remove", "refactor").
+  - Aim for ≤ 72 characters so GitHub doesn’t collapse/truncate it.
+  - Avoid "misc", "wip", "update stuff", or vague summaries.
+- Don’t include boilerplate like "tests green / all checks passed" in commits or PR text (that’s a prerequisite).
+  - If there’s _non-obvious_ verification (manual steps), add a single `Verify:` line in the commit body.
+- File mentions:
+  - Wrap filenames/paths in backticks.
+  - Prefer filenames only; allow at most two directory level when needed for disambiguation
+    (e.g., `HomeFeature.tsx` or `home/components/HomeFeature.tsx`), not full repo paths.
+- Commit body:
+  - Use it for a small rationale snapshot (Why/What), and migration notes when relevant.
+  - For D1 (Drizzle) schema/persistence contract changes, include migration notes in commit body and/or PR description.
+- Don’t reference untracked plan docs. Keep commits self-contained; put a short rationale in the body or link a tracked ADR/PR.
 
 AGENTS.md updates:
 
