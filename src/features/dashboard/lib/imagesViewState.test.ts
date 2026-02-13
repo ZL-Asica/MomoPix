@@ -3,16 +3,16 @@ import { getIsInitialImagesLoading, getRenderableImages } from './imagesViewStat
 
 describe('getRenderableImages', () => {
   it('returns empty list when current view has not loaded to avoid stale album rows', () => {
-    const previousAlbumRows = [
+    const previousAlbumRows: Array<{ objectKey: string }> = [
       { objectKey: 'a' },
       { objectKey: 'b' },
-    ] as any
+    ]
 
     expect(getRenderableImages({ images: previousAlbumRows, hasLoadedCurrentView: false })).toEqual([])
   })
 
   it('returns existing rows once the current view has loaded', () => {
-    const currentAlbumRows = [{ objectKey: 'album-b-1' }] as any
+    const currentAlbumRows: Array<{ objectKey: string }> = [{ objectKey: 'album-b-1' }]
 
     expect(getRenderableImages({ images: currentAlbumRows, hasLoadedCurrentView: true })).toBe(currentAlbumRows)
   })
