@@ -11,6 +11,7 @@ import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useUpload } from '@/features/dashboard/hooks/useUpload'
+import { getIsInitialImagesLoading, getRenderableImages } from '@/features/dashboard/lib/imagesViewState'
 import { createAlbumFn, listAlbumsFn, moveAlbumFn, renameAlbumFn, setDefaultAlbumFn } from '@/functions/albums'
 import { deleteImageFn, deleteImagesFn, listImagesFn, moveImageFn, moveImagesFn, renameImageFn } from '@/functions/images'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
@@ -51,6 +52,7 @@ export function useDashboardData() {
   const [imagesReloadToken, setImagesReloadToken] = useState(0)
   const [isAlbumsLoaded, setIsAlbumsLoaded] = useState(false)
   const [loadedViewKeys, setLoadedViewKeys] = useState<Set<string>>(() => new Set())
+  const [currentImagesViewKey, setCurrentImagesViewKey] = useState<string | null>(null)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [renameImageObjectKey, setRenameImageObjectKey] = useState<string | null>(null)
   const [moveImageObjectKey, setMoveImageObjectKey] = useState<string | null>(null)
@@ -63,17 +65,24 @@ export function useDashboardData() {
   const albumById = useMemo(() => new Map(albums.map(album => [album.id, album])), [albums])
   const selectedAlbum = albumById.get(selectedAlbumId) ?? null
   const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}`
-  const hasLoadedCurrentView = loadedViewKeys.has(currentViewKey)
-  const hasLoadedAnyView = loadedViewKeys.size > 0
+  const hasCurrentViewData = currentImagesViewKey === currentViewKey
   const isSearchMode = debouncedSearchQuery.length > 0
-  const totalCount = hasLoadedCurrentView
+  const totalCount = hasCurrentViewData
     ? images.length
     : (isSearchMode ? null : (selectedAlbum?.imageCount ?? 0))
   const totalPages = totalCount === null ? null : Math.max(1, Math.ceil(totalCount / pageSize))
   const hasPreviousPage = pageIndex > 0
   const hasNextPage = totalPages !== null && pageIndex < totalPages - 1
   const isFetching = isImagesFetching || isViewTransitionPending
-  const isInitialLoading = !hasLoadedCurrentView && images.length === 0 && (!hasLoadedAnyView || imagesState === 'loading' || isImagesFetching)
+  const renderableImages = useMemo(() => getRenderableImages({
+    images,
+    hasCurrentViewData,
+  }), [hasCurrentViewData, images])
+  const isInitialLoading = getIsInitialImagesLoading({
+    hasCurrentViewData,
+    isFetching,
+    imagesState,
+  })
   const isPaginationBusy = isFetching
 
   useEffect(() => {
@@ -127,6 +136,7 @@ export function useDashboardData() {
     setImagesError(null)
     if (!hadLoadedView) {
       setImagesState('loading')
+      setImageUrlError(null)
     }
 
     try {
@@ -162,6 +172,7 @@ export function useDashboardData() {
       setPageIndex(previous => Math.min(previous, nextLastPageIndex))
       setImages(items)
       setImageUrlError(viewImageUrlError)
+      setCurrentImagesViewKey(input.viewKey)
       setImagesState('success')
       setLoadedViewKeys((previous) => {
         if (previous.has(input.viewKey)) {
@@ -416,7 +427,7 @@ export function useDashboardData() {
   return {
     albums,
     albumById,
-    images,
+    images: renderableImages,
     imageUrlError,
     meta,
     selectedAlbumId,
@@ -460,7 +471,7 @@ export function useDashboardData() {
       state: imagesState,
       isFetching,
       isInitialLoading,
-      hasLoadedOnce: hasLoadedCurrentView,
+      hasLoadedOnce: hasCurrentViewData,
       error: imagesError,
     },
   }
