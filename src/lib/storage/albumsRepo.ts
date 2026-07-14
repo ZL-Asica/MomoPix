@@ -94,8 +94,10 @@ function buildPathResolver(rows: Array<{ id: string, parentId: string | null }>)
 }
 
 async function listAlbumRecordsInternal(): Promise<AlbumRecord[]> {
-  const rows = await loadAlbumRows()
-  const usageById = await loadAlbumUsageById()
+  const [rows, usageById] = await Promise.all([
+    loadAlbumRows(),
+    loadAlbumUsageById(),
+  ])
   const resolvePath = buildPathResolver(rows.map(row => ({ id: row.id, parentId: row.parentId })))
 
   return rows
@@ -243,13 +245,42 @@ export async function getAlbumRecord(_db: D1Database, albumId: string): Promise<
 }
 
 /**
+ * Checks whether an album exists without loading the complete album tree or
+ * aggregating image usage.
+ *
+ * @param _db D1 database binding.
+ * @param albumId Album identifier.
+ * @returns `true` when the album exists.
+ */
+export async function albumExists(_db: D1Database, albumId: string): Promise<boolean> {
+  const db = getDb()
+  const [album] = await db
+    .select({ id: albumsTable.id })
+    .from(albumsTable)
+    .where(eq(albumsTable.id, albumId))
+    .limit(1)
+
+  if (album !== undefined || albumId !== ROOT_ALBUM_ID) {
+    return album !== undefined
+  }
+
+  // Direct image endpoints can be the first storage request. Initialize only
+  // the root row on that uncommon path instead of rebuilding usage metadata.
+  await ensureRootAlbum()
+  return true
+}
+
+/**
  * Lists all albums sorted by depth then name for stable tree rendering.
  *
  * @param _db D1 database binding.
  * @returns Sorted flat album list.
+ *
+ * The caller must initialize storage with `ensureStorageBootstrap` before
+ * listing. Server handlers already perform that initialization once per
+ * request, avoiding duplicate D1 reads for the same snapshot.
  */
 export async function listAlbumRecords(_db: D1Database): Promise<AlbumRecord[]> {
-  await ensureStorageBootstrap(_db)
   return listAlbumRecordsInternal()
 }
 

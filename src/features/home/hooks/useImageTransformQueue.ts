@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { getImageDimensions } from '@/lib/images/dimensions'
 import { checkImage, normalizeTransformError, transformImageFile } from '@/lib/img'
+import { shouldKeepOriginalImage } from '@/lib/img/output'
 import { normalizeImageMime } from '@/lib/storage/format'
 
 function fileBaseName(name: string): string {
@@ -70,9 +71,9 @@ export function useImageTransformQueue() {
           originalPreviewUrl: URL.createObjectURL(file),
           originalFormat: normalizeImageMime(extension, file.type).replace('image/', ''),
           targetFormat,
-          compressedBlob: null,
-          compressedFile: null,
-          compressedSize: null,
+          outputBlob: null,
+          outputFile: null,
+          outputSize: null,
           width: null,
           height: null,
           status: 'idle',
@@ -119,14 +120,38 @@ export function useImageTransformQueue() {
       originalName: item.originalName,
       targetFormat,
     })
+
+    if (shouldKeepOriginalImage({
+      originalSize: item.originalSize,
+      outputSize: blob.size,
+    })) {
+      const dimensions = await getImageDimensions(item.originalFile)
+      return {
+        ...item,
+        targetFormat,
+        outputBlob: item.originalFile,
+        outputFile: item.originalFile,
+        outputSize: item.originalSize,
+        width: dimensions?.width ?? null,
+        height: dimensions?.height ?? null,
+        status: 'original',
+        transformError: 'The original file was kept.',
+        uploadStatus: 'idle',
+        uploadError: null,
+        uploadedUrl: null,
+        uploadedObjectKey: null,
+        uploadedAlbumId: null,
+      }
+    }
+
     const dimensions = await getImageDimensions(compressedFile)
 
     return {
       ...item,
       targetFormat,
-      compressedBlob: blob,
-      compressedFile,
-      compressedSize: blob.size,
+      outputBlob: blob,
+      outputFile: compressedFile,
+      outputSize: blob.size,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,
       status: 'compressed',
@@ -150,6 +175,7 @@ export function useImageTransformQueue() {
 
     let succeeded = 0
     let failed = 0
+    let retainedOriginals = 0
 
     for (let index = 0; index < itemsRef.current.length; index += 1) {
       const current = itemsRef.current[index]
@@ -162,6 +188,9 @@ export function useImageTransformQueue() {
       try {
         const transformed = await transformOne(current)
         patchItem(current.id, transformed)
+        if (transformed.status === 'original') {
+          retainedOriginals += 1
+        }
         succeeded += 1
       }
       catch (error) {
@@ -169,9 +198,9 @@ export function useImageTransformQueue() {
         patchItem(current.id, {
           status: 'error',
           transformError: normalized.message,
-          compressedBlob: null,
-          compressedFile: null,
-          compressedSize: null,
+          outputBlob: null,
+          outputFile: null,
+          outputSize: null,
           width: null,
           height: null,
           uploadStatus: 'idle',
@@ -188,7 +217,14 @@ export function useImageTransformQueue() {
     }
 
     if (succeeded > 0 && failed === 0) {
-      toast.success('Images compressed successfully')
+      if (retainedOriginals > 0) {
+        toast.warning('Some original files were kept', {
+          description: `${retainedOriginals} conversion(s) would have increased file size.`,
+        })
+      }
+      else {
+        toast.success('Images compressed successfully')
+      }
       setCompressionState('success')
       return
     }
@@ -226,9 +262,9 @@ export function useImageTransformQueue() {
       patchItem(id, {
         status: 'error',
         transformError: normalized.message,
-        compressedBlob: null,
-        compressedFile: null,
-        compressedSize: null,
+        outputBlob: null,
+        outputFile: null,
+        outputSize: null,
         width: null,
         height: null,
         uploadStatus: 'idle',

@@ -66,7 +66,8 @@ export function ResultsList({
   }
 
   const transformedCount = items.filter(item => item.status === 'compressed').length
-  const hasDownloadables = transformedCount > 0
+  const retainedOriginalCount = items.filter(item => item.status === 'original').length
+  const hasDownloadables = items.some(item => item.outputFile !== null)
 
   return (
     <section aria-label="Processed image list" className="min-w-0 space-y-3">
@@ -80,6 +81,17 @@ export function ResultsList({
             {transformedCount}
             {' '}
             compressed
+            {retainedOriginalCount > 0 && (
+              <>
+                {' · '}
+                {retainedOriginalCount}
+                {' '}
+                original
+                {retainedOriginalCount === 1 ? '' : 's'}
+                {' '}
+                kept
+              </>
+            )}
           </p>
           {isCompressing && (
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -122,7 +134,7 @@ export function ResultsList({
             <>
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Checkbox
-                  aria-label="Select all compressed rows"
+                  aria-label="Select all processed rows"
                   checked={isIndeterminate ? 'indeterminate' : isAllSelected}
                   disabled={selectionDisabled || selectableCount === 0}
                   onCheckedChange={checked => onToggleAll(checked === true)}

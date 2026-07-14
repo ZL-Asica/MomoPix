@@ -244,8 +244,8 @@ export function useUploadSelected(
   const uploadCandidates = useMemo(() => {
     return items.filter(item => (
       selectedIds.has(item.id)
-      && item.status === 'compressed'
-      && item.compressedFile !== null
+      && (item.status === 'compressed' || item.status === 'original')
+      && item.outputFile !== null
       && item.uploadStatus !== 'uploaded'
     ))
   }, [items, selectedIds])
@@ -277,10 +277,10 @@ export function useUploadSelected(
         candidates,
         async (item) => {
           try {
-            const file = item.compressedFile
+            const file = item.outputFile
 
             if (!file) {
-              throw new Error('Missing compressed output file')
+              throw new Error('Missing processed output file')
             }
 
             const formData = new FormData()
@@ -428,7 +428,7 @@ export function useUploadSelected(
 
     if (uploadCandidates.length === 0) {
       toast.error(
-        'No selected compressed images to upload',
+        'No selected processed images to upload',
       )
       return
     }

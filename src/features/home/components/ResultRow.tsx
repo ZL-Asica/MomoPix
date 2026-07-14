@@ -43,6 +43,11 @@ function ConversionBadge({ status, originalFormat, targetFormat }: ConversionBad
           </Badge>
         </>
       )}
+      {status === 'original' && (
+        <Badge variant="outline" className="shrink-0 border-amber-600 text-amber-700">
+          Original kept
+        </Badge>
+      )}
       {status === 'error' && (
         <Badge variant="destructive" className="shrink-0">Error</Badge>
       )}
@@ -64,9 +69,9 @@ export function ResultRow({
   onRemove,
   onRetryTransform,
 }: ResultRowProps) {
-  const compressedSize = item.compressedSize
+  const compressedSize = item.outputSize
   const isCompressed = item.status === 'compressed' && compressedSize !== null
-  const isSelectable = item.status === 'compressed' && item.compressedFile !== null
+  const isOutputAvailable = (item.status === 'compressed' || item.status === 'original') && item.outputFile !== null
   const savedPercent = isCompressed && item.originalSize > 0
     ? ((item.originalSize - compressedSize) / item.originalSize) * 100
     : 0
@@ -83,7 +88,7 @@ export function ResultRow({
             <Checkbox
               aria-label={`Select ${item.originalName}`}
               checked={isSelected}
-              disabled={selectionDisabled || !isSelectable}
+              disabled={selectionDisabled || !isOutputAvailable}
               onCheckedChange={checked => onToggleSelected(checked === true)}
               className="h-5 w-5 rounded-md"
             />
@@ -104,19 +109,19 @@ export function ResultRow({
               <p className="truncate text-sm font-medium">{baseName(item.originalName)}</p>
               <p className="text-xs text-muted-foreground">
                 {getHumanReadableFileSize(item.originalSize)}
-                {item.compressedSize !== null && (
+                {isCompressed && item.outputSize !== null && (
                   <>
                     {' '}
                     {'->'}
                     {' '}
-                    {getHumanReadableFileSize(item.compressedSize)}
+                    {getHumanReadableFileSize(item.outputSize)}
                   </>
                 )}
               </p>
             </div>
 
             <div className="flex shrink-0 items-center gap-1 self-start">
-              {isCompressed && (
+              {isOutputAvailable && (
                 <Button
                   type="button"
                   size="icon"
@@ -171,10 +176,15 @@ export function ResultRow({
             {sizeLabel !== null && (
               <span className={`wrap-break-word ${sizeLabelClass}`}>{sizeLabel}</span>
             )}
+            {item.status === 'original' && (
+              <span className="wrap-break-word text-amber-700 dark:text-amber-400">
+                Converted output was not smaller.
+              </span>
+            )}
           </div>
 
           {item.transformError !== null && item.transformError.length > 0 && (
-            <p className="flex items-start gap-1 text-xs text-destructive">
+            <p className={`flex items-start gap-1 text-xs ${item.status === 'original' ? 'text-amber-700 dark:text-amber-400' : 'text-destructive'}`}>
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="wrap-break-word">{item.transformError}</span>
             </p>

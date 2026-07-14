@@ -1,3 +1,4 @@
+import type { AlbumImageRecord, ImageRecord } from '@/lib/storage/types'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { uploadImageFn } from '@/functions/images'
@@ -5,7 +6,13 @@ import { getImageDimensions } from '@/lib/images/dimensions'
 
 interface UseUploadOptions {
   selectedAlbumId: string
-  onUploaded: (albumId: string) => Promise<void>
+  onUploaded: (uploaded: UploadedImage[]) => void
+}
+
+export interface UploadedImage {
+  image: ImageRecord
+  albumImage: AlbumImageRecord
+  publicUrl: string | null
 }
 
 /**
@@ -32,6 +39,7 @@ export function useUpload(options: UseUploadOptions) {
 
     setIsUploading(true)
     try {
+      const uploaded: UploadedImage[] = []
       for (const file of Array.from(files)) {
         const dimensions = await getImageDimensions(file)
         if (dimensions === null) {
@@ -48,10 +56,10 @@ export function useUpload(options: UseUploadOptions) {
           formData.set('width', String(dimensions.width))
           formData.set('height', String(dimensions.height))
         }
-        await uploadImageFn({ data: formData })
+        uploaded.push(await uploadImageFn({ data: formData }))
       }
 
-      await onUploaded(selectedAlbumId)
+      onUploaded(uploaded)
       toast.success(`${files.length} image(s) uploaded`)
     }
     catch (error) {

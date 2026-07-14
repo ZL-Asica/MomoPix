@@ -11,7 +11,7 @@ import { requireAuth } from '@/lib/auth/guards'
 import { runBulkOperation } from '@/lib/bulk'
 import { getD1Binding, getR2Binding } from '@/lib/cloudflare/bindings'
 import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
-import { getAlbumRecord } from '@/lib/storage/albumsRepo'
+import { albumExists } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
 import { deriveDefaultImageName, resolveImageName } from '@/lib/storage/imageName'
 import {
@@ -76,8 +76,7 @@ export const listImagesFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
-    const album = await getAlbumRecord(db, data.albumId)
-    if (!album) {
+    if (!(await albumExists(db, data.albumId))) {
       throw new Error('Album not found')
     }
 
@@ -139,8 +138,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     const albumId = String(data.get('albumId') ?? '').trim()
     uploadDashboardSchema.parse({ albumId })
 
-    const album = await getAlbumRecord(db, albumId)
-    if (!album) {
+    if (!(await albumExists(db, albumId))) {
       throw new Error('Album not found')
     }
 
@@ -235,8 +233,7 @@ export const moveImageFn = createServerFn({ method: 'POST' })
       return { image }
     }
 
-    const targetAlbum = await getAlbumRecord(db, data.targetAlbumId)
-    if (!targetAlbum) {
+    if (!(await albumExists(db, data.targetAlbumId))) {
       throw new Error('Target album not found')
     }
 
@@ -257,8 +254,7 @@ export const moveImagesFn = createServerFn({ method: 'POST' })
     await requireAuth()
     const db = getD1Binding()
 
-    const targetAlbum = await getAlbumRecord(db, data.targetAlbumId)
-    if (!targetAlbum) {
+    if (!(await albumExists(db, data.targetAlbumId))) {
       throw new Error('Target album not found')
     }
 
@@ -330,7 +326,7 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
     }
 
     await deleteImageRecords(db, image)
-    return true
+    return { image }
   })
 
 /**
