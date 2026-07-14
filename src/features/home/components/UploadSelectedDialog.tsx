@@ -43,7 +43,7 @@ export function UploadSelectedDialog({
           <DialogDescription>
             {isPending
               ? `Uploading ${selectedCount} image(s)...`
-              : `Choose an album and upload ${selectedCount} compressed image(s).`}
+              : `Choose an album and upload ${selectedCount} processed image(s).`}
           </DialogDescription>
         </DialogHeader>
 

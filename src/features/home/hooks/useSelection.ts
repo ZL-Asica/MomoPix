@@ -2,7 +2,10 @@ import type { HomeProcessedItem } from '@/features/home/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 function isSelectable(item: HomeProcessedItem): boolean {
-  return item.status === 'compressed' && item.compressedFile !== null
+  return (
+    (item.status === 'compressed' || item.status === 'original')
+    && item.outputFile !== null
+  )
 }
 
 function isSameSelection(previous: Set<string>, nextIds: readonly string[]): boolean {
