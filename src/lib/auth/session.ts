@@ -1,4 +1,4 @@
-import { useSession } from '@tanstack/react-start/server'
+import { useSession as getStartSession } from '@tanstack/react-start/server'
 import { getAuthConfig } from '@/lib/auth/env'
 import { isProductionRuntime } from '@/lib/env'
 
@@ -11,16 +11,23 @@ export interface AppSessionData {
 /** Session cookie name for MomoPix auth state. */
 export const APP_SESSION_COOKIE_NAME = 'momopix-user-session'
 
+function getSessionSecret(): string {
+  const { sessionSecret } = getAuthConfig()
+
+  if (sessionSecret === undefined || sessionSecret.length === 0) {
+    throw new Error('Auth session secret is not configured')
+  }
+
+  return sessionSecret
+}
+
 /**
  * Creates/reads the current TanStack Start session for this request context.
  */
-export async function getSession(_request?: Request) {
-  const authConfig = getAuthConfig()
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSession<AppSessionData>({
+export async function getSession() {
+  return getStartSession<AppSessionData>({
     name: APP_SESSION_COOKIE_NAME,
-    password: authConfig.sessionSecret ?? 'momopix-disabled-session-secret',
+    password: getSessionSecret(),
     cookie: {
       secure: isProductionRuntime(),
       sameSite: 'lax',
@@ -30,19 +37,24 @@ export async function getSession(_request?: Request) {
   })
 }
 
+export type AppSession = Awaited<ReturnType<typeof getSession>>
+
 /**
  * Persists auth-related data to the current session cookie.
  */
 export async function commitSession(
-  session: Awaited<ReturnType<typeof getSession>>,
+  session: AppSession,
   data: Partial<AppSessionData>,
 ) {
-  await session.update(oldData => ({ ...oldData, ...data }))
+  await session.update(oldData => ({
+    ...oldData,
+    ...data,
+  }))
 }
 
 /**
  * Clears the current session cookie.
  */
-export async function destroySession(session: Awaited<ReturnType<typeof getSession>>) {
+export async function destroySession(session: AppSession) {
   await session.clear()
 }

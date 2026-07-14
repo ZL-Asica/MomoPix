@@ -82,9 +82,9 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
     }
 
     // Auto-select is guarded and one-time per row to avoid setState feedback loops.
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react/set-state-in-effect
     setSelectedIds(previous => addManyToSet(previous, autoSelectableIds))
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react/set-state-in-effect
     setAutoSelectedOnceIds(previous => addManyToSet(previous, autoSelectableIds))
   }, [autoSelectableIds, enabled])
 
@@ -181,6 +181,11 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
     setManuallyDeselectedIds(previous => addManyToSet(previous, selectableIds))
   }, [selectableIds])
 
+  const removeSelection = useCallback((ids: readonly string[]) => {
+    setSelectedIds(previous => removeManyFromSet(previous, ids))
+    setManuallyDeselectedIds(previous => addManyToSet(previous, ids))
+  }, [])
+
   return {
     selectedIds: visibleSelectedIds,
     selectedCount,
@@ -190,5 +195,6 @@ export function useSelection(items: readonly HomeProcessedItem[], enabled: boole
     toggleOne,
     toggleAll,
     clearSelection,
+    removeSelection,
   }
 }

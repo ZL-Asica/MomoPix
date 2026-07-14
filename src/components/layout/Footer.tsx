@@ -1,9 +1,11 @@
+const currentYear = new Date().getFullYear()
+
 const Footer = () => {
   return (
     <footer className="mb-2 mt-10 w-full">
       <div className="mx-auto max-w-7xl px-4 py-4 text-center space-y-2 text-base">
         <p className="text-gray-700 dark:text-gray-300">
-          {`© ${new Date().getFullYear()} ZL Asica | All rights reserved.`}
+          {`© ${currentYear} ZL Asica | All rights reserved.`}
         </p>
         <p className="text-gray-700 dark:text-gray-300">
           {/* Please leave this credit intact. Really appreciate it! */}

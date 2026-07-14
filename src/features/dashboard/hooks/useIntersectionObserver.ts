@@ -32,7 +32,7 @@ export function useIntersectionObserver<T extends Element>(options: UseIntersect
       return
     }
     if (typeof IntersectionObserver === 'undefined') {
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+      // eslint-disable-next-line react/set-state-in-effect
       setIsIntersecting(true)
       return
     }

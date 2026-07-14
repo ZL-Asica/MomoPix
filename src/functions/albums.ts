@@ -23,7 +23,7 @@ export const listAlbumsFn = createServerFn({ method: 'GET' })
  * Creates a new album under the requested parent and returns refreshed snapshots.
  */
 export const createAlbumFn = createServerFn({ method: 'POST' })
-  .inputValidator(createAlbumSchema)
+  .validator(createAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -37,7 +37,7 @@ export const createAlbumFn = createServerFn({ method: 'POST' })
  * Renames an existing album and returns refreshed snapshots.
  */
 export const renameAlbumFn = createServerFn({ method: 'POST' })
-  .inputValidator(renameAlbumSchema)
+  .validator(renameAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -51,7 +51,7 @@ export const renameAlbumFn = createServerFn({ method: 'POST' })
  * Moves an album in the tree and returns refreshed snapshots.
  */
 export const moveAlbumFn = createServerFn({ method: 'POST' })
-  .inputValidator(moveAlbumSchema)
+  .validator(moveAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -65,7 +65,7 @@ export const moveAlbumFn = createServerFn({ method: 'POST' })
  * Updates the default upload destination album.
  */
 export const setDefaultAlbumFn = createServerFn({ method: 'POST' })
-  .inputValidator(setDefaultAlbumSchema)
+  .validator(setDefaultAlbumSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()

@@ -54,7 +54,7 @@ export function HomeFeature() {
     items,
     selectedIds: selection.selectedIds,
     patchItem,
-    clearSelection: selection.clearSelection,
+    removeSelection: selection.removeSelection,
   })
 
   const isUploading = uploadState === 'uploading'
