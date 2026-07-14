@@ -12,7 +12,7 @@ interface UploadSelectedDialogProps {
   selectedAlbumId: string
   selectedCount: number
   onSelectAlbum: (albumId: string) => void
-  onConfirmUpload: () => Promise<void>
+  onConfirmUpload: () => void
 }
 
 /**

@@ -38,7 +38,7 @@ describe('getQualitySliderMeta', () => {
   it('returns sliderMin/sliderMax and calls getQualityState with correct params (with preset)', () => {
     const meta = getQualitySliderMeta({
       quality: 80,
-      targetFormat: 'webp' as any,
+      targetFormat: 'webp',
     })
 
     expect(meta.sliderMin).toBe(QUALITY_SLIDER_MIN)
@@ -67,7 +67,7 @@ describe('getQualitySliderMeta', () => {
     // preset width=(90-70)/60*100 = 33.333...
     const meta = getQualitySliderMeta({
       quality: 80,
-      targetFormat: 'webp' as any,
+      targetFormat: 'webp',
     })
 
     expect(meta.qualityPosPct).toBeCloseTo(66.6667, 3)
@@ -78,7 +78,7 @@ describe('getQualitySliderMeta', () => {
   it('clamps qualityPosPct to 0 when quality is below slider min', () => {
     const meta = getQualitySliderMeta({
       quality: 0,
-      targetFormat: 'webp' as any,
+      targetFormat: 'webp',
     })
 
     expect(meta.qualityPosPct).toBe(0)
@@ -87,7 +87,7 @@ describe('getQualitySliderMeta', () => {
   it('clamps qualityPosPct to 100 when quality is above slider max', () => {
     const meta = getQualitySliderMeta({
       quality: 200,
-      targetFormat: 'webp' as any,
+      targetFormat: 'webp',
     })
 
     expect(meta.qualityPosPct).toBe(100)
@@ -96,7 +96,7 @@ describe('getQualitySliderMeta', () => {
   it('handles missing preset: preset fields become 0 and preset is undefined', () => {
     const meta = getQualitySliderMeta({
       quality: 80,
-      targetFormat: 'avif' as any, // not in mocked qualityPresets
+      targetFormat: 'avif', // not in mocked qualityPresets
     })
 
     expect(meta.qualityPreset).toBeUndefined()

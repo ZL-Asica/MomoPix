@@ -72,7 +72,7 @@ const uploadDashboardSchema = z.object({
  * Lists indexed images for one album.
  */
 export const listImagesFn = createServerFn({ method: 'POST' })
-  .inputValidator(listImagesSchema)
+  .validator(listImagesSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -130,7 +130,7 @@ export const listImagesFn = createServerFn({ method: 'POST' })
  * Uploads one image object, writes metadata rows, and returns metadata.
  */
 export const uploadImageFn = createServerFn({ method: 'POST' })
-  .inputValidator(validateUploadPayload)
+  .validator(validateUploadPayload)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -222,7 +222,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
  * Moves one image between albums.
  */
 export const moveImageFn = createServerFn({ method: 'POST' })
-  .inputValidator(moveImageSchema)
+  .validator(moveImageSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -252,7 +252,7 @@ export const moveImageFn = createServerFn({ method: 'POST' })
  * Moves multiple images between albums and reports success/failure counts.
  */
 export const moveImagesFn = createServerFn({ method: 'POST' })
-  .inputValidator(moveImagesSchema)
+  .validator(moveImagesSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -302,7 +302,7 @@ export const moveImagesFn = createServerFn({ method: 'POST' })
  * Renames one image metadata record without changing its object key.
  */
 export const renameImageFn = createServerFn({ method: 'POST' })
-  .inputValidator(renameImageSchema)
+  .validator(renameImageSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -317,7 +317,7 @@ export const renameImageFn = createServerFn({ method: 'POST' })
  * Deletes an image from R2 and metadata rows.
  */
 export const deleteImageFn = createServerFn({ method: 'POST' })
-  .inputValidator(deleteImageSchema)
+  .validator(deleteImageSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
@@ -337,7 +337,7 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
  * Deletes multiple images and reports success/failure counts.
  */
 export const deleteImagesFn = createServerFn({ method: 'POST' })
-  .inputValidator(deleteImagesSchema)
+  .validator(deleteImagesSchema)
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()

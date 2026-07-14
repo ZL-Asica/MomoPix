@@ -57,3 +57,5 @@ todos.json
 
 .env
 docs/
+.local-data/
+.pnpm-store/

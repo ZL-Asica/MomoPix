@@ -59,7 +59,7 @@ export const getAuthConfigFn = createServerFn({ method: 'GET' })
  * @returns `true` on success or an error payload when verification/auth fails.
  */
 export const loginFn = createServerFn({ method: 'POST' })
-  .inputValidator(loginInputSchema)
+  .validator(loginInputSchema)
   .handler(async ({ data }) => {
     try {
       const authConfig = getAuthConfig()
@@ -99,8 +99,15 @@ export const loginFn = createServerFn({ method: 'POST' })
 export const logoutFn = createServerFn({ method: 'POST' })
   .handler(async () => {
     try {
+      const { sessionSecret } = getAuthConfig()
+
+      if (sessionSecret === undefined || sessionSecret.length === 0) {
+        return true
+      }
+
       const session = await getSession()
       await destroySession(session)
+
       return true
     }
     catch (error) {

@@ -1,6 +1,20 @@
-import type { HomeProcessedItem, UploadState, UploadSummary } from '@/features/home/types'
+import type {
+  HomeProcessedItem,
+  UploadState,
+  UploadSummary,
+} from '@/features/home/types'
 import type { AlbumRecord } from '@/lib/storage/types'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import {
+  useCallback,
+  useMemo,
+  useReducer,
+  useState,
+} from 'react'
 import { toast } from 'sonner'
 import { listAlbumsFn } from '@/functions/albums'
 import { uploadImageFn } from '@/functions/images'
@@ -8,6 +22,23 @@ import { runBulkOperation } from '@/lib/bulk'
 
 const UPLOAD_CONCURRENCY = 3
 const UPLOAD_TIMEOUT_MS = 45_000
+
+const EMPTY_ALBUMS: AlbumRecord[] = []
+
+/**
+ * Centralized query keys.
+ *
+ * Reuse these keys anywhere else that reads albums or images so mutations can
+ * invalidate the correct cached data.
+ */
+export const albumQueryKeys = {
+  all: ['albums'] as const,
+  list: () => [...albumQueryKeys.all, 'list'] as const,
+}
+
+export const imageQueryKeys = {
+  all: ['images'] as const,
+}
 
 interface UploadImageResponse {
   image: {
@@ -18,99 +49,197 @@ interface UploadImageResponse {
 }
 
 interface UseUploadSelectedInput {
+  /** Whether account-bound album and upload operations are available. */
   enabled: boolean
   items: readonly HomeProcessedItem[]
-  selectedIds: Set<string>
-  patchItem: (id: string, patch: Partial<HomeProcessedItem>) => void
-  clearSelection: () => void
+  selectedIds: ReadonlySet<string>
+  patchItem: (
+    id: string,
+    patch: Partial<HomeProcessedItem>,
+  ) => void
+
+  /**
+   * Removes only the specified items from the current selection.
+   *
+   * This is intentionally more precise than clearSelection(), because a
+   * selection can contain items that were not eligible for upload.
+   */
+  removeSelection: (ids: readonly string[]) => void
+}
+
+interface UploadProgress {
+  state: UploadState
+  summary: UploadSummary
+}
+
+type UploadProgressAction
+  = | {
+    type: 'reset'
+  }
+  | {
+    type: 'start'
+    total: number
+  }
+  | {
+    type: 'item-succeeded'
+  }
+  | {
+    type: 'item-failed'
+  }
+  | {
+    type: 'finish'
+    succeeded: number
+    failed: number
+  }
+  | {
+    type: 'fatal-error'
+  }
+
+interface UploadMutationVariables {
+  albumId: string
+  candidates: readonly HomeProcessedItem[]
+}
+
+interface UploadMutationResult {
+  total: number
+  succeeded: number
+  failed: number
+  succeededIds: string[]
+}
+
+const INITIAL_UPLOAD_PROGRESS: UploadProgress = {
+  state: 'idle',
+  summary: {
+    total: 0,
+    succeeded: 0,
+    failed: 0,
+  },
+}
+
+function uploadProgressReducer(
+  current: UploadProgress,
+  action: UploadProgressAction,
+): UploadProgress {
+  switch (action.type) {
+    case 'reset':
+      return INITIAL_UPLOAD_PROGRESS
+
+    case 'start':
+      return {
+        state: 'uploading',
+        summary: {
+          total: action.total,
+          succeeded: 0,
+          failed: 0,
+        },
+      }
+
+    case 'item-succeeded':
+      return {
+        ...current,
+        summary: {
+          ...current.summary,
+          succeeded: current.summary.succeeded + 1,
+        },
+      }
+
+    case 'item-failed':
+      return {
+        ...current,
+        summary: {
+          ...current.summary,
+          failed: current.summary.failed + 1,
+        },
+      }
+
+    case 'finish':
+      return {
+        state: action.failed === 0 ? 'success' : 'error',
+        summary: {
+          total: action.succeeded + action.failed,
+          succeeded: action.succeeded,
+          failed: action.failed,
+        },
+      }
+
+    case 'fatal-error':
+      return {
+        ...current,
+        state: 'error',
+      }
+
+    default:
+      return current
+  }
 }
 
 /**
- * Handles post-compression upload flow, album defaults, and upload progress state.
+ * Handles album loading and selected-image uploads.
  *
- * @param input Upload dependencies.
- * @param input.enabled Enables account-bound upload behaviors.
- * @param input.items Current home queue rows.
- * @param input.selectedIds Selected row ids eligible for upload.
- * @param input.patchItem Per-row patch helper from transform queue.
- * @param input.clearSelection Clears UI selection after successful uploads.
- * @returns Upload dialog state, album choices, progress summary, and submit action.
+ * This hook should only be mounted while account-bound upload functionality
+ * is enabled. Unmounting the consuming component naturally resets all local
+ * dialog and upload state.
  */
-export function useUploadSelected(input: UseUploadSelectedInput) {
+export function useUploadSelected(
+  input: UseUploadSelectedInput,
+) {
   const {
     enabled,
     items,
     selectedIds,
     patchItem,
-    clearSelection,
+    removeSelection,
   } = input
-  const [albums, setAlbums] = useState<AlbumRecord[]>([])
-  const [defaultAlbumId, setDefaultAlbumId] = useState<string | null>(null)
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
-  const [selectedAlbumId, setSelectedAlbumId] = useState('')
-  const [isLoadingAccountData, setIsLoadingAccountData] = useState(false)
-  const [uploadState, setUploadState] = useState<UploadState>('idle')
-  const [uploadSummary, setUploadSummary] = useState<UploadSummary>({
-    total: 0,
-    succeeded: 0,
-    failed: 0,
+
+  const queryClient = useQueryClient()
+
+  // eslint-disable-next-line react/use-state
+  const [uploadDialogOpen, setUploadDialogOpenState] = useState(false)
+
+  /**
+   * Stores only an explicit user selection.
+   *
+   * When empty or invalid, selectedAlbumId falls back to the account's current
+   * default album without requiring an effect to synchronize state.
+   */
+  const [
+    selectedAlbumOverride,
+    setSelectedAlbumOverride,
+  ] = useState('')
+
+  const [uploadProgress, dispatchUploadProgress] = useReducer(
+    uploadProgressReducer,
+    INITIAL_UPLOAD_PROGRESS,
+  )
+
+  const albumsQuery = useQuery({
+    queryKey: albumQueryKeys.list(),
+    queryFn: async () => listAlbumsFn(),
+    enabled,
+    staleTime: 60_000,
+    retry: 1,
   })
 
-  useEffect(() => {
-    if (!enabled) {
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setAlbums([])
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setDefaultAlbumId(null)
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setSelectedAlbumId('')
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setUploadDialogOpen(false)
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setUploadState('idle')
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setUploadSummary({ total: 0, succeeded: 0, failed: 0 })
-      return
+  const albums = albumsQuery.data?.albums ?? EMPTY_ALBUMS
+
+  const defaultAlbumId
+    = albumsQuery.data?.meta.defaultAlbumId ?? null
+
+  const selectedAlbumId = useMemo(() => {
+    const overrideExists = albums.some(
+      album => album.id === selectedAlbumOverride,
+    )
+
+    if (overrideExists) {
+      return selectedAlbumOverride
     }
 
-    let cancelled = false
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setIsLoadingAccountData(true)
-
-    void (async () => {
-      try {
-        const payload = await listAlbumsFn()
-        if (cancelled) {
-          return
-        }
-
-        setAlbums(payload.albums)
-        setDefaultAlbumId(payload.meta.defaultAlbumId)
-        setSelectedAlbumId((previous) => {
-          if (previous.length > 0 && payload.albums.some(album => album.id === previous)) {
-            return previous
-          }
-          return payload.meta.defaultAlbumId
-        })
-      }
-      catch (error) {
-        if (!cancelled) {
-          toast.error('Failed to load upload albums', {
-            description: error instanceof Error ? error.message : String(error),
-          })
-        }
-      }
-      finally {
-        if (!cancelled) {
-          setIsLoadingAccountData(false)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [enabled])
+    return defaultAlbumId ?? ''
+  }, [
+    albums,
+    defaultAlbumId,
+    selectedAlbumOverride,
+  ])
 
   const uploadCandidates = useMemo(() => {
     return items.filter(item => (
@@ -121,112 +250,235 @@ export function useUploadSelected(input: UseUploadSelectedInput) {
     ))
   }, [items, selectedIds])
 
-  const uploadSelected = useCallback(async () => {
-    if (!enabled) {
+  const uploadMutation = useMutation({
+    mutationKey: ['images', 'bulk-upload'],
+
+    onMutate: ({ candidates }: UploadMutationVariables) => {
+      dispatchUploadProgress({
+        type: 'start',
+        total: candidates.length,
+      })
+
+      for (const item of candidates) {
+        patchItem(item.id, {
+          uploadStatus: 'uploading',
+          uploadError: null,
+        })
+      }
+    },
+
+    mutationFn: async ({
+      albumId,
+      candidates,
+    }: UploadMutationVariables): Promise<UploadMutationResult> => {
+      const succeededIds: string[] = []
+
+      const result = await runBulkOperation(
+        candidates,
+        async (item) => {
+          try {
+            const file = item.compressedFile
+
+            if (!file) {
+              throw new Error('Missing compressed output file')
+            }
+
+            const formData = new FormData()
+            formData.set('file', file)
+            formData.set('albumId', albumId)
+            formData.set('source', 'index-compressed')
+            formData.set('originalName', item.originalName)
+
+            if (
+              item.width !== null
+              && item.height !== null
+            ) {
+              formData.set('width', String(item.width))
+              formData.set('height', String(item.height))
+            }
+
+            const payload = await uploadImageFn({
+              data: formData,
+            }) as UploadImageResponse
+
+            succeededIds.push(item.id)
+
+            patchItem(item.id, {
+              uploadStatus: 'uploaded',
+              uploadError: null,
+              uploadedObjectKey: payload.image.objectKey,
+              uploadedAlbumId: payload.image.albumId,
+              uploadedUrl: payload.publicUrl,
+            })
+
+            dispatchUploadProgress({
+              type: 'item-succeeded',
+            })
+
+            return payload
+          }
+          catch (error) {
+            const message = error instanceof Error
+              ? error.message
+              : String(error)
+
+            patchItem(item.id, {
+              uploadStatus: 'error',
+              uploadError: message,
+            })
+
+            dispatchUploadProgress({
+              type: 'item-failed',
+            })
+
+            throw error
+          }
+        },
+        {
+          concurrency: UPLOAD_CONCURRENCY,
+          timeoutMs: UPLOAD_TIMEOUT_MS,
+        },
+      )
+
+      return {
+        total: candidates.length,
+        succeeded: result.ok.length,
+        failed: result.failed.length,
+        succeededIds,
+      }
+    },
+
+    onSuccess: (result) => {
+      dispatchUploadProgress({
+        type: 'finish',
+        succeeded: result.succeeded,
+        failed: result.failed,
+      })
+
+      if (result.succeededIds.length > 0) {
+        removeSelection(result.succeededIds)
+      }
+
+      /*
+       * Uploads can affect album image counts, covers, and image listings.
+       * These calls are harmless when no active query currently matches.
+       */
+      void Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: albumQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: imageQueryKeys.all,
+        }),
+      ])
+
+      if (result.failed === 0) {
+        setUploadDialogOpenState(false)
+
+        toast.success(
+          `Uploaded ${result.succeeded} image(s)`,
+        )
+
+        return
+      }
+
+      toast.error(
+        `Uploaded ${result.succeeded} image(s), ${result.failed} failed`,
+      )
+    },
+
+    onError: (error) => {
+      dispatchUploadProgress({
+        type: 'fatal-error',
+      })
+
+      toast.error('Upload failed', {
+        description: error instanceof Error
+          ? error.message
+          : String(error),
+      })
+    },
+  })
+
+  const setUploadDialogOpen = useCallback(
+    (open: boolean) => {
+      /*
+       * Do not allow the user to dismiss the dialog while the active batch is
+       * still writing item state.
+       */
+      if (!open && uploadMutation.isPending) {
+        return
+      }
+
+      if (open) {
+        dispatchUploadProgress({
+          type: 'reset',
+        })
+      }
+
+      setUploadDialogOpenState(open)
+    },
+    [uploadMutation.isPending],
+  )
+
+  const uploadSelected = useCallback(() => {
+    if (!enabled || uploadMutation.isPending) {
       return
     }
 
     if (uploadCandidates.length === 0) {
-      toast.error('No selected compressed images to upload')
+      toast.error(
+        'No selected compressed images to upload',
+      )
       return
     }
 
-    if (selectedAlbumId.trim().length === 0) {
+    if (selectedAlbumId.length === 0) {
       toast.error('Choose an album before uploading')
       return
     }
 
-    setUploadState('uploading')
-    setUploadSummary({ total: uploadCandidates.length, succeeded: 0, failed: 0 })
+    /*
+     * Take a snapshot so later queue or selection changes do not alter the
+     * currently running upload batch.
+     */
+    uploadMutation.mutate({
+      albumId: selectedAlbumId,
+      candidates: [...uploadCandidates],
+    })
+  }, [
+    enabled,
+    selectedAlbumId,
+    uploadCandidates,
+    uploadMutation,
+  ])
 
-    for (const item of uploadCandidates) {
-      patchItem(item.id, {
-        uploadStatus: 'uploading',
-        uploadError: null,
-      })
+  const reloadAccountData = useCallback(() => {
+    if (enabled) {
+      void albumsQuery.refetch()
     }
-
-    try {
-      const result = await runBulkOperation(uploadCandidates, async (item) => {
-        try {
-          const file = item.compressedFile
-          if (!file) {
-            throw new Error('Missing compressed output file')
-          }
-
-          const formData = new FormData()
-          formData.set('file', file)
-          formData.set('albumId', selectedAlbumId)
-          formData.set('source', 'index-compressed')
-          formData.set('originalName', item.originalName)
-          if (item.width !== null && item.height !== null) {
-            formData.set('width', String(item.width))
-            formData.set('height', String(item.height))
-          }
-
-          const payload = await uploadImageFn({ data: formData }) as UploadImageResponse
-          patchItem(item.id, {
-            uploadStatus: 'uploaded',
-            uploadError: null,
-            uploadedObjectKey: payload.image.objectKey,
-            uploadedAlbumId: payload.image.albumId,
-            uploadedUrl: payload.publicUrl,
-          })
-          setUploadSummary(previous => ({
-            ...previous,
-            succeeded: previous.succeeded + 1,
-          }))
-          return payload
-        }
-        catch (error) {
-          patchItem(item.id, {
-            uploadStatus: 'error',
-            uploadError: error instanceof Error ? error.message : String(error),
-          })
-          setUploadSummary(previous => ({
-            ...previous,
-            failed: previous.failed + 1,
-          }))
-          throw error
-        }
-      }, {
-        concurrency: UPLOAD_CONCURRENCY,
-        timeoutMs: UPLOAD_TIMEOUT_MS,
-      })
-
-      const succeeded = result.ok.length
-      const failed = result.failed.length
-      setUploadSummary({ total: uploadCandidates.length, succeeded, failed })
-
-      if (failed === 0) {
-        setUploadState('success')
-        setUploadDialogOpen(false)
-        clearSelection()
-        toast.success(`Uploaded ${succeeded} image(s)`)
-        return
-      }
-
-      setUploadState('error')
-      toast.error(`Uploaded ${succeeded} image(s), ${failed} failed`)
-    }
-    catch (error) {
-      setUploadState('error')
-      toast.error('Upload failed', {
-        description: error instanceof Error ? error.message : String(error),
-      })
-    }
-  }, [clearSelection, enabled, patchItem, selectedAlbumId, uploadCandidates])
+  }, [albumsQuery, enabled])
 
   return {
     albums,
     defaultAlbumId,
+
+    accountDataError: albumsQuery.error,
+    isLoadingAccountData: albumsQuery.isLoading,
+    isRefreshingAccountData: albumsQuery.isFetching,
+    reloadAccountData,
+
     uploadDialogOpen,
     setUploadDialogOpen,
+
     selectedAlbumId,
-    setSelectedAlbumId,
-    isLoadingAccountData,
-    uploadState,
-    uploadSummary,
+    setSelectedAlbumId: setSelectedAlbumOverride,
+
+    uploadCandidates,
+    uploadState: uploadProgress.state,
+    uploadSummary: uploadProgress.summary,
+
+    isUploading: uploadMutation.isPending,
     uploadSelected,
   }
 }

@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config'
+import tanstackQuery from '@tanstack/eslint-plugin-query'
 
 export default antfu({
   ignores: [
@@ -16,6 +17,9 @@ export default antfu({
     // For JSON-LD we need to allow the use of `dangerouslySetInnerHTML`
     'react-dom/no-dangerously-set-innerhtml': 'off',
   },
+  plugins: {
+    tanstackQuery
+  }
 }, {
   files: ['src/routes/**/*.{ts,tsx}'],
   rules: {
