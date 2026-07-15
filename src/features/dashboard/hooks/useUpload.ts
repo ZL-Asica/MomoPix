@@ -1,8 +1,9 @@
 import type { AlbumImageRecord, ImageRecord } from '@/lib/storage/types'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { uploadImageFn } from '@/functions/images'
-import { getImageDimensions } from '@/lib/images/dimensions'
+
+const UPLOAD_CONCURRENCY = 3
 
 interface UseUploadOptions {
   selectedAlbumId: string
@@ -13,6 +14,23 @@ export interface UploadedImage {
   image: ImageRecord
   albumImage: AlbumImageRecord
   publicUrl: string | null
+}
+
+interface FailedUpload {
+  file: File
+  message: string
+  albumId: string
+}
+
+export interface UploadProgress {
+  total: number
+  completed: number
+  succeeded: number
+  failed: number
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 /**
@@ -26,54 +44,106 @@ export interface UploadedImage {
 export function useUpload(options: UseUploadOptions) {
   const { selectedAlbumId, onUploaded } = options
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
+  const [failedUploads, setFailedUploads] = useState<FailedUpload[]>([])
+  const uploadLockRef = useRef(false)
 
-  const uploadFiles = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0) {
+  const uploadFiles = useCallback(async (
+    files: FileList | readonly File[] | null,
+    targetAlbumId = selectedAlbumId,
+  ) => {
+    const batch = files === null ? [] : Array.from(files)
+    if (batch.length === 0) {
       return
     }
 
-    if (!selectedAlbumId) {
+    if (uploadLockRef.current) {
+      return
+    }
+
+    if (!targetAlbumId) {
       toast.error('Select an album first')
       return
     }
 
+    uploadLockRef.current = true
     setIsUploading(true)
-    try {
-      const uploaded: UploadedImage[] = []
-      for (const file of Array.from(files)) {
-        const dimensions = await getImageDimensions(file)
-        if (dimensions === null) {
-          toast.warning('Could not read image dimensions', {
-            description: `Uploading ${file.name} without width/height metadata`,
+    setFailedUploads([])
+    setUploadProgress({
+      total: batch.length,
+      completed: 0,
+      succeeded: 0,
+      failed: 0,
+    })
+
+    const uploaded: UploadedImage[] = []
+    const failures: FailedUpload[] = []
+    let nextIndex = 0
+    let completed = 0
+
+    const uploadNext = async (): Promise<void> => {
+      while (nextIndex < batch.length) {
+        const file = batch[nextIndex]
+        nextIndex += 1
+
+        try {
+          const formData = new FormData()
+          formData.set('file', file)
+          formData.set('albumId', targetAlbumId)
+          formData.set('source', 'dashboard-upload')
+          uploaded.push(await uploadImageFn({ data: formData }))
+        }
+        catch (error) {
+          failures.push({ file, message: errorMessage(error), albumId: targetAlbumId })
+        }
+        finally {
+          completed += 1
+          setUploadProgress({
+            total: batch.length,
+            completed,
+            succeeded: uploaded.length,
+            failed: failures.length,
           })
         }
+      }
+    }
 
-        const formData = new FormData()
-        formData.set('file', file)
-        formData.set('albumId', selectedAlbumId)
-        formData.set('source', 'dashboard-upload')
-        if (dimensions !== null) {
-          formData.set('width', String(dimensions.width))
-          formData.set('height', String(dimensions.height))
-        }
-        uploaded.push(await uploadImageFn({ data: formData }))
+    try {
+      await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, batch.length) }, uploadNext))
+      if (uploaded.length > 0) {
+        onUploaded(uploaded)
       }
 
-      onUploaded(uploaded)
-      toast.success(`${files.length} image(s) uploaded`)
-    }
-    catch (error) {
-      toast.error('Upload failed', {
-        description: error instanceof Error ? error.message : String(error),
+      if (failures.length === 0) {
+        setUploadProgress(null)
+        toast.success(`${uploaded.length} image(s) uploaded`)
+        return
+      }
+
+      setFailedUploads(failures)
+      toast.warning(`${uploaded.length} of ${batch.length} image(s) uploaded`, {
+        description: `${failures.length} failed. ${failures[0].message} Retry only the failed files.`,
       })
     }
     finally {
       setIsUploading(false)
+      uploadLockRef.current = false
     }
   }, [onUploaded, selectedAlbumId])
 
+  const retryFailedUploads = useCallback(async () => {
+    const targetAlbumId = failedUploads[0]?.albumId
+    if (targetAlbumId === undefined) {
+      return
+    }
+    await uploadFiles(failedUploads.map(({ file }) => file), targetAlbumId)
+  }, [failedUploads, uploadFiles])
+
   return {
     isUploading,
+    uploadProgress,
+    failedUploadCount: failedUploads.length,
     uploadFiles,
+    retryFailedUploads,
   }
 }

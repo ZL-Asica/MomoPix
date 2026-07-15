@@ -286,7 +286,13 @@ export function useDashboardData() {
     }))
   }, [])
 
-  const { isUploading, uploadFiles } = useUpload({
+  const {
+    isUploading,
+    uploadProgress,
+    failedUploadCount,
+    uploadFiles,
+    retryFailedUploads,
+  } = useUpload({
     selectedAlbumId,
     onUploaded: (uploaded) => {
       const uploadViewKey = currentViewKey
@@ -635,7 +641,10 @@ export function useDashboardData() {
     pendingDeleteObjectKey,
     setPendingDeleteObjectKey,
     isUploading,
+    uploadProgress,
+    failedUploadCount,
     uploadFiles,
+    retryFailedUploads,
     createAlbum,
     renameAlbum,
     moveAlbum,

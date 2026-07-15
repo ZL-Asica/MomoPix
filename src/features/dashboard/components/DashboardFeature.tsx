@@ -1,5 +1,5 @@
 import { ImageIcon } from 'lucide-react'
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
@@ -24,7 +24,6 @@ const DEFAULT_TOTAL_SPACE_BYTES = 5 * 1024 * 1024 * 1024
  * Stateful dashboard feature that wires albums, images, and mutation dialogs.
  */
 export function DashboardFeature() {
-  const [isUploadPending, startUploadTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [renameAlbumId, setRenameAlbumId] = useState<string | null>(null)
@@ -48,6 +47,8 @@ export function DashboardFeature() {
     imagesStatus,
     imageUrlError,
     isUploading,
+    uploadProgress,
+    failedUploadCount,
     meta,
     mobileSidebarOpen,
     pageIndex,
@@ -73,6 +74,7 @@ export function DashboardFeature() {
     setPendingDeleteObjectKey,
     selectAlbum,
     uploadFiles,
+    retryFailedUploads,
   } = useDashboardData()
 
   const selectedAlbum = albumById.get(selectedAlbumId)
@@ -171,19 +173,16 @@ export function DashboardFeature() {
             fileInputRef={fileInputRef}
             onUploadClick={() => fileInputRef.current?.click()}
             onUploadChange={(files) => {
-              startUploadTransition(async () => {
-                try {
-                  await uploadFiles(files)
-                }
-                finally {
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = ''
-                  }
-                }
-              })
+              void uploadFiles(files)
+              if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+              }
             }}
-            uploadDisabled={isUploading || isUploadPending || !selectedAlbumId}
-            uploadLoading={isUploading || isUploadPending}
+            uploadDisabled={isUploading || !selectedAlbumId}
+            uploadLoading={isUploading}
+            uploadProgress={uploadProgress}
+            failedUploadCount={failedUploadCount}
+            onRetryFailedUploads={() => void retryFailedUploads()}
             bulkOptions={(
               <BulkOptionsMenu
                 selectedImages={selectedImagesOrdered}
