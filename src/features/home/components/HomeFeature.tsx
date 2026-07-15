@@ -28,6 +28,7 @@ export function HomeFeature() {
     setUseManualQuality,
     compressionState,
     compressedCount,
+    isTransforming,
     addImages,
     removeItem,
     transformAll,
@@ -58,7 +59,7 @@ export function HomeFeature() {
   })
 
   const isUploading = uploadState === 'uploading'
-  const isActionLocked = isCompressing || isUploading
+  const isActionLocked = isTransforming || isUploading
 
   const copyItems = useMemo(() => {
     return items.map(item => ({

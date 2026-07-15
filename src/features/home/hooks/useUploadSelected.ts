@@ -13,6 +13,7 @@ import {
   useCallback,
   useMemo,
   useReducer,
+  useRef,
   useState,
 } from 'react'
 import { toast } from 'sonner'
@@ -211,6 +212,7 @@ export function useUploadSelected(
     uploadProgressReducer,
     INITIAL_UPLOAD_PROGRESS,
   )
+  const isUploadStartingRef = useRef(false)
 
   const albumsQuery = useQuery({
     queryKey: albumQueryKeys.list(),
@@ -398,6 +400,10 @@ export function useUploadSelected(
           : String(error),
       })
     },
+
+    onSettled: () => {
+      isUploadStartingRef.current = false
+    },
   })
 
   const setUploadDialogOpen = useCallback(
@@ -406,7 +412,7 @@ export function useUploadSelected(
        * Do not allow the user to dismiss the dialog while the active batch is
        * still writing item state.
        */
-      if (!open && uploadMutation.isPending) {
+      if (!open && (isUploadStartingRef.current || uploadMutation.isPending)) {
         return
       }
 
@@ -422,7 +428,7 @@ export function useUploadSelected(
   )
 
   const uploadSelected = useCallback(() => {
-    if (!enabled || uploadMutation.isPending) {
+    if (!enabled || isUploadStartingRef.current || uploadMutation.isPending) {
       return
     }
 
@@ -442,6 +448,7 @@ export function useUploadSelected(
      * Take a snapshot so later queue or selection changes do not alter the
      * currently running upload batch.
      */
+    isUploadStartingRef.current = true
     uploadMutation.mutate({
       albumId: selectedAlbumId,
       candidates: [...uploadCandidates],

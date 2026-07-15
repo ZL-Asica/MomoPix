@@ -38,7 +38,9 @@ export function useImageTransformQueue() {
   const [useManualQuality, setUseManualQuality] = useState(false)
   const [compressionState, setCompressionState] = useState<CompressionState>('idle')
   const [compressedCount, setCompressedCount] = useState(0)
+  const [isTransforming, setIsTransforming] = useState(false)
   const itemsRef = useRef<HomeProcessedItem[]>([])
+  const isTransformingRef = useRef(false)
 
   useEffect(() => {
     itemsRef.current = items
@@ -165,88 +167,110 @@ export function useImageTransformQueue() {
   }, [quality, targetFormat, useManualQuality])
 
   const transformAll = useCallback(async () => {
-    if (itemsRef.current.length === 0) {
-      toast.error('Please add some images first')
+    if (isTransformingRef.current || itemsRef.current.length === 0) {
+      if (itemsRef.current.length === 0) {
+        toast.error('Please add some images first')
+      }
       return
     }
 
-    setCompressionState('compressing')
-    setCompressedCount(0)
+    /*
+     * State updates do not disable the button until React's next render. Keep
+     * this synchronous guard so rapid clicks cannot start overlapping transforms.
+     */
+    isTransformingRef.current = true
+    setIsTransforming(true)
 
-    let succeeded = 0
-    let failed = 0
-    let retainedOriginals = 0
+    try {
+      setCompressionState('compressing')
+      setCompressedCount(0)
 
-    for (let index = 0; index < itemsRef.current.length; index += 1) {
-      const current = itemsRef.current[index]
+      let succeeded = 0
+      let failed = 0
+      let retainedOriginals = 0
 
-      patchItem(current.id, {
-        status: 'compressing',
-        transformError: null,
-      })
+      for (let index = 0; index < itemsRef.current.length; index += 1) {
+        const current = itemsRef.current[index]
 
-      try {
-        const transformed = await transformOne(current)
-        patchItem(current.id, transformed)
-        if (transformed.status === 'original') {
-          retainedOriginals += 1
-        }
-        succeeded += 1
-      }
-      catch (error) {
-        const normalized = normalizeTransformError(error)
         patchItem(current.id, {
-          status: 'error',
-          transformError: normalized.message,
-          outputBlob: null,
-          outputFile: null,
-          outputSize: null,
-          width: null,
-          height: null,
-          uploadStatus: 'idle',
-          uploadError: null,
-          uploadedUrl: null,
-          uploadedObjectKey: null,
-          uploadedAlbumId: null,
+          status: 'compressing',
+          transformError: null,
         })
-        failed += 1
-      }
-      finally {
-        setCompressedCount(index + 1)
-      }
-    }
 
-    if (succeeded > 0 && failed === 0) {
-      if (retainedOriginals > 0) {
-        toast.warning('Some original files were kept', {
-          description: `${retainedOriginals} conversion(s) would have increased file size.`,
+        try {
+          const transformed = await transformOne(current)
+          patchItem(current.id, transformed)
+          if (transformed.status === 'original') {
+            retainedOriginals += 1
+          }
+          succeeded += 1
+        }
+        catch (error) {
+          const normalized = normalizeTransformError(error)
+          patchItem(current.id, {
+            status: 'error',
+            transformError: normalized.message,
+            outputBlob: null,
+            outputFile: null,
+            outputSize: null,
+            width: null,
+            height: null,
+            uploadStatus: 'idle',
+            uploadError: null,
+            uploadedUrl: null,
+            uploadedObjectKey: null,
+            uploadedAlbumId: null,
+          })
+          failed += 1
+        }
+        finally {
+          setCompressedCount(index + 1)
+        }
+      }
+
+      if (succeeded > 0 && failed === 0) {
+        if (retainedOriginals > 0) {
+          toast.warning('Some original files were kept', {
+            description: `${retainedOriginals} conversion(s) would have increased file size.`,
+          })
+        }
+        else {
+          toast.success('Images compressed successfully')
+        }
+        setCompressionState('success')
+        return
+      }
+
+      if (succeeded > 0 && failed > 0) {
+        toast.warning('Compression partially completed', {
+          description: `${succeeded} succeeded, ${failed} failed.`,
         })
+        setCompressionState('error')
+        return
       }
-      else {
-        toast.success('Images compressed successfully')
-      }
-      setCompressionState('success')
-      return
-    }
 
-    if (succeeded > 0 && failed > 0) {
-      toast.warning('Compression partially completed', {
-        description: `${succeeded} succeeded, ${failed} failed.`,
-      })
+      toast.error('Failed to compress images')
       setCompressionState('error')
-      return
     }
-
-    toast.error('Failed to compress images')
-    setCompressionState('error')
+    finally {
+      isTransformingRef.current = false
+      setIsTransforming(false)
+    }
   }, [patchItem, transformOne])
 
   const retryTransform = useCallback(async (id: string) => {
+    if (isTransformingRef.current) {
+      return
+    }
+
     const target = itemsRef.current.find(item => item.id === id)
     if (!target) {
       return
     }
 
+    isTransformingRef.current = true
+    setIsTransforming(true)
+    setCompressionState('idle')
     patchItem(id, {
       status: 'compressing',
       transformError: null,
@@ -256,6 +280,7 @@ export function useImageTransformQueue() {
       const transformed = await transformOne(target)
       patchItem(id, transformed)
       toast.success(`Recompressed ${target.originalName}`)
+      setCompressionState('success')
     }
     catch (error) {
       const normalized = normalizeTransformError(error)
@@ -276,6 +301,11 @@ export function useImageTransformQueue() {
       toast.error(`Failed to recompress ${target.originalName}`, {
         description: normalized.message,
       })
+      setCompressionState('error')
+    }
+    finally {
+      isTransformingRef.current = false
+      setIsTransforming(false)
     }
   }, [patchItem, transformOne])
 
@@ -289,6 +319,7 @@ export function useImageTransformQueue() {
     setUseManualQuality,
     compressionState,
     compressedCount,
+    isTransforming,
     addImages,
     removeItem,
     transformAll,
