@@ -11,7 +11,7 @@ import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useUpload } from '@/features/dashboard/hooks/useUpload'
-import { createAlbumFn, listAlbumsFn, moveAlbumFn, renameAlbumFn, setDefaultAlbumFn } from '@/functions/albums'
+import { createAlbumFn, deleteAlbumFn, listAlbumsFn, moveAlbumFn, renameAlbumFn, setDefaultAlbumFn } from '@/functions/albums'
 import { deleteImageFn, deleteImagesFn, listImagesFn, moveImageFn, moveImagesFn, renameImageFn } from '@/functions/images'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
 
@@ -50,6 +50,7 @@ export function useDashboardData() {
   const [imagesError, setImagesError] = useState<string | null>(null)
   const [isImagesFetching, setIsImagesFetching] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
+  const [imagesRevision, setImagesRevision] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_IMAGE_PAGE_SIZE)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -59,6 +60,7 @@ export function useDashboardData() {
   const [renameImageObjectKey, setRenameImageObjectKey] = useState<string | null>(null)
   const [moveImageObjectKey, setMoveImageObjectKey] = useState<string | null>(null)
   const [pendingDeleteObjectKey, setPendingDeleteObjectKey] = useState<string | null>(null)
+  const [pendingDeleteAlbumId, setPendingDeleteAlbumId] = useState<string | null>(null)
   const [isViewTransitionPending, startViewTransition] = useTransition()
   const imageRequestIdRef = useRef(0)
   const activeImagesRef = useRef(images)
@@ -68,7 +70,7 @@ export function useDashboardData() {
 
   const albumById = useMemo(() => new Map(albums.map(album => [album.id, album])), [albums])
   const selectedAlbum = albumById.get(selectedAlbumId) ?? null
-  const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}`
+  const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}|${imagesRevision}`
   const activeViewKeyRef = useRef(currentViewKey)
   const hasLoadedCurrentView = loadedViewKeys.has(currentViewKey)
   const hasLoadedAnyView = loadedViewKeys.size > 0
@@ -422,6 +424,22 @@ export function useDashboardData() {
     toast.success('Default album updated')
   }, [])
 
+  const deleteAlbum = useCallback(async (input: { albumId: string, targetAlbumId: string }) => {
+    const payload = await deleteAlbumFn({ data: input })
+    setAlbums(payload.albums)
+    setMeta(payload.meta)
+    imageRequestIdRef.current += 1
+    imageViewsRef.current.clear()
+    setLoadedViewKeys(new Set())
+    setImagesRevision(previous => previous + 1)
+    setPendingDeleteAlbumId(null)
+    if (selectedAlbumIdRef.current === payload.deletedAlbumId) {
+      setSelectedAlbumId(payload.targetAlbumId)
+      setPageIndex(0)
+    }
+    toast.success('Album deleted and contents moved')
+  }, [])
+
   const moveImage = useCallback(async ({ objectKey, targetAlbumId }: MoveImageInput) => {
     const viewKey = currentViewKey
     const sourceImage = images.find(image => image.objectKey === objectKey)
@@ -640,6 +658,8 @@ export function useDashboardData() {
     setMoveImageObjectKey,
     pendingDeleteObjectKey,
     setPendingDeleteObjectKey,
+    pendingDeleteAlbumId,
+    setPendingDeleteAlbumId,
     isUploading,
     uploadProgress,
     failedUploadCount,
@@ -654,6 +674,7 @@ export function useDashboardData() {
     bulkMoveImages,
     bulkDeleteImages,
     setDefaultAlbum,
+    deleteAlbum,
     searchQuery,
     onSearchQueryChange,
     pageIndex: pageIndex + 1,

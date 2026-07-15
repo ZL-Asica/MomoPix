@@ -12,6 +12,7 @@ import { SidebarAlbums } from '@/features/dashboard/components/SidebarAlbums'
 import { UsageSummary } from '@/features/dashboard/components/UsageSummary'
 import { AlbumDialogs } from '@/features/dashboard/dialogs/AlbumDialogs'
 import { BulkMoveImagesDialog } from '@/features/dashboard/dialogs/BulkMoveImagesDialog'
+import { DeleteAlbumDialog } from '@/features/dashboard/dialogs/DeleteAlbumDialog'
 import { DeleteImageDialog } from '@/features/dashboard/dialogs/DeleteImageDialog'
 import { RenameImageDialog } from '@/features/dashboard/dialogs/RenameImageDialog'
 import { useDashboardData } from '@/features/dashboard/hooks/useDashboardData'
@@ -33,6 +34,7 @@ export function DashboardFeature() {
     albumById,
     createAlbum,
     deleteImage,
+    deleteAlbum,
     bulkDeleteImages,
     bulkMoveImages,
     goFirstPage,
@@ -61,6 +63,7 @@ export function DashboardFeature() {
     moveImageObjectKey,
     pendingDeleteObjectKey,
     renameAlbum,
+    pendingDeleteAlbumId,
     selectedAlbumId,
     totalCount,
     totalPages,
@@ -72,6 +75,7 @@ export function DashboardFeature() {
     setRenameImageObjectKey,
     setMoveImageObjectKey,
     setPendingDeleteObjectKey,
+    setPendingDeleteAlbumId,
     selectAlbum,
     uploadFiles,
     retryFailedUploads,
@@ -111,11 +115,12 @@ export function DashboardFeature() {
         onCreateAlbumClick={() => setCreateDialogOpen(true)}
         onRequestRename={setRenameAlbumId}
         onRequestMove={setMoveAlbumId}
+        onRequestDelete={setPendingDeleteAlbumId}
         onSetDefault={setDefaultAlbum}
       />
       <UsageSummary meta={meta} totalSpaceBytes={DEFAULT_TOTAL_SPACE_BYTES} />
     </div>
-  ), [albums, meta, selectedAlbumId, selectAlbum, setDefaultAlbum, setMobileSidebarOpen])
+  ), [albums, meta, selectedAlbumId, selectAlbum, setDefaultAlbum, setMobileSidebarOpen, setPendingDeleteAlbumId])
 
   return (
     <DashboardLayout
@@ -264,6 +269,13 @@ export function DashboardFeature() {
         objectKey={pendingDeleteObjectKey}
         onDelete={deleteImage}
         onCancel={() => setPendingDeleteObjectKey(null)}
+      />
+
+      <DeleteAlbumDialog
+        album={pendingDeleteAlbumId === null ? null : (albumById.get(pendingDeleteAlbumId) ?? null)}
+        albums={albums}
+        onDelete={deleteAlbum}
+        onCancel={() => setPendingDeleteAlbumId(null)}
       />
 
       <AlbumDialogs

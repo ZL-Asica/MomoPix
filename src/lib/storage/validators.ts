@@ -38,6 +38,12 @@ export const setDefaultAlbumSchema = z.object({
   albumId: albumIdSchema,
 })
 
+/** Payload schema for deleting an album after migrating its contents. */
+export const deleteAlbumSchema = z.object({
+  albumId: albumIdSchema,
+  targetAlbumId: albumIdSchema,
+})
+
 /**
  * Payload schema for listing album images.
  */
