@@ -35,10 +35,14 @@ export const imagesTable = sqliteTable('images', {
   source: text('source', {
     enum: ['index-compressed', 'dashboard-upload'],
   }).notNull(),
+  deletedAt: integer('deleted_at'),
+  cleanupAttempts: integer('cleanup_attempts').notNull().default(0),
+  cleanupError: text('cleanup_error'),
 }, table => [
   index('idx_images_album_created_desc').on(table.albumId, table.createdAt, table.id),
   index('idx_images_album_name_lower').on(table.albumId, table.nameLower),
   index('idx_images_created_desc').on(table.createdAt, table.id),
+  index('idx_images_pending_cleanup').on(table.deletedAt, table.id),
 ])
 
 export type AlbumRow = typeof albumsTable.$inferSelect

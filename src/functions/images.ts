@@ -11,11 +11,12 @@ import { requireAuth } from '@/lib/auth/guards'
 import { runBulkOperation } from '@/lib/bulk'
 import { getD1Binding, getR2Binding } from '@/lib/cloudflare/bindings'
 import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
+import { validateUploadImage } from '@/lib/images/uploadValidation'
 import { albumExists } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
+import { deleteImageSafely, reconcilePendingImageDeletes } from '@/lib/storage/imageCleanup'
 import { deriveDefaultImageName, resolveImageName } from '@/lib/storage/imageName'
 import {
-  deleteImageRecords,
   getImageRecord,
   listAlbumImages,
   moveImageRecords,
@@ -34,17 +35,6 @@ import {
 
 const BULK_OPERATION_CONCURRENCY = 4
 const BULK_OPERATION_TIMEOUT_MS = 20_000
-
-function parseNumberField(value: FormDataEntryValue | null): number | null {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    return null
-  }
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) {
-    return null
-  }
-  return parsed
-}
 
 function normalizeDimensionValue(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
@@ -76,6 +66,10 @@ export const listImagesFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireAuth()
     const db = getD1Binding()
+    const r2 = getR2Binding()
+    await reconcilePendingImageDeletes({ db, r2 }).catch((error) => {
+      console.error('[listImagesFn] Failed to reconcile pending image deletions:', error)
+    })
     if (!(await albumExists(db, data.albumId))) {
       throw new Error('Album not found')
     }
@@ -147,17 +141,16 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       throw new TypeError('File is required')
     }
 
+    const validatedFile = await validateUploadImage(fileEntry)
     const originalName = String(data.get('originalName') ?? fileEntry.name).trim() || fileEntry.name
     const source = sourceFrom(data.get('source'))
-    const ext = normalizeImageExt(fileEntry.name, fileEntry.type)
-    const mime = normalizeImageMime(ext, fileEntry.type)
+    const ext = normalizeImageExt(fileEntry.name, validatedFile.mime)
+    const mime = normalizeImageMime(ext, validatedFile.mime)
     const storedName = toStoredName(originalName, ext)
     const objectKey = buildR2ObjectKey({ ext })
     const imageName = deriveDefaultImageName(originalName, objectKey)
     const uploadedAt = new Date().toISOString()
-    const bytes = await fileEntry.arrayBuffer()
-    const width = parseNumberField(data.get('width'))
-    const height = parseNumberField(data.get('height'))
+    const { bytes, width, height } = validatedFile
 
     await putImageObject(r2, {
       key: objectKey,
@@ -319,14 +312,11 @@ export const deleteImageFn = createServerFn({ method: 'POST' })
     const db = getD1Binding()
     const r2 = getR2Binding()
     const image = await getImageRecord(db, data.objectKey)
-
-    await deleteImageObject(r2, data.objectKey)
     if (!image) {
       throw new Error('Image not found')
     }
 
-    await deleteImageRecords(db, image)
-    return { image }
+    return deleteImageSafely({ db, r2, image })
   })
 
 /**
@@ -342,13 +332,11 @@ export const deleteImagesFn = createServerFn({ method: 'POST' })
 
     const result = await runBulkOperation(objectKeys, async (objectKey) => {
       const image = await getImageRecord(db, objectKey)
-
-      await deleteImageObject(r2, objectKey)
       if (!image) {
         throw new Error('Image not found')
       }
 
-      await deleteImageRecords(db, image)
+      return deleteImageSafely({ db, r2, image })
     }, {
       concurrency: BULK_OPERATION_CONCURRENCY,
       timeoutMs: BULK_OPERATION_TIMEOUT_MS,
@@ -365,6 +353,9 @@ export const deleteImagesFn = createServerFn({ method: 'POST' })
       succeeded: result.ok.length,
       failed: result.failed.length,
       succeededObjectKeys: result.ok.map(item => item.item),
+      cleanupPendingObjectKeys: result.ok
+        .filter(item => item.result.cleanupPending)
+        .map(item => item.item),
       failedItems: result.failed.map(failure => ({
         objectKey: failure.item,
         reason: failure.error.message,

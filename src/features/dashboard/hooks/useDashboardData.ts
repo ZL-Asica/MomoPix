@@ -485,7 +485,12 @@ export function useDashboardData() {
           updatedAt: new Date().toISOString(),
         })
     setPendingDeleteObjectKey(null)
-    toast.success('Image deleted')
+    if (payload.cleanupPending) {
+      toast.warning('Image hidden; storage cleanup will retry automatically')
+    }
+    else {
+      toast.success('Image deleted')
+    }
   }, [currentViewKey, invalidateInactiveImageViews, removeImagesFromCachedViews, updateAlbumUsage])
 
   const bulkMoveImages = useCallback(async ({ objectKeys, targetAlbumId }: BulkMoveImagesInput): Promise<BulkOperationResult> => {
@@ -534,6 +539,10 @@ export function useDashboardData() {
             totalBytesUsed: Math.max(0, previous.totalBytesUsed - bytesUsed),
             updatedAt: new Date().toISOString(),
           })
+    }
+
+    if (result.cleanupPendingObjectKeys.length > 0) {
+      toast.warning(`${result.cleanupPendingObjectKeys.length} image cleanup(s) will retry automatically`)
     }
 
     return result
