@@ -38,6 +38,7 @@ export function useImageTransformQueue() {
   const [useManualQuality, setUseManualQuality] = useState(false)
   const [compressionState, setCompressionState] = useState<CompressionState>('idle')
   const [compressedCount, setCompressedCount] = useState(0)
+  const [isTransforming, setIsTransforming] = useState(false)
   const itemsRef = useRef<HomeProcessedItem[]>([])
   const isTransformingRef = useRef(false)
 
@@ -175,9 +176,10 @@ export function useImageTransformQueue() {
 
     /*
      * State updates do not disable the button until React's next render. Keep
-     * this synchronous guard so rapid clicks cannot start overlapping batches.
+     * this synchronous guard so rapid clicks cannot start overlapping transforms.
      */
     isTransformingRef.current = true
+    setIsTransforming(true)
 
     try {
       setCompressionState('compressing')
@@ -252,15 +254,23 @@ export function useImageTransformQueue() {
     }
     finally {
       isTransformingRef.current = false
+      setIsTransforming(false)
     }
   }, [patchItem, transformOne])
 
   const retryTransform = useCallback(async (id: string) => {
+    if (isTransformingRef.current) {
+      return
+    }
+
     const target = itemsRef.current.find(item => item.id === id)
     if (!target) {
       return
     }
 
+    isTransformingRef.current = true
+    setIsTransforming(true)
+    setCompressionState('idle')
     patchItem(id, {
       status: 'compressing',
       transformError: null,
@@ -270,6 +280,7 @@ export function useImageTransformQueue() {
       const transformed = await transformOne(target)
       patchItem(id, transformed)
       toast.success(`Recompressed ${target.originalName}`)
+      setCompressionState('success')
     }
     catch (error) {
       const normalized = normalizeTransformError(error)
@@ -290,6 +301,11 @@ export function useImageTransformQueue() {
       toast.error(`Failed to recompress ${target.originalName}`, {
         description: normalized.message,
       })
+      setCompressionState('error')
+    }
+    finally {
+      isTransformingRef.current = false
+      setIsTransforming(false)
     }
   }, [patchItem, transformOne])
 
@@ -303,6 +319,7 @@ export function useImageTransformQueue() {
     setUseManualQuality,
     compressionState,
     compressedCount,
+    isTransforming,
     addImages,
     removeItem,
     transformAll,
