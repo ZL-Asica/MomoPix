@@ -506,3 +506,68 @@ export async function moveAlbumRecord(
 
   return moved
 }
+
+/**
+ * Deletes a non-root album while preserving its images and children.
+ *
+ * Images in the deleted album and its direct child albums are moved to the
+ * supplied destination. A default upload destination is transferred first.
+ *
+ * @param _db D1 database binding.
+ * @param input Source and destination album ids.
+ * @param input.albumId Album to delete.
+ * @param input.targetAlbumId Album receiving the migrated contents.
+ * @returns The source and destination ids used by the migration.
+ * @throws When either album is missing, the source is root, or destination is a descendant.
+ */
+export async function deleteAlbumRecord(
+  _db: D1Database,
+  input: { albumId: string, targetAlbumId: string },
+): Promise<{ deletedAlbumId: string, targetAlbumId: string }> {
+  await ensureStorageBootstrap(_db)
+  if (input.albumId === ROOT_ALBUM_ID) {
+    throw new Error('Root album cannot be deleted')
+  }
+  if (input.albumId === input.targetAlbumId) {
+    throw new Error('Choose a different destination album')
+  }
+
+  const db = getDb()
+  const rows = await db
+    .select({ id: albumsTable.id, parentId: albumsTable.parentId, isDefault: albumsTable.isDefault })
+    .from(albumsTable)
+  const byId = new Map(rows.map(row => [row.id, row]))
+  const source = byId.get(input.albumId)
+  const target = byId.get(input.targetAlbumId)
+  if (source === undefined || target === undefined) {
+    throw new Error('Album not found')
+  }
+
+  let ancestorId: string | null = input.targetAlbumId
+  while (ancestorId !== null) {
+    if (ancestorId === input.albumId) {
+      throw new Error('Cannot migrate an album into one of its descendants')
+    }
+    ancestorId = byId.get(ancestorId)?.parentId ?? null
+  }
+
+  const timestamp = nowMs()
+  const moveImages = db.update(imagesTable).set({ albumId: input.targetAlbumId, updatedAt: timestamp }).where(eq(imagesTable.albumId, input.albumId))
+  const moveChildren = db.update(albumsTable).set({ parentId: input.targetAlbumId, updatedAt: timestamp }).where(eq(albumsTable.parentId, input.albumId))
+  const removeSource = db.delete(albumsTable).where(eq(albumsTable.id, input.albumId))
+  // D1 executes the batch atomically, so a failed foreign-key operation cannot leave a partial migration.
+  if (source.isDefault === 1) {
+    await db.batch([
+      db.update(albumsTable).set({ isDefault: 0, updatedAt: timestamp }).where(eq(albumsTable.id, input.albumId)),
+      db.update(albumsTable).set({ isDefault: 1, updatedAt: timestamp }).where(eq(albumsTable.id, input.targetAlbumId)),
+      moveImages,
+      moveChildren,
+      removeSource,
+    ])
+  }
+  else {
+    await db.batch([moveImages, moveChildren, removeSource])
+  }
+
+  return { deletedAlbumId: input.albumId, targetAlbumId: input.targetAlbumId }
+}

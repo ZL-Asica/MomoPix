@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { AlbumRecord } from '@/lib/storage/types'
-import { FolderTree, Loader2, MoreHorizontal, MoveRight, PencilLine, Plus, Star } from 'lucide-react'
+import { FolderTree, Loader2, MoreHorizontal, MoveRight, PencilLine, Plus, Star, Trash2 } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ interface SidebarAlbumsProps {
   onCreateAlbumClick: () => void
   onRequestRename: (albumId: string) => void
   onRequestMove: (albumId: string) => void
+  onRequestDelete: (albumId: string) => void
   onSetDefault: (albumId: string) => Promise<void>
 }
 
@@ -36,6 +37,7 @@ export function SidebarAlbums({
   onCreateAlbumClick,
   onRequestRename,
   onRequestMove,
+  onRequestDelete,
   onSetDefault,
 }: SidebarAlbumsProps) {
   const [isSettingDefaultPending, startSetDefaultTransition] = useTransition()
@@ -116,6 +118,12 @@ export function SidebarAlbums({
                       Move
                     </DropdownMenuItem>
                   )}
+                  {album.id !== ROOT_ALBUM_ID && (
+                    <DropdownMenuItem variant="destructive" onClick={() => onRequestDelete(album.id)} disabled={isSettingDefaultPending}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -137,6 +145,12 @@ export function SidebarAlbums({
               <ContextMenuItem onClick={() => onRequestMove(album.id)} disabled={isSettingDefaultPending}>
                 <MoveRight className="mr-2 h-4 w-4" />
                 Move
+              </ContextMenuItem>
+            )}
+            {album.id !== ROOT_ALBUM_ID && (
+              <ContextMenuItem variant="destructive" onClick={() => onRequestDelete(album.id)} disabled={isSettingDefaultPending}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
               </ContextMenuItem>
             )}
           </ContextMenuContent>

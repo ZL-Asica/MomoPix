@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireAuth } from '@/lib/auth/guards'
 import { getD1Binding } from '@/lib/cloudflare/bindings'
-import { createAlbumRecord, ensureStorageBootstrap, listAlbumRecords, moveAlbumRecord, renameAlbumRecord, setDefaultAlbum } from '@/lib/storage/albumsRepo'
-import { createAlbumSchema, moveAlbumSchema, renameAlbumSchema, setDefaultAlbumSchema } from '@/lib/storage/validators'
+import { createAlbumRecord, deleteAlbumRecord, ensureStorageBootstrap, listAlbumRecords, moveAlbumRecord, renameAlbumRecord, setDefaultAlbum } from '@/lib/storage/albumsRepo'
+import { createAlbumSchema, deleteAlbumSchema, moveAlbumSchema, renameAlbumSchema, setDefaultAlbumSchema } from '@/lib/storage/validators'
 
 /**
  * Returns the full album tree and storage meta for dashboard/index use.
@@ -71,4 +71,16 @@ export const setDefaultAlbumFn = createServerFn({ method: 'POST' })
     const db = getD1Binding()
     const meta = await setDefaultAlbum(db, data)
     return { meta }
+  })
+
+/** Deletes an album after moving its direct contents and child albums to a destination. */
+export const deleteAlbumFn = createServerFn({ method: 'POST' })
+  .validator(deleteAlbumSchema)
+  .handler(async ({ data }) => {
+    await requireAuth()
+    const db = getD1Binding()
+    const result = await deleteAlbumRecord(db, data)
+    const albums = await listAlbumRecords(db)
+    const { meta } = await ensureStorageBootstrap(db)
+    return { ...result, albums, meta }
   })
