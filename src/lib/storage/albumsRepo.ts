@@ -1,5 +1,5 @@
 import type { AlbumRecord, StorageBootstrapResult, StorageMeta } from '@/lib/storage/types'
-import { eq, sql } from 'drizzle-orm'
+import { eq, isNull, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { getDb } from '@/lib/db/client'
 import { albumsTable, imagesTable } from '@/lib/db/schema'
@@ -28,6 +28,7 @@ async function loadAlbumUsageById(): Promise<Map<string, { imageCount: number, b
       bytesUsed: sql<number>`COALESCE(SUM(${imagesTable.bytes}), 0)`,
     })
     .from(imagesTable)
+    .where(isNull(imagesTable.deletedAt))
     .groupBy(imagesTable.albumId)
 
   const usageById = new Map<string, { imageCount: number, bytesUsed: number }>()
@@ -151,6 +152,7 @@ async function buildStorageMetaInternal(): Promise<StorageMeta> {
       maxUpdatedAt: sql<number>`COALESCE(MAX(${imagesTable.updatedAt}), 0)`,
     })
     .from(imagesTable)
+    .where(isNull(imagesTable.deletedAt))
 
   const updatedAtMs = Math.max(
     albumTotals?.maxUpdatedAt ?? 0,

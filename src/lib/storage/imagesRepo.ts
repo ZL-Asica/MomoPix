@@ -6,7 +6,7 @@ import type {
   ListAlbumImagesInput,
   ListAlbumImagesResult,
 } from '@/lib/storage/types'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import { getDb } from '@/lib/db/client'
 import { decodeImageListCursor, encodeImageListCursor } from '@/lib/db/cursor'
 import { imagesTable } from '@/lib/db/schema'
@@ -118,7 +118,7 @@ export async function getImageRecord(_db: D1Database, objectKey: string): Promis
       source: imagesTable.source,
     })
     .from(imagesTable)
-    .where(eq(imagesTable.id, objectKey))
+    .where(and(eq(imagesTable.id, objectKey), isNull(imagesTable.deletedAt)))
     .limit(1)
 
   return row === undefined ? null : toImageRecord(row)
@@ -170,6 +170,9 @@ export async function putImageRecords(
         storedName: image.storedName,
         mime: image.mime,
         source: image.source,
+        deletedAt: null,
+        cleanupAttempts: 0,
+        cleanupError: null,
       },
     })
 }
@@ -190,7 +193,10 @@ export async function listAlbumImages(
     ? decodeImageListCursor(input.cursor)
     : null
 
-  const conditions: SQL[] = [eq(imagesTable.albumId, input.albumId)]
+  const conditions: SQL[] = [
+    eq(imagesTable.albumId, input.albumId),
+    isNull(imagesTable.deletedAt),
+  ]
   if (needle.length > 0) {
     conditions.push(sql`instr(${imagesTable.nameLower}, ${needle}) > 0`)
   }
@@ -246,6 +252,87 @@ export async function listAlbumImages(
 export async function deleteImageRecords(_db: D1Database, image: ImageRecord): Promise<void> {
   const db = getDb()
   await db.delete(imagesTable).where(eq(imagesTable.id, image.objectKey))
+}
+
+/**
+ * Hides an image before its R2 binary is deleted.
+ *
+ * The retained tombstone is the reconciliation record if R2 cleanup fails.
+ *
+ * @param _db D1 binding.
+ * @param objectKey Canonical image object key.
+ */
+export async function markImageForDeletion(_db: D1Database, objectKey: string): Promise<void> {
+  const db = getDb()
+  await db
+    .update(imagesTable)
+    .set({
+      deletedAt: Date.now(),
+      cleanupError: null,
+    })
+    .where(and(eq(imagesTable.id, objectKey), isNull(imagesTable.deletedAt)))
+}
+
+/**
+ * Records an R2 cleanup failure against an already-hidden image tombstone.
+ *
+ * @param _db D1 binding.
+ * @param input Cleanup-failure details.
+ * @param input.objectKey Canonical image object key.
+ * @param input.message Error details retained for the next reconciliation attempt.
+ */
+export async function recordImageCleanupFailure(
+  _db: D1Database,
+  input: { objectKey: string, message: string },
+): Promise<void> {
+  const db = getDb()
+  await db
+    .update(imagesTable)
+    .set({
+      cleanupAttempts: sql`${imagesTable.cleanupAttempts} + 1`,
+      cleanupError: input.message.slice(0, 500),
+    })
+    .where(and(eq(imagesTable.id, input.objectKey), isNotNull(imagesTable.deletedAt)))
+}
+
+/**
+ * Lists hidden records whose R2 object deletion needs another attempt.
+ *
+ * @param _db D1 binding.
+ * @param limit Maximum tombstones to process.
+ * @returns Oldest pending image records first.
+ */
+export async function listImagesPendingDeletion(
+  _db: D1Database,
+  limit: number,
+): Promise<ImageRecord[]> {
+  const db = getDb()
+  const rows = await db
+    .select({
+      id: imagesTable.id,
+      albumId: imagesTable.albumId,
+      name: imagesTable.name,
+      nameLower: imagesTable.nameLower,
+      ext: imagesTable.ext,
+      bytes: imagesTable.bytes,
+      width: imagesTable.width,
+      height: imagesTable.height,
+      createdAt: imagesTable.createdAt,
+      updatedAt: imagesTable.updatedAt,
+      originalName: imagesTable.originalName,
+      storedName: imagesTable.storedName,
+      mime: imagesTable.mime,
+      source: imagesTable.source,
+      deletedAt: imagesTable.deletedAt,
+      cleanupAttempts: imagesTable.cleanupAttempts,
+      cleanupError: imagesTable.cleanupError,
+    })
+    .from(imagesTable)
+    .where(isNotNull(imagesTable.deletedAt))
+    .orderBy(asc(imagesTable.deletedAt), asc(imagesTable.id))
+    .limit(Math.max(1, Math.min(100, Math.trunc(limit))))
+
+  return (rows as ImageRow[]).map(toImageRecord)
 }
 
 /**

@@ -1,7 +1,16 @@
-/** Maximum accepted upload size in bytes (10 MB). */
-export const MAX_SIZE_LIMIT = import.meta.env.VITE_MAX_SIZE_LIMIT !== undefined
-  ? parseInt(String(import.meta.env.VITE_MAX_SIZE_LIMIT))
-  : 10 * 1024 * 1024
+import { MAX_UPLOAD_SIZE_BYTES } from '@/lib/images/uploadValidation'
+
+const configuredMaxSize = Number(import.meta.env.VITE_MAX_SIZE_LIMIT)
+
+/**
+ * Client-side upload limit in bytes.
+ *
+ * A deployment may choose a lower Vite value, but it may never advertise a
+ * limit above the server's enforced 10 MiB boundary.
+ */
+export const MAX_SIZE_LIMIT = Number.isFinite(configuredMaxSize) && configuredMaxSize > 0
+  ? Math.min(configuredMaxSize, MAX_UPLOAD_SIZE_BYTES)
+  : MAX_UPLOAD_SIZE_BYTES
 
 /** MIME types accepted for input images. */
 export const SUPPORTED_FORMAT_MIME_TYPES = [
@@ -12,7 +21,6 @@ export const SUPPORTED_FORMAT_MIME_TYPES = [
   'image/jpg',
   'image/jpeg',
   'image/png',
-  'image/svg+xml',
   'image/webp',
   'image/bmp',
 ]
