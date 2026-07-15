@@ -1,3 +1,5 @@
+import { withoutExtension } from '@/lib/storage/format'
+
 export type ImageCopyFormat = 'direct' | 'html' | 'markdown'
 
 /**
@@ -47,7 +49,7 @@ export const IMAGE_COPY_FORMATS: readonly ImageCopyFormatMeta[] = [
 ] as const
 
 function toMarkdownAlt(name: string): string {
-  return name.replaceAll('[', '\\[').replaceAll(']', '\\]')
+  return withoutExtension(name).replaceAll('[', '\\[').replaceAll(']', '\\]')
 }
 
 function toHtmlAlt(name: string): string {
