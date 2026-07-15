@@ -43,11 +43,15 @@ export function UploadedLinksPanel({
         <CardDescription>
           {uploadedCount}
           {' '}
-          uploaded ·
-          {' '}
-          {selectedUploadedCount}
-          {' '}
-          selected uploaded
+          uploaded
+          {selectedUploadedCount > 0 && (
+            <>
+              {' · '}
+              {selectedUploadedCount}
+              {' '}
+              selected uploaded
+            </>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
