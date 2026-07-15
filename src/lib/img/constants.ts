@@ -1,5 +1,7 @@
 /** Maximum accepted upload size in bytes (10 MB). */
-export const MAX_SIZE_LIMIT = 10 * 1024 * 1024
+export const MAX_SIZE_LIMIT = import.meta.env.VITE_MAX_SIZE_LIMIT !== undefined
+  ? parseInt(String(import.meta.env.VITE_MAX_SIZE_LIMIT))
+  : 10 * 1024 * 1024
 
 /** MIME types accepted for input images. */
 export const SUPPORTED_FORMAT_MIME_TYPES = [

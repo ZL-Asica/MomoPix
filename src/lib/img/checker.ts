@@ -15,7 +15,8 @@ export const checkImage = (
   originalSize: number
 } => {
   if (file.size > MAX_SIZE_LIMIT) {
-    throw new Error('Image size exceeds 10MB')
+    const maxSizeMB = (MAX_SIZE_LIMIT / (1024 * 1024)).toFixed(2)
+    throw new Error(`Image size exceeds ${maxSizeMB}MB`)
   }
   return {
     format: checkImageFormat(file),
