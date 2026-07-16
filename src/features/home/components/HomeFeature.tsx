@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCompressedDownloads } from '@/features/home/hooks/useCompressedDownloads'
 import { useCopyLinks } from '@/features/home/hooks/useCopyLinks'
@@ -45,8 +46,11 @@ export function HomeFeature() {
     uploadDialogOpen,
     setUploadDialogOpen,
     selectedAlbumId,
+    accountDataError,
     setSelectedAlbumId,
     isLoadingAccountData,
+    isRefreshingAccountData,
+    reloadAccountData,
     uploadState,
     uploadSummary,
     uploadSelected,
@@ -60,6 +64,7 @@ export function HomeFeature() {
 
   const isUploading = uploadState === 'uploading'
   const isActionLocked = isTransforming || isUploading
+  const isUploadAccountUnavailable = accountDataError !== null
 
   const copyItems = useMemo(() => {
     return items.map(item => ({
@@ -120,6 +125,22 @@ export function HomeFeature() {
               </CardContent>
             </Card>
           )}
+          {isAuthed && isUploadAccountUnavailable && (
+            <Card role="alert">
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6 text-sm">
+                <p>Could not load upload albums. Retry before uploading images.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isRefreshingAccountData || isUploading}
+                  onClick={reloadAccountData}
+                >
+                  {isRefreshingAccountData ? 'Retrying...' : 'Retry'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="min-w-0">
@@ -138,6 +159,7 @@ export function HomeFeature() {
             isAllSelected={selection.isAllSelected}
             isIndeterminate={selection.isIndeterminate}
             selectionDisabled={isActionLocked}
+            uploadDisabled={isUploadAccountUnavailable}
             actionDisabled={isActionLocked}
             downloadingAll={downloadingAll}
             onToggleSelected={(id, selected) => {
@@ -167,6 +189,9 @@ export function HomeFeature() {
               void retryTransform(id)
             }}
             onUploadSelectedClick={() => {
+              if (isUploadAccountUnavailable) {
+                return
+              }
               setUploadDialogOpen(true)
             }}
           />
