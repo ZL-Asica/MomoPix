@@ -2,7 +2,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
@@ -28,8 +27,6 @@ interface AlbumImagePaginationProps {
   onPageSizeChange: (value: number) => void
   onPreviousPage: () => void
   onNextPage: () => void
-  onFirstPage: () => void
-  onLastPage: () => void
 }
 
 function disabledLinkClass(disabled: boolean): string {
@@ -37,7 +34,7 @@ function disabledLinkClass(disabled: boolean): string {
 }
 
 /**
- * Client-side pagination control for album image listings.
+ * Cursor pagination control for album image listings.
  */
 export function AlbumImagePagination({
   pageIndex,
@@ -50,14 +47,10 @@ export function AlbumImagePagination({
   onPageSizeChange,
   onPreviousPage,
   onNextPage,
-  onFirstPage,
-  onLastPage,
 }: AlbumImagePaginationProps) {
   const prevDisabled = isLoading || !hasPreviousPage
   const nextDisabled = isLoading || !hasNextPage
   const showBounds = totalPages !== null
-  const firstDisabled = isLoading || pageIndex <= 1
-  const lastDisabled = isLoading || totalPages === null || pageIndex >= totalPages
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -111,23 +104,6 @@ export function AlbumImagePagination({
 
         <Pagination className="justify-end">
           <PaginationContent>
-            {showBounds && (
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  className={cn('px-2', disabledLinkClass(firstDisabled))}
-                  aria-disabled={firstDisabled}
-                  onClick={(event_) => {
-                    event_.preventDefault()
-                    if (!firstDisabled) {
-                      onFirstPage()
-                    }
-                  }}
-                >
-                  First
-                </PaginationLink>
-              </PaginationItem>
-            )}
             <PaginationItem>
               <PaginationPrevious
                 href="#"
@@ -141,15 +117,10 @@ export function AlbumImagePagination({
                 }}
               />
             </PaginationItem>
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                isActive
-                className={cn('pointer-events-none', isLoading && 'opacity-70')}
-                aria-label={`Current page ${pageIndex}`}
-              >
-                {pageIndex}
-              </PaginationLink>
+            <PaginationItem className={cn('px-3 text-sm text-muted-foreground', isLoading && 'opacity-70')}>
+              Page
+              {' '}
+              {pageIndex}
             </PaginationItem>
             <PaginationItem>
               <PaginationNext
@@ -164,23 +135,6 @@ export function AlbumImagePagination({
                 }}
               />
             </PaginationItem>
-            {showBounds && (
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  className={cn('px-2', disabledLinkClass(lastDisabled))}
-                  aria-disabled={lastDisabled}
-                  onClick={(event_) => {
-                    event_.preventDefault()
-                    if (!lastDisabled) {
-                      onLastPage()
-                    }
-                  }}
-                >
-                  Last
-                </PaginationLink>
-              </PaginationItem>
-            )}
           </PaginationContent>
         </Pagination>
       </div>
