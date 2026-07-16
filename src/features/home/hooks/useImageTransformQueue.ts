@@ -111,11 +111,30 @@ export function useImageTransformQueue() {
   }, [])
 
   const transformOne = useCallback(async (item: HomeProcessedItem): Promise<HomeProcessedItem> => {
-    const { blob, width, height } = await transformImageFile(
+    const transformed = await transformImageFile(
       item.originalFile,
       targetFormat,
       useManualQuality ? quality : undefined,
     )
+    const { blob, width, height } = transformed
+    if (transformed.preservedOriginal) {
+      return {
+        ...item,
+        targetFormat,
+        outputBlob: item.originalFile,
+        outputFile: item.originalFile,
+        outputSize: item.originalSize,
+        width,
+        height,
+        status: 'original',
+        transformError: 'Animated images are uploaded unchanged.',
+        uploadStatus: 'idle',
+        uploadError: null,
+        uploadedUrl: null,
+        uploadedObjectKey: null,
+        uploadedAlbumId: null,
+      }
+    }
     if (shouldKeepOriginalImage({
       originalSize: item.originalSize,
       outputSize: blob.size,
