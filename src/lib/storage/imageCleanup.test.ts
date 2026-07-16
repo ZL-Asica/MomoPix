@@ -73,6 +73,25 @@ describe('imageCleanup', () => {
     })
   })
 
+  it('cleans a retained original after deleting its derived image', async () => {
+    const imageWithOriginal = {
+      ...image,
+      original: {
+        objectKey: 'originals/2026/07/15/image.png',
+        sizeBytes: 200,
+        ext: 'png',
+        mime: 'image/png',
+        width: 10,
+        height: 10,
+      },
+    }
+
+    await deleteImageSafely({ ...bindings, image: imageWithOriginal })
+
+    expect(mocks.deleteImageObject).toHaveBeenNthCalledWith(1, bindings.r2, image.objectKey)
+    expect(mocks.deleteImageObject).toHaveBeenNthCalledWith(2, bindings.r2, imageWithOriginal.original.objectKey)
+  })
+
   it('retries each pending tombstone and leaves failed ones for later', async () => {
     const failedImage = { ...image, objectKey: '2026/07/15/failed.webp' }
     mocks.listImagesPendingDeletion.mockResolvedValueOnce([image, failedImage])

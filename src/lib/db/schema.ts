@@ -1,5 +1,5 @@
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const albumsTable = sqliteTable('albums', {
   id: text('id').primaryKey(),
@@ -38,11 +38,18 @@ export const imagesTable = sqliteTable('images', {
   deletedAt: integer('deleted_at'),
   cleanupAttempts: integer('cleanup_attempts').notNull().default(0),
   cleanupError: text('cleanup_error'),
+  originalObjectKey: text('original_object_key'),
+  originalBytes: integer('original_bytes'),
+  originalExt: text('original_ext'),
+  originalMime: text('original_mime'),
+  originalWidth: integer('original_width'),
+  originalHeight: integer('original_height'),
 }, table => [
   index('idx_images_album_created_desc').on(table.albumId, table.createdAt, table.id),
   index('idx_images_album_name_lower').on(table.albumId, table.nameLower),
   index('idx_images_created_desc').on(table.createdAt, table.id),
   index('idx_images_pending_cleanup').on(table.deletedAt, table.id),
+  uniqueIndex('ux_images_original_object_key').on(table.originalObjectKey),
 ])
 
 export type AlbumRow = typeof albumsTable.$inferSelect

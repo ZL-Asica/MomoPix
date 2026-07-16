@@ -11,6 +11,13 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+async function deleteImageObjects(r2: R2Bucket, image: ImageRecord): Promise<void> {
+  await deleteImageObject(r2, image.objectKey)
+  if (image.original?.objectKey !== undefined) {
+    await deleteImageObject(r2, image.original.objectKey)
+  }
+}
+
 export interface ImageDeleteResult {
   image: ImageRecord
   cleanupPending: boolean
@@ -37,7 +44,7 @@ export async function deleteImageSafely(input: {
   await markImageForDeletion(db, image.objectKey)
 
   try {
-    await deleteImageObject(r2, image.objectKey)
+    await deleteImageObjects(r2, image)
     await deleteImageRecords(db, image)
     return { image, cleanupPending: false }
   }
@@ -69,7 +76,7 @@ export async function reconcilePendingImageDeletes(input: {
 
   for (const image of pendingImages) {
     try {
-      await deleteImageObject(input.r2, image.objectKey)
+      await deleteImageObjects(input.r2, image)
       await deleteImageRecords(input.db, image)
       reconciled += 1
     }
