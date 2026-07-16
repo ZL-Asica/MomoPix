@@ -6,14 +6,17 @@ import type {
   ListAlbumImagesResult,
 } from '@/lib/storage/types'
 import { createServerFn } from '@tanstack/react-start'
-import { and, asc, eq, lt, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/auth/guards'
 import { runBulkOperation } from '@/lib/bulk'
 import { getD1Binding, getR2Binding } from '@/lib/cloudflare/bindings'
 import { buildPublicImageUrl, getR2PublicDomain } from '@/lib/cloudflare/publicUrl'
 import { getDb } from '@/lib/db/client'
-import { imagesTable, orphanImageCleanupTable, storageReservationsTable } from '@/lib/db/schema'
+import { storageReservationsTable } from '@/lib/db/schema'
+import {
+  MAX_UPLOAD_ASSET_BYTES,
+  validateOriginalUpload,
+} from '@/lib/images/originalUploadValidation'
 import { validateUploadImage } from '@/lib/images/uploadValidation'
 import { albumExists } from '@/lib/storage/albumsRepo'
 import { normalizeImageExt, normalizeImageMime, toStoredName } from '@/lib/storage/format'
@@ -26,7 +29,18 @@ import {
   putImageRecords,
   renameImageRecords,
 } from '@/lib/storage/imagesRepo'
-import { buildR2ObjectKey, deleteImageObject, putImageObject } from '@/lib/storage/r2Repo'
+import {
+  buildOriginalR2ObjectKey,
+  buildR2ObjectKey,
+  buildThumbnailR2ObjectKey,
+  putImageObject,
+} from '@/lib/storage/r2Repo'
+import {
+  cleanupUncommittedUpload,
+  getImageMetadataState,
+  reconcilePendingUploads,
+  releaseStorageReservation,
+} from '@/lib/storage/uploadReconciliation'
 import {
   deleteImageSchema,
   deleteImagesSchema,
@@ -38,8 +52,6 @@ import {
 
 const BULK_OPERATION_CONCURRENCY = 4
 const BULK_OPERATION_TIMEOUT_MS = 20_000
-const UPLOAD_RESERVATION_GRACE_MS = 15 * 60 * 1000
-const UPLOAD_RECONCILIATION_LIMIT = 3
 
 function normalizeDimensionValue(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
@@ -62,137 +74,6 @@ function validateUploadPayload(input: unknown): FormData {
 const uploadDashboardSchema = z.object({
   albumId: z.string().min(1),
 })
-
-async function recordOrphanUploadCleanup(objectKey: string, error: unknown): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error)
-  const db = getDb()
-  await db
-    .insert(orphanImageCleanupTable)
-    .values({
-      objectKey,
-      cleanupAttempts: 1,
-      cleanupError: message.slice(0, 500),
-      createdAt: Date.now(),
-    })
-    .onConflictDoUpdate({
-      target: orphanImageCleanupTable.objectKey,
-      set: {
-        cleanupAttempts: sql`${orphanImageCleanupTable.cleanupAttempts} + 1`,
-        cleanupError: message.slice(0, 500),
-      },
-    })
-}
-
-async function imageMetadataExists(objectKey: string): Promise<boolean> {
-  const db = getDb()
-  const [image] = await db
-    .select({ id: imagesTable.id })
-    .from(imagesTable)
-    .where(eq(imagesTable.id, objectKey))
-    .limit(1)
-  return image !== undefined
-}
-
-async function uploadMetadataMatches(image: ImageRecord): Promise<boolean> {
-  const [storedImage] = await getDb()
-    .select({ id: imagesTable.id })
-    .from(imagesTable)
-    .where(and(
-      eq(imagesTable.id, image.objectKey),
-      eq(imagesTable.albumId, image.albumId),
-      eq(imagesTable.bytes, image.sizeBytes),
-      eq(imagesTable.storedName, image.storedName),
-      eq(imagesTable.source, image.source),
-      eq(imagesTable.createdAt, Date.parse(image.createdAt)),
-    ))
-    .limit(1)
-  return storedImage !== undefined
-}
-
-type ImageMetadataState = 'present' | 'absent' | 'unknown'
-
-async function getImageMetadataState(image: ImageRecord): Promise<ImageMetadataState> {
-  try {
-    return await uploadMetadataMatches(image) ? 'present' : 'absent'
-  }
-  catch (error) {
-    console.error('[uploadImageFn] Failed to determine whether metadata committed:', error)
-    return 'unknown'
-  }
-}
-
-async function releaseStorageReservation(objectKey: string): Promise<void> {
-  await getDb().delete(storageReservationsTable).where(eq(storageReservationsTable.objectKey, objectKey))
-}
-
-/**
- * Cleans an R2 object only after its metadata is known not to exist.
- *
- * A reservation remains until this succeeds so an uncertain R2 write still
- * occupies quota and can be retried safely.
- */
-async function cleanupUncommittedUpload(r2: R2Bucket, objectKey: string, cause: unknown): Promise<void> {
-  try {
-    await deleteImageObject(r2, objectKey)
-    await releaseStorageReservation(objectKey)
-    await getDb().delete(orphanImageCleanupTable).where(eq(orphanImageCleanupTable.objectKey, objectKey))
-  }
-  catch (cleanupError) {
-    try {
-      await recordOrphanUploadCleanup(objectKey, cleanupError)
-    }
-    catch (recordError) {
-      // The reservation is the durable fallback when D1 cannot record the
-      // cleanup error. It is reconciled once D1 becomes available again.
-      console.error('[uploadImageFn] Failed to record orphan upload cleanup:', recordError)
-    }
-    console.error('[uploadImageFn] Failed to clean uncommitted upload:', cause, cleanupError)
-  }
-}
-
-async function reconcilePendingUploads(r2: R2Bucket, limit = UPLOAD_RECONCILIATION_LIMIT): Promise<void> {
-  const db = getDb()
-  const cutoff = Date.now() - UPLOAD_RESERVATION_GRACE_MS
-  const [reservations, orphanMarkers] = await Promise.all([
-    db
-      .select({ objectKey: storageReservationsTable.objectKey })
-      .from(storageReservationsTable)
-      .where(lt(storageReservationsTable.createdAt, cutoff))
-      .orderBy(asc(storageReservationsTable.createdAt), asc(storageReservationsTable.objectKey))
-      .limit(Math.max(1, Math.min(10, limit))),
-    db
-      .select({ objectKey: orphanImageCleanupTable.objectKey })
-      .from(orphanImageCleanupTable)
-      .orderBy(asc(orphanImageCleanupTable.createdAt), asc(orphanImageCleanupTable.objectKey))
-      .limit(Math.max(1, Math.min(10, limit))),
-  ])
-
-  const objectKeys = [...new Set([
-    ...reservations.map(reservation => reservation.objectKey),
-    ...orphanMarkers.map(marker => marker.objectKey),
-  ])]
-
-  for (const objectKey of objectKeys) {
-    try {
-      if (await imageMetadataExists(objectKey)) {
-        // A metadata insert may have committed before its response failed.
-        // Metadata now owns the quota, so remove only the temporary reservation.
-        await releaseStorageReservation(objectKey)
-        await db.delete(orphanImageCleanupTable).where(eq(orphanImageCleanupTable.objectKey, objectKey))
-        continue
-      }
-      await cleanupUncommittedUpload(r2, objectKey, new Error('Reconciliation cleanup'))
-    }
-    catch (error) {
-      try {
-        await recordOrphanUploadCleanup(objectKey, error)
-      }
-      catch (recordError) {
-        console.error('[listImagesFn] Failed to record upload reconciliation error:', recordError)
-      }
-    }
-  }
-}
 
 /**
  * Lists indexed images for one album.
@@ -243,6 +124,9 @@ export const listImagesFn = createServerFn({ method: 'POST' })
         width: normalizeDimensionValue(image.width),
         height: normalizeDimensionValue(image.height),
         publicUrl: publicDomain !== null ? buildPublicImageUrl(image.objectKey, publicDomain) : null,
+        thumbnailUrl: publicDomain !== null
+          ? buildPublicImageUrl(image.thumbnail?.objectKey ?? image.objectKey, publicDomain)
+          : null,
       }
     })
 
@@ -280,28 +164,77 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       throw new TypeError('File is required')
     }
 
+    const thumbnailEntry = data.get('thumbnail')
+    if (!(thumbnailEntry instanceof File)) {
+      throw new TypeError('WebP thumbnail is required')
+    }
+
     const validatedFile = await validateUploadImage(fileEntry)
+    const validatedThumbnail = await validateUploadImage(thumbnailEntry)
+    if (validatedThumbnail.mime !== 'image/webp') {
+      throw new Error('Thumbnail must be WebP')
+    }
+    if (validatedThumbnail.width > 512 || validatedThumbnail.height > 512) {
+      throw new Error('Thumbnail dimensions must not exceed 512 pixels')
+    }
+
+    const originalEntry = data.get('original')
+    const validatedOriginal = originalEntry instanceof File
+      ? await validateOriginalUpload(originalEntry)
+      : null
+    const uploadAssetBytes = validatedFile.bytes.byteLength
+      + validatedThumbnail.bytes.byteLength
+      + (validatedOriginal?.file.size ?? 0)
+    if (uploadAssetBytes > MAX_UPLOAD_ASSET_BYTES) {
+      throw new Error('Combined hosted image, thumbnail, and original exceed 95 MiB')
+    }
     const originalName = String(data.get('originalName') ?? fileEntry.name).trim() || fileEntry.name
     const source = sourceFrom(data.get('source'))
     const ext = normalizeImageExt(fileEntry.name, validatedFile.mime)
     const mime = normalizeImageMime(ext, validatedFile.mime)
     const storedName = toStoredName(originalName, ext)
     const objectKey = buildR2ObjectKey({ ext })
+    const thumbnailObjectKey = buildThumbnailR2ObjectKey()
+    const originalObjectKey = validatedOriginal === null
+      ? null
+      : buildOriginalR2ObjectKey({ ext: validatedOriginal.ext })
     const imageName = deriveDefaultImageName(originalName, objectKey)
     const uploadedAt = new Date().toISOString()
     const { bytes, width, height } = validatedFile
 
+    const assetKeys = [objectKey, thumbnailObjectKey, ...(originalObjectKey === null ? [] : [originalObjectKey])]
+    const bytesReserved = uploadAssetBytes
+
     await getDb().insert(storageReservationsTable).values({
       objectKey,
-      bytesReserved: bytes.byteLength,
+      bytesReserved,
+      assetKeysJson: JSON.stringify(assetKeys),
       createdAt: Date.now(),
     })
 
     try {
       await putImageObject(r2, { key: objectKey, bytes, mime, albumId, source, uploadedAt })
+      await putImageObject(r2, {
+        key: thumbnailObjectKey,
+        bytes: validatedThumbnail.bytes,
+        mime: validatedThumbnail.mime,
+        albumId,
+        source,
+        uploadedAt,
+      })
+      if (validatedOriginal !== null && originalObjectKey !== null) {
+        await putImageObject(r2, {
+          key: originalObjectKey,
+          bytes: validatedOriginal.file.stream(),
+          mime: validatedOriginal.mime,
+          albumId,
+          source,
+          uploadedAt,
+        })
+      }
     }
     catch (error) {
-      await cleanupUncommittedUpload(r2, objectKey, error)
+      await cleanupUncommittedUpload(r2, objectKey, assetKeys, error)
       throw error
     }
 
@@ -319,6 +252,23 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       createdAt: uploadedAt,
       updatedAt: uploadedAt,
       source,
+      thumbnail: {
+        objectKey: thumbnailObjectKey,
+        sizeBytes: validatedThumbnail.bytes.byteLength,
+        mime: 'image/webp',
+        width: validatedThumbnail.width,
+        height: validatedThumbnail.height,
+      },
+      original: validatedOriginal === null || originalObjectKey === null
+        ? null
+        : {
+            objectKey: originalObjectKey,
+            sizeBytes: validatedOriginal.file.size,
+            ext: validatedOriginal.ext,
+            mime: validatedOriginal.mime,
+            width: null,
+            height: null,
+          },
     }
 
     const albumImage: AlbumImageRecord = {
@@ -326,12 +276,13 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       albumId,
       name: image.name,
       nameLower: image.name.toLowerCase(),
-      storageBytes: image.sizeBytes + (image.original?.sizeBytes ?? 0),
+      storageBytes: image.sizeBytes + (image.thumbnail?.sizeBytes ?? 0) + (image.original?.sizeBytes ?? 0),
       sizeBytes: image.sizeBytes,
       mime: image.mime,
       width: image.width,
       height: image.height,
       createdAt: image.createdAt,
+      thumbnail: image.thumbnail ?? null,
     }
 
     let metadataCommitted = false
@@ -342,7 +293,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
     catch (error) {
       const metadataState = await getImageMetadataState(image)
       if (metadataState === 'absent') {
-        await cleanupUncommittedUpload(r2, objectKey, error)
+        await cleanupUncommittedUpload(r2, objectKey, assetKeys, error)
       }
       if (metadataState !== 'present') {
         // An unavailable D1 response cannot prove the write rolled back. Keep

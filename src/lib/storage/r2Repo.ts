@@ -31,6 +31,11 @@ export function buildOriginalR2ObjectKey(input: { ext: string, date?: Date }): s
   return `originals/${buildR2ObjectKey(input)}`
 }
 
+/** Builds an isolated key for an album-only WebP preview asset. */
+export function buildThumbnailR2ObjectKey(input: { date?: Date } = {}): string {
+  return `thumbnails/${buildR2ObjectKey({ ext: 'webp', date: input.date })}`
+}
+
 /**
  * Stores the final image object in R2 with content type and tracing metadata.
  *
@@ -48,7 +53,7 @@ export async function putImageObject(
   bucket: R2Bucket,
   input: {
     key: string
-    bytes: ArrayBuffer
+    bytes: ArrayBuffer | ReadableStream
     mime: string
     albumId: string
     source: ImageSource

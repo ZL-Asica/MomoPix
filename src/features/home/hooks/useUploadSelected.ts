@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 import { listAlbumsFn } from '@/functions/albums'
 import { uploadImageFn } from '@/functions/images'
 import { runBulkOperation } from '@/lib/bulk'
+import { MAX_UPLOAD_ASSET_BYTES } from '@/lib/images/originalUploadValidation'
 
 const UPLOAD_CONCURRENCY = 3
 
@@ -247,6 +248,7 @@ export function useUploadSelected(
       selectedIds.has(item.id)
       && (item.status === 'compressed' || item.status === 'original')
       && item.outputFile !== null
+      && item.thumbnailFile !== null
       && item.uploadStatus !== 'uploaded'
     ))
   }, [items, selectedIds])
@@ -283,12 +285,27 @@ export function useUploadSelected(
             if (!file) {
               throw new Error('Missing processed output file')
             }
+            if (!item.thumbnailFile) {
+              throw new Error('Missing WebP thumbnail file')
+            }
 
             const formData = new FormData()
             formData.set('file', file)
+            formData.set('thumbnail', item.thumbnailFile)
             formData.set('albumId', albumId)
             formData.set('source', 'index-compressed')
             formData.set('originalName', item.originalName)
+
+            if (item.retainOriginal && item.status !== 'original') {
+              formData.set('original', item.originalFile)
+            }
+
+            const uploadAssetBytes = file.size
+              + item.thumbnailFile.size
+              + (item.retainOriginal && item.status !== 'original' ? item.originalFile.size : 0)
+            if (uploadAssetBytes > MAX_UPLOAD_ASSET_BYTES) {
+              throw new Error('Combined hosted image, thumbnail, and original exceed 95 MiB')
+            }
 
             if (
               item.width !== null

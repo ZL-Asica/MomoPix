@@ -1,98 +1,171 @@
-import { parseUploadImage } from '@/lib/images/uploadValidation'
-import { isAnimatedRaster } from './animation'
-import { OUTPUT_MIME_TYPE_BY_FORMAT } from './constants'
-
-/**
- * Largest image the browser transform path will decode and paint.
- *
- * A canvas needs at least four bytes per pixel, so this keeps the working
- * bitmap below roughly 96 MiB before encoder overhead on mobile devices.
- */
-export const MAX_TRANSFORM_PIXELS = 24_000_000
+export { MAX_TRANSFORM_PIXELS, THUMBNAIL_MAX_EDGE } from './constants'
 
 /** Normalized image transform error returned to UI. */
 export interface TransformError {
   message: string
 }
 
-interface TransformImageResult {
+export interface TransformImageResult {
   blob: Blob
   mimeType: string
   width: number
   height: number
+  sourceWidth: number
+  sourceHeight: number
+  thumbnailBlob: Blob
+  thumbnailWidth: number
+  thumbnailHeight: number
   preservedOriginal: boolean
+  sourceNotice: string | null
+}
+
+interface WorkerTransformResult extends Omit<TransformImageResult, 'blob'> {
+  blob: Blob | null
+}
+
+interface TransformWorkerResponse {
+  id: number
+  result?: WorkerTransformResult
+  error?: string
+}
+
+interface PendingTransform {
+  file: File
+  resolve: (result: TransformImageResult) => void
+  reject: (error: Error) => void
+  timeoutId: ReturnType<typeof setTimeout>
+}
+
+let transformWorker: Worker | null = null
+let nextTransformId = 0
+const pendingTransforms = new Map<number, PendingTransform>()
+let workerIdleTimer: ReturnType<typeof setTimeout> | null = null
+
+const WORKER_IDLE_TIMEOUT_MS = 30_000
+const TRANSFORM_TIMEOUT_MS = 90_000
+
+function clearWorkerIdleTimer(): void {
+  if (workerIdleTimer !== null) {
+    clearTimeout(workerIdleTimer)
+    workerIdleTimer = null
+  }
+}
+
+function scheduleWorkerTermination(): void {
+  clearWorkerIdleTimer()
+  const worker = transformWorker
+  if (worker === null || pendingTransforms.size > 0) {
+    return
+  }
+  workerIdleTimer = setTimeout(() => {
+    if (transformWorker === worker && pendingTransforms.size === 0) {
+      worker.terminate()
+      transformWorker = null
+    }
+    workerIdleTimer = null
+  }, WORKER_IDLE_TIMEOUT_MS)
+}
+
+function rejectPendingTransforms(message: string): void {
+  for (const pending of pendingTransforms.values()) {
+    clearTimeout(pending.timeoutId)
+    pending.reject(new Error(message))
+  }
+  pendingTransforms.clear()
+}
+
+function getTransformWorker(): Worker {
+  clearWorkerIdleTimer()
+  if (transformWorker !== null) {
+    return transformWorker
+  }
+
+  const worker = new Worker(new URL('./transform.worker.ts', import.meta.url), {
+    type: 'module',
+  })
+
+  worker.addEventListener('message', (event: MessageEvent<TransformWorkerResponse>) => {
+    const pending = pendingTransforms.get(event.data.id)
+    if (!pending) {
+      return
+    }
+    pendingTransforms.delete(event.data.id)
+    clearTimeout(pending.timeoutId)
+
+    if (event.data.error !== undefined) {
+      pending.reject(new Error(event.data.error))
+      scheduleWorkerTermination()
+      return
+    }
+    if (event.data.result === undefined) {
+      pending.reject(new Error('Image worker returned an invalid result'))
+      scheduleWorkerTermination()
+      return
+    }
+
+    pending.resolve({
+      ...event.data.result,
+      blob: event.data.result.preservedOriginal
+        ? pending.file
+        : (event.data.result.blob ?? pending.file),
+    })
+    scheduleWorkerTermination()
+  })
+
+  worker.addEventListener('error', () => {
+    clearWorkerIdleTimer()
+    rejectPendingTransforms('Image worker stopped unexpectedly')
+    worker.terminate()
+    transformWorker = null
+  })
+
+  transformWorker = worker
+  return worker
 }
 
 /**
- * Converts an input image file into the requested target format.
+ * Converts one input into a hosted image plus a dedicated WebP thumbnail.
+ *
+ * Pixel decoding and encoding run in a module worker so large or slow codecs do
+ * not block UI interaction. Codecs for HEIC, TIFF, RAW, and AVIF are loaded only
+ * when the selected input/output requires them.
  */
 export async function transformImageFile(
   file: File,
   format: SupportedFormat,
   quality?: number,
 ): Promise<TransformImageResult> {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  const inputMetadata = parseUploadImage(bytes)
-  if (!inputMetadata) {
-    throw new Error('Unable to read image dimensions')
-  }
-  if (inputMetadata.width * inputMetadata.height > MAX_TRANSFORM_PIXELS) {
-    throw new Error(`Image dimensions exceed the ${MAX_TRANSFORM_PIXELS / 1_000_000} megapixel transform limit`)
-  }
-  if (isAnimatedRaster(bytes)) {
-    return {
-      blob: file,
-      mimeType: inputMetadata.mime,
-      width: inputMetadata.width,
-      height: inputMetadata.height,
-      preservedOriginal: true,
+  return new Promise((resolve, reject) => {
+    const id = nextTransformId
+    nextTransformId += 1
+    const timeoutId = setTimeout(() => {
+      clearWorkerIdleTimer()
+      transformWorker?.terminate()
+      transformWorker = null
+      rejectPendingTransforms('Image transform timed out. Try a smaller or different source file.')
+    }, TRANSFORM_TIMEOUT_MS)
+    pendingTransforms.set(id, { file, resolve, reject, timeoutId })
+
+    try {
+      getTransformWorker().postMessage({
+        id,
+        file,
+        format,
+        quality,
+      })
     }
-  }
-
-  const bitmap = await createImageBitmap(file)
-
-  try {
-    const canvas = document.createElement('canvas')
-    canvas.width = bitmap.width
-    canvas.height = bitmap.height
-
-    const context = canvas.getContext('2d')
-    if (!context) {
-      throw new Error('Failed to initialize canvas context')
+    catch (error) {
+      const pending = pendingTransforms.get(id)
+      if (pending !== undefined) {
+        clearTimeout(pending.timeoutId)
+        pendingTransforms.delete(id)
+      }
+      reject(error instanceof Error ? error : new Error(String(error)))
     }
-
-    context.drawImage(bitmap, 0, 0)
-
-    const mimeType = OUTPUT_MIME_TYPE_BY_FORMAT[format]
-    const qualityValue = quality !== undefined ? Math.min(1, Math.max(0.1, quality / 100)) : undefined
-
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, mimeType, qualityValue)
-    })
-
-    if (!blob) {
-      throw new Error(`Unable to encode image as ${format}`)
-    }
-    if (blob.type !== mimeType) {
-      throw new Error(`This browser cannot encode images as ${format.toUpperCase()}`)
-    }
-
-    return {
-      blob,
-      mimeType,
-      width: bitmap.width,
-      height: bitmap.height,
-      preservedOriginal: false,
-    }
-  }
-  finally {
-    bitmap.close()
-  }
+  })
 }
 
-/**
- * Maps unknown transform failures to user-safe error messages.
- */
+/** Maps unknown transform failures to user-safe error messages. */
 export function normalizeTransformError(error: unknown): TransformError {
   if (error instanceof Error) {
     return { message: error.message }

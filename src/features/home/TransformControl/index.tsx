@@ -1,7 +1,8 @@
 import { Wand2 } from 'lucide-react'
-import { useTransition } from 'react'
+import { Label } from '@/components/ui/label'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import OutputFormat from './OutputFormat'
 import QualityControl from './QualityControl'
 
@@ -15,6 +16,8 @@ interface TransformControlsProps {
   hasImages: boolean
   useManualQuality: boolean
   setUseManualQuality: (value: boolean) => void
+  retainOriginal: boolean
+  setRetainOriginal: (value: boolean) => void
   actionLabel?: string
 }
 
@@ -28,9 +31,10 @@ const TransformControls = ({
   hasImages,
   useManualQuality,
   setUseManualQuality,
+  retainOriginal,
+  setRetainOriginal,
   actionLabel = 'Transform images',
 }: TransformControlsProps) => {
-  const [, startTransformTransition] = useTransition()
   const isDisabled = isProcessing || !hasImages
   const showNoImagesHint = !hasImages && !isProcessing
 
@@ -76,6 +80,24 @@ const TransformControls = ({
         setUseManualQuality={setUseManualQuality}
       />
 
+      <Separator />
+
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <Label htmlFor="retain-original" className="text-xs font-medium">Keep original in hosting storage</Label>
+          <p className="text-xs text-muted-foreground">
+            Stores the source beside the hosted image and WebP thumbnail, and counts it toward quota.
+          </p>
+        </div>
+        <Switch
+          id="retain-original"
+          checked={retainOriginal}
+          disabled={isProcessing}
+          onCheckedChange={setRetainOriginal}
+          aria-label="Keep original image in hosting storage"
+        />
+      </div>
+
       {/* Actions */}
       <div className="space-y-2">
         <LoadingButton
@@ -83,9 +105,7 @@ const TransformControls = ({
           loading={isProcessing}
           loadingText="Processing..."
           onClick={() => {
-            startTransformTransition(async () => {
-              await onTransform()
-            })
+            void onTransform()
           }}
           disabled={isDisabled}
           aria-busy={isProcessing}

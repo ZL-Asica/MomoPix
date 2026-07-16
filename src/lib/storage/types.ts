@@ -47,7 +47,17 @@ export interface ImageRecord {
   createdAt: ISODateString
   updatedAt: ISODateString
   source: ImageSource
+  thumbnail?: ThumbnailImageAsset | null
   original?: OriginalImageAsset | null
+}
+
+/** WebP preview asset used by album listings instead of the hosted image. */
+export interface ThumbnailImageAsset {
+  objectKey: string
+  sizeBytes: number
+  mime: 'image/webp'
+  width: number
+  height: number
 }
 
 /** Optional source asset retained beside a derived upload. */
@@ -56,8 +66,8 @@ export interface OriginalImageAsset {
   sizeBytes: number
   ext: string
   mime: string
-  width: number
-  height: number
+  width: number | null
+  height: number | null
 }
 
 /**
@@ -68,20 +78,24 @@ export interface AlbumImageRecord {
   albumId: string
   name: string
   nameLower: string
-  /** Bytes occupied by the derived image and any retained original asset. */
+  /** Bytes occupied by hosted, thumbnail, and any retained original assets. */
   storageBytes: number
   sizeBytes: number
   mime: string
   width: number | null
   height: number | null
   createdAt: ISODateString
+  thumbnail: ThumbnailImageAsset | null
 }
 
 /**
  * Album image row enriched with a display-ready public URL.
  */
 export interface AlbumImageListItem extends AlbumImageRecord {
+  /** Public URL for copied links and full-size viewing. */
   publicUrl: string | null
+  /** Small WebP preview URL, falling back to `publicUrl` for legacy rows. */
+  thumbnailUrl: string | null
 }
 
 /**

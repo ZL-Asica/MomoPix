@@ -107,6 +107,9 @@ importers:
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
+      libheif-js:
+        specifier: ^1.19.8
+        version: 1.19.8
       lucide-react:
         specifier: ^1.24.0
         version: 1.24.0(react@19.2.7)
@@ -116,6 +119,9 @@ importers:
       radix-ui:
         specifier: ^1.6.2
         version: 1.6.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      raw-decoder:
+        specifier: ^1.0.0
+        version: 1.0.0
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -131,6 +137,9 @@ importers:
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
+      utif2:
+        specifier: ^4.1.0
+        version: 4.1.0
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -3551,6 +3560,14 @@ packages:
   dayjs@1.11.21:
     resolution: {integrity: sha512-98IT+HOahAisibz/yjKbzuOBwYcjJ7BCLPzARyHiyEBmRz4fatF+KPJszEHXsGYjUG234aH/cOjW1wwTbKUZlA==}
 
+  debug@2.6.9:
+    resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
@@ -4072,6 +4089,9 @@ packages:
   eventemitter3@5.0.4:
     resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
 
+  exif-parser@0.1.9:
+    resolution: {integrity: sha512-+xoBJf73zs5Xb4uLXeFt/JLf1hYUsNMgWN3WNNECm2KdmePPePm+sxZEjPJcnwGHrPHKgp/FZ7cirnbS9tnmdA==}
+
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
@@ -4522,6 +4542,10 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
+  libheif-js@1.19.8:
+    resolution: {integrity: sha512-vQJWusIxO7wavpON1dusciL8Go9jsIQ+EUrckauFYAiSTjcmLAsuJh3SszLpvkwPci3JcL41ek2n+LUZGFpPIQ==}
+    engines: {node: '>=8.0.0'}
+
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
@@ -4809,6 +4833,9 @@ packages:
   motion-utils@12.39.0:
     resolution: {integrity: sha512-8nadJAJjTtqRkmRF36FoJTrywK9nnFmnPwnSMyxaOCU7GDjN9RTMJIxx9De8ErM+vpPhMccr/6fo5WciyQLnMQ==}
 
+  ms@2.0.0:
+    resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -5002,6 +5029,9 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
+
+  raw-decoder@1.0.0:
+    resolution: {integrity: sha512-Xqlmvk3bJWoAQNsraD9tNczFvo4MIIrLR7Zz4qliDlPWU46rYR1NtSnts96Sd5iZBQu0iX0JaZn2KXeFe2ZSOg==}
 
   react-dom@19.2.7:
     resolution: {integrity: sha512-t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ==}
@@ -5531,6 +5561,9 @@ packages:
     resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  utif2@4.1.0:
+    resolution: {integrity: sha512-+oknB9FHrJ7oW7A2WZYajOcv4FcDR4CfoGB0dPNfxbi4GO05RRnFmt5oa23+9w32EanrYcSJWspUiJkLMs+37w==}
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -8835,6 +8868,10 @@ snapshots:
 
   dayjs@1.11.21: {}
 
+  debug@2.6.9:
+    dependencies:
+      ms: 2.0.0
+
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
@@ -9529,6 +9566,8 @@ snapshots:
 
   eventemitter3@5.0.4: {}
 
+  exif-parser@0.1.9: {}
+
   expect-type@1.4.0: {}
 
   exsolve@1.1.0: {}
@@ -9984,6 +10023,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libheif-js@1.19.8: {}
 
   lie@3.3.0:
     dependencies:
@@ -10474,6 +10515,8 @@ snapshots:
 
   motion-utils@12.39.0: {}
 
+  ms@2.0.0: {}
+
   ms@2.1.3: {}
 
   nanoid@3.3.16: {}
@@ -10748,6 +10791,13 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.17
       '@types/react-dom': 19.2.3(@types/react@19.2.17)
+
+  raw-decoder@1.0.0:
+    dependencies:
+      debug: 2.6.9
+      exif-parser: 0.1.9
+    transitivePeerDependencies:
+      - supports-color
 
   react-dom@19.2.7(react@19.2.7):
     dependencies:
@@ -11384,6 +11434,10 @@ snapshots:
   use-sync-external-store@1.6.0(react@19.2.7):
     dependencies:
       react: 19.2.7
+
+  utif2@4.1.0:
+    dependencies:
+      pako: 1.0.11
 
   util-deprecate@1.0.2: {}
 

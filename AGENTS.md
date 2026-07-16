@@ -14,6 +14,7 @@ Primary goals:
 Key concepts:
 
 - **Original vs converted/derived assets** (e.g., WebP variants) are first-class and must be represented consistently in metadata + UI.
+- Every newly hosted image has a dedicated WebP thumbnail for album browsing; album lists must not decode hosted/original assets as previews.
 - **Usage/accounting** (bytes used, image counts, album counts) must be correct and resilient to partial failures.
 
 ## 2) Tech Stack and Package Rules
@@ -276,10 +277,11 @@ Metadata correctness:
 Usage/accounting:
 
 - `totalBytesUsed`, `totalImageCount`, and related counters must be consistent with canonical data.
+- Storage byte accounting includes the hosted asset, thumbnail, and any retained original.
 - If using cached counters, provide a recount/reconcile path and document when it runs.
 - `storage_quota` is maintained only by D1 triggers. Reserve capacity before
   uploading to R2, and retain that reservation until metadata is committed or
-  the orphaned object has been deleted; never update the counter directly.
+  every orphaned asset has been deleted; never update the counter directly.
 
 UI invariants:
 

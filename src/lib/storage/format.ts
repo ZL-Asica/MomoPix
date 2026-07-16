@@ -8,6 +8,8 @@ const EXT_TO_MIME: Record<string, string> = {
   bmp: 'image/bmp',
   tiff: 'image/tiff',
   tif: 'image/tiff',
+  heic: 'image/heic',
+  heif: 'image/heif',
 }
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -18,6 +20,8 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/gif': 'gif',
   'image/bmp': 'bmp',
   'image/tiff': 'tiff',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
 }
 
 /**

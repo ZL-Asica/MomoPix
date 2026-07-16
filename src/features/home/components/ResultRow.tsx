@@ -97,7 +97,7 @@ export function ResultRow({
 
         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg sm:h-20 sm:w-20">
           <img
-            src={item.originalPreviewUrl}
+            src={item.thumbnailPreviewUrl ?? item.originalPreviewUrl}
             alt={`Preview of ${item.originalName}`}
             className="h-full w-full object-cover"
           />
@@ -178,7 +178,7 @@ export function ResultRow({
             )}
             {item.status === 'original' && (
               <span className="wrap-break-word text-amber-700 dark:text-amber-400">
-                Converted output was not smaller.
+                Animation preserved without flattening frames.
               </span>
             )}
           </div>
@@ -188,6 +188,10 @@ export function ResultRow({
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="wrap-break-word">{item.transformError}</span>
             </p>
+          )}
+
+          {item.transformNotice !== null && item.transformNotice.length > 0 && (
+            <p className="wrap-break-word text-xs text-muted-foreground">{item.transformNotice}</p>
           )}
 
           <div className="flex max-w-full flex-wrap items-center gap-2 text-xs">
