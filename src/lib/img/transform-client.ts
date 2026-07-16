@@ -12,7 +12,7 @@ export async function transformImageFile(
   file: File,
   format: SupportedFormat,
   quality?: number,
-): Promise<{ blob: Blob, mimeType: string }> {
+): Promise<{ blob: Blob, mimeType: string, width: number, height: number }> {
   const bitmap = await createImageBitmap(file)
 
   try {
@@ -38,7 +38,7 @@ export async function transformImageFile(
       throw new Error(`Unable to encode image as ${format}`)
     }
 
-    return { blob, mimeType }
+    return { blob, mimeType, width: bitmap.width, height: bitmap.height }
   }
   finally {
     bitmap.close()

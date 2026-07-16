@@ -61,9 +61,37 @@ interface ImageRow {
   storedName: string
   mime: string
   source: 'index-compressed' | 'dashboard-upload'
+  originalObjectKey?: string | null
+  originalBytes?: number | null
+  originalExt?: string | null
+  originalMime?: string | null
+  originalWidth?: number | null
+  originalHeight?: number | null
 }
 
 function toImageRecord(row: ImageRow): ImageRecord {
+  const originalValues = [row.originalBytes, row.originalExt, row.originalMime, row.originalWidth, row.originalHeight]
+  const hasOriginalMetadata = originalValues.some(value => value !== null && value !== undefined)
+  if (row.originalObjectKey === null || row.originalObjectKey === undefined) {
+    if (hasOriginalMetadata) {
+      throw new Error('Image original metadata is incomplete')
+    }
+  }
+  else if (
+    !row.originalObjectKey.startsWith('originals/')
+    || originalValues.some(value => value === null || value === undefined)
+    || (row.originalBytes ?? 0) < 1
+    || (row.originalWidth ?? 0) < 1
+    || (row.originalHeight ?? 0) < 1
+    || row.originalExt === null
+    || row.originalExt === undefined
+    || row.originalExt.length === 0
+    || row.originalMime === null
+    || row.originalMime === undefined
+    || row.originalMime.length === 0
+  ) {
+    throw new Error('Image original metadata is invalid')
+  }
   return {
     objectKey: row.id,
     albumId: row.albumId,
@@ -78,6 +106,34 @@ function toImageRecord(row: ImageRow): ImageRecord {
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt),
     source: row.source,
+    original: row.originalObjectKey === null || row.originalObjectKey === undefined
+      ? null
+      : {
+          objectKey: row.originalObjectKey,
+          sizeBytes: row.originalBytes ?? 0,
+          ext: row.originalExt ?? '',
+          mime: row.originalMime ?? '',
+          width: row.originalWidth ?? 0,
+          height: row.originalHeight ?? 0,
+        },
+  }
+}
+
+function validateOriginalAsset(image: ImageRecord): void {
+  const original = image.original
+  if (!original) {
+    return
+  }
+  if (
+    original.objectKey === image.objectKey
+    || !original.objectKey.startsWith('originals/')
+    || original.sizeBytes < 1
+    || original.width < 1
+    || original.height < 1
+    || !original.ext
+    || !original.mime
+  ) {
+    throw new Error('Invalid original image asset')
   }
 }
 
@@ -116,6 +172,12 @@ export async function getImageRecord(_db: D1Database, objectKey: string): Promis
       storedName: imagesTable.storedName,
       mime: imagesTable.mime,
       source: imagesTable.source,
+      originalObjectKey: imagesTable.originalObjectKey,
+      originalBytes: imagesTable.originalBytes,
+      originalExt: imagesTable.originalExt,
+      originalMime: imagesTable.originalMime,
+      originalWidth: imagesTable.originalWidth,
+      originalHeight: imagesTable.originalHeight,
     })
     .from(imagesTable)
     .where(and(eq(imagesTable.id, objectKey), isNull(imagesTable.deletedAt)))
@@ -132,6 +194,7 @@ export async function putImageRecords(
   image: ImageRecord,
   albumImage: AlbumImageRecord,
 ): Promise<void> {
+  validateOriginalAsset(image)
   const db = getDb()
   const createdAt = fromIsoString(image.createdAt)
   const updatedAt = fromIsoString(image.updatedAt)
@@ -153,6 +216,12 @@ export async function putImageRecords(
       storedName: image.storedName,
       mime: image.mime,
       source: image.source,
+      originalObjectKey: image.original?.objectKey ?? null,
+      originalBytes: image.original?.sizeBytes ?? null,
+      originalExt: image.original?.ext ?? null,
+      originalMime: image.original?.mime ?? null,
+      originalWidth: image.original?.width ?? null,
+      originalHeight: image.original?.height ?? null,
     })
     .onConflictDoUpdate({
       target: imagesTable.id,
@@ -170,6 +239,12 @@ export async function putImageRecords(
         storedName: image.storedName,
         mime: image.mime,
         source: image.source,
+        originalObjectKey: image.original?.objectKey ?? null,
+        originalBytes: image.original?.sizeBytes ?? null,
+        originalExt: image.original?.ext ?? null,
+        originalMime: image.original?.mime ?? null,
+        originalWidth: image.original?.width ?? null,
+        originalHeight: image.original?.height ?? null,
         deletedAt: null,
         cleanupAttempts: 0,
         cleanupError: null,
@@ -326,6 +401,12 @@ export async function listImagesPendingDeletion(
       deletedAt: imagesTable.deletedAt,
       cleanupAttempts: imagesTable.cleanupAttempts,
       cleanupError: imagesTable.cleanupError,
+      originalObjectKey: imagesTable.originalObjectKey,
+      originalBytes: imagesTable.originalBytes,
+      originalExt: imagesTable.originalExt,
+      originalMime: imagesTable.originalMime,
+      originalWidth: imagesTable.originalWidth,
+      originalHeight: imagesTable.originalHeight,
     })
     .from(imagesTable)
     .where(isNotNull(imagesTable.deletedAt))

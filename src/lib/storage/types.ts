@@ -47,6 +47,17 @@ export interface ImageRecord {
   createdAt: ISODateString
   updatedAt: ISODateString
   source: ImageSource
+  original?: OriginalImageAsset | null
+}
+
+/** Optional source asset retained beside a derived upload. */
+export interface OriginalImageAsset {
+  objectKey: string
+  sizeBytes: number
+  ext: string
+  mime: string
+  width: number
+  height: number
 }
 
 /**

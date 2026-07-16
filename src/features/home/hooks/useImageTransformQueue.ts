@@ -112,7 +112,7 @@ export function useImageTransformQueue() {
   }, [])
 
   const transformOne = useCallback(async (item: HomeProcessedItem): Promise<HomeProcessedItem> => {
-    const { blob } = await transformImageFile(
+    const { blob, width, height } = await transformImageFile(
       item.originalFile,
       targetFormat,
       useManualQuality ? quality : undefined,
@@ -146,16 +146,14 @@ export function useImageTransformQueue() {
       }
     }
 
-    const dimensions = await getImageDimensions(compressedFile)
-
     return {
       ...item,
       targetFormat,
       outputBlob: blob,
       outputFile: compressedFile,
       outputSize: blob.size,
-      width: dimensions?.width ?? null,
-      height: dimensions?.height ?? null,
+      width,
+      height,
       status: 'compressed',
       transformError: null,
       uploadStatus: 'idle',

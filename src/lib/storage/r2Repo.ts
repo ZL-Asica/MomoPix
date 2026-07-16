@@ -26,6 +26,11 @@ export function buildR2ObjectKey(input: { ext: string, date?: Date }): string {
   return `${year}/${month}/${day}/${objectId}.${ext}`
 }
 
+/** Builds an isolated key for an optional retained source asset. */
+export function buildOriginalR2ObjectKey(input: { ext: string, date?: Date }): string {
+  return `originals/${buildR2ObjectKey(input)}`
+}
+
 /**
  * Stores the final image object in R2 with content type and tracing metadata.
  *

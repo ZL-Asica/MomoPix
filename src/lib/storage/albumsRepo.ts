@@ -25,7 +25,7 @@ async function loadAlbumUsageById(): Promise<Map<string, { imageCount: number, b
     .select({
       albumId: imagesTable.albumId,
       imageCount: sql<number>`CAST(COUNT(*) AS INTEGER)`,
-      bytesUsed: sql<number>`COALESCE(SUM(${imagesTable.bytes}), 0)`,
+      bytesUsed: sql<number>`COALESCE(SUM(${imagesTable.bytes} + COALESCE(${imagesTable.originalBytes}, 0)), 0)`,
     })
     .from(imagesTable)
     .where(isNull(imagesTable.deletedAt))
@@ -148,7 +148,7 @@ async function buildStorageMetaInternal(): Promise<StorageMeta> {
   const [imageTotals] = await db
     .select({
       totalImageCount: sql<number>`CAST(COUNT(*) AS INTEGER)`,
-      totalBytesUsed: sql<number>`COALESCE(SUM(${imagesTable.bytes}), 0)`,
+      totalBytesUsed: sql<number>`COALESCE(SUM(${imagesTable.bytes} + COALESCE(${imagesTable.originalBytes}, 0)), 0)`,
       maxUpdatedAt: sql<number>`COALESCE(MAX(${imagesTable.updatedAt}), 0)`,
     })
     .from(imagesTable)
