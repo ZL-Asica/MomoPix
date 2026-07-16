@@ -1,5 +1,5 @@
 import { AlertCircle, RefreshCw } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useIntersectionObserver } from '@/features/dashboard/hooks/useIntersectionObserver'
@@ -17,12 +17,12 @@ interface LazyImageProps {
 /**
  * Renders a lazy thumbnail with near-viewport eager loading, skeleton, and retry fallback.
  */
-export function LazyImage({
+export const LazyImage = memo(({
   src,
   alt,
   className,
   rootMargin = '0px',
-}: LazyImageProps) {
+}: LazyImageProps) => {
   const [retryToken, setRetryToken] = useState(0)
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
@@ -93,4 +93,4 @@ export function LazyImage({
       )}
     </div>
   )
-}
+})

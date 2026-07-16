@@ -105,19 +105,23 @@ export function DashboardFeature() {
   const moveImageTarget = images.find(image => image.objectKey === moveImageObjectKey) ?? null
   const moveImageTargets = moveImageTarget ? [moveImageTarget] : []
 
+  const handleRenameImageRequest = useCallback((objectKey: string) => {
+    setRenameImageObjectKey(objectKey)
+  }, [setRenameImageObjectKey])
+  const handleMoveImageRequest = useCallback((objectKey: string) => {
+    setMoveImageObjectKey(objectKey)
+  }, [setMoveImageObjectKey])
+  const handleDeleteImageRequest = useCallback((objectKey: string) => {
+    setPendingDeleteObjectKey(objectKey)
+  }, [setPendingDeleteObjectKey])
+
   const { clearSelection, selectedImagesOrdered, setSelectionToObjectKeys, table } = useImagesTable({
     images,
     pageIndex: pageIndexZeroBased,
     pageSize,
-    onRenameImage: (objectKey) => {
-      setRenameImageObjectKey(objectKey)
-    },
-    onMoveImage: (objectKey) => {
-      setMoveImageObjectKey(objectKey)
-    },
-    onDeleteImage: (objectKey) => {
-      setPendingDeleteObjectKey(objectKey)
-    },
+    onRenameImage: handleRenameImageRequest,
+    onMoveImage: handleMoveImageRequest,
+    onDeleteImage: handleDeleteImageRequest,
   })
 
   const sidebar = useMemo(() => (
