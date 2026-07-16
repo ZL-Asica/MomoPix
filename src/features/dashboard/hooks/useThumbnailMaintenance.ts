@@ -35,7 +35,7 @@ export interface ThumbnailMaintenanceProgress {
   currentName: string | null
 }
 
-type MaintenanceState = 'loading' | 'idle' | 'running' | 'error'
+type MaintenanceState = 'loading' | 'idle' | 'running' | 'pausing' | 'error'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -65,6 +65,7 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState<ThumbnailMaintenanceProgress | null>(null)
   const runningRef = useRef(false)
+  const settlingRef = useRef(false)
   const generationRef = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
@@ -101,21 +102,22 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
   }, [refresh])
 
   const cancel = useCallback(() => {
+    if (!runningRef.current) {
+      return
+    }
     runningRef.current = false
     generationRef.current += 1
     abortRef.current?.abort()
-    abortRef.current = null
-    setState('idle')
+    setState('pausing')
     setProgress(previous => previous === null ? null : { ...previous, currentName: null })
-    onUpdated()
-    void refresh()
-  }, [onUpdated, refresh])
+  }, [])
 
   const start = useCallback(async () => {
-    if (runningRef.current) {
+    if (runningRef.current || settlingRef.current) {
       return
     }
     runningRef.current = true
+    settlingRef.current = true
     const generation = generationRef.current + 1
     generationRef.current = generation
     const isCurrentRun = () => runningRef.current && generationRef.current === generation
@@ -199,11 +201,9 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
       }
     }
     finally {
+      const ownsController = abortRef.current === controller
       if (generationRef.current === generation) {
         runningRef.current = false
-        if (abortRef.current === controller) {
-          abortRef.current = null
-        }
         if (mountedRef.current) {
           if (succeeded > 0) {
             onUpdated()
@@ -225,8 +225,18 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
           }
         }
       }
+      else if (mountedRef.current && ownsController) {
+        if (succeeded > 0) {
+          onUpdated()
+        }
+        await refresh()
+      }
+      if (ownsController) {
+        abortRef.current = null
+        settlingRef.current = false
+      }
     }
-  }, [missingCount, onUpdated])
+  }, [missingCount, onUpdated, refresh])
 
   return {
     state,

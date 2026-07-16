@@ -1,4 +1,4 @@
-import { ImageDown, Pause } from 'lucide-react'
+import { ImageDown, LoaderCircle, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -34,6 +34,7 @@ export function ThumbnailMaintenance({ onUpdated }: ThumbnailMaintenanceProps) {
   }
 
   const isRunning = maintenance.state === 'running'
+  const isPausing = maintenance.state === 'pausing'
   const progressValue = maintenance.progress === null || maintenance.progress.total === 0
     ? 0
     : (maintenance.progress.processed / maintenance.progress.total) * 100
@@ -60,15 +61,22 @@ export function ThumbnailMaintenance({ onUpdated }: ThumbnailMaintenanceProps) {
                   Pause
                 </Button>
               )
-            : (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => void maintenance.start()}
-                >
-                  {maintenance.progress === null ? 'Start' : 'Resume'}
-                </Button>
-              )}
+            : isPausing
+              ? (
+                  <Button type="button" size="sm" variant="outline" disabled>
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    Pausing…
+                  </Button>
+                )
+              : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void maintenance.start()}
+                  >
+                    {maintenance.progress === null ? 'Start' : 'Resume'}
+                  </Button>
+                )}
         </div>
 
         {maintenance.progress !== null && (
