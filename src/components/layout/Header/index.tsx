@@ -1,26 +1,70 @@
 import { Link } from '@tanstack/react-router'
-import { useClickOutside, useHideOnScrollDown, useToggle } from '@zl-asica/react'
-import { Menu } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useHideOnScrollDown } from '@zl-asica/react'
+import { Menu, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import HeaderMenu from './HeaderMenu'
 
 const Header = () => {
-  const [isOpen, toggleOpen] = useToggle()
+  const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const headerRef = useRef<HTMLElement>(null)
   const isHeaderVisible = useHideOnScrollDown(headerRef)
 
-  useClickOutside(menuRef, () => {
-    if (isOpen) {
-      toggleOpen()
+  const closeMenu = useCallback(() => {
+    setIsOpen(false)
+    menuButtonRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
     }
-  })
+
+    const panel = menuRef.current
+    const focusable = () => panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []
+    const focusables = focusable()
+    focusables[0]?.focus()
+
+    const onKeyDown = (event_: KeyboardEvent) => {
+      if (event_.key === 'Escape') {
+        event_.preventDefault()
+        closeMenu()
+        return
+      }
+      if (event_.key === 'Tab' && focusables.length > 0) {
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (event_.shiftKey && document.activeElement === first) {
+          event_.preventDefault()
+          last.focus()
+        }
+        else if (!event_.shiftKey && document.activeElement === last) {
+          event_.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    const onPointerDown = (event_: PointerEvent) => {
+      const target = event_.target
+      if (target instanceof Node && !panel?.contains(target) && !menuButtonRef.current?.contains(target)) {
+        closeMenu()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [closeMenu, isOpen])
 
   // Avoid scrolling when the menu is open (mobile)
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      menuRef.current?.querySelector<HTMLElement>('a, button')?.focus()
     }
     else {
       document.body.style.overflow = ''
@@ -50,32 +94,36 @@ const Header = () => {
 
         {/* Mobile Menu Button */}
         <Button
+          ref={menuButtonRef}
           type="button"
           variant="default"
           size="icon"
-          className="transition-transform-300 z-50 h-12 w-12 rounded-full text-2xl shadow-md hover:scale-110 md:hidden"
-          onClick={toggleOpen}
-          aria-label="Toggle menu"
+          className="transition-transform-300 z-60 h-12 w-12 rounded-full text-2xl shadow-md hover:scale-110 md:hidden"
+          onClick={() => setIsOpen(open => !open)}
+          aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={isOpen ? 'true' : 'false'}
           aria-controls="mobile-menu"
         >
-          {!isOpen && <Menu strokeWidth={2.5} />}
+          {isOpen ? <X strokeWidth={2.5} /> : <Menu strokeWidth={2.5} />}
         </Button>
 
         {/* Mobile Menu */}
-        <div
-          id="mobile-menu"
-          ref={menuRef}
-          className={`transition-all-300 fixed right-0 top-0 z-50 h-screen w-1/2 bg-background shadow-lg md:hidden ${
-            isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-          }`}
-        >
-          <HeaderMenu
-            isMobile
-            ulClassName="flex flex-col items-start gap-4 p-6"
-            onClickHandler={toggleOpen}
-          />
-        </div>
+        {isOpen && (
+          <div
+            id="mobile-menu"
+            ref={menuRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            className="transition-all-300 fixed right-0 top-0 z-50 h-screen w-1/2 bg-background shadow-lg md:hidden"
+          >
+            <HeaderMenu
+              isMobile
+              ulClassName="flex flex-col items-start gap-4 p-6"
+              onClickHandler={closeMenu}
+            />
+          </div>
+        )}
 
         {/* Backdrop */}
         {isOpen && (
@@ -84,7 +132,7 @@ const Header = () => {
             onClick={(event_) => {
               event_.preventDefault()
               event_.stopPropagation()
-              toggleOpen()
+              closeMenu()
             }}
             aria-hidden
           />
