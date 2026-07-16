@@ -2,16 +2,11 @@ import type {
   ColumnDef,
   PaginationState,
   RowSelectionState,
-  SortingState,
   Table as TableInstance,
-  Updater,
 } from '@tanstack/react-table'
 import type { AlbumImageListItem } from '@/lib/storage/types'
 import {
-  functionalUpdate,
   getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -25,7 +20,6 @@ interface UseImagesTableOptions {
   images: AlbumImageListItem[]
   pageIndex: number
   pageSize: number
-  onPageIndexChange: (nextPageIndex: number) => void
   onRenameImage: (objectKey: string) => void
   onMoveImage: (objectKey: string) => void
   onDeleteImage: (objectKey: string) => void
@@ -47,7 +41,6 @@ export interface ImagesTableMeta {
  * @param options.images Full image dataset for table rows.
  * @param options.pageIndex Current zero-based page index.
  * @param options.pageSize Current page size.
- * @param options.onPageIndexChange Callback for page index updates.
  * @param options.onRenameImage Callback for row rename action.
  * @param options.onMoveImage Callback for row move action.
  * @param options.onDeleteImage Callback for row delete action.
@@ -58,18 +51,11 @@ export function useImagesTable(options: UseImagesTableOptions) {
     images,
     pageIndex,
     pageSize,
-    onPageIndexChange,
     onRenameImage,
     onMoveImage,
     onDeleteImage,
   } = options
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [sorting, setSorting] = useState<SortingState>([
-    {
-      id: 'createdAt',
-      desc: true,
-    },
-  ])
   const lastAnchorRowIdRef = useRef<string | null>(null)
   const clearSelection = useCallback(() => {
     setRowSelection({})
@@ -180,13 +166,13 @@ export function useImagesTable(options: UseImagesTableOptions) {
       cell: ({ row }) => (
         <div className="max-w-60 truncate font-medium">{row.original.name}</div>
       ),
-      enableSorting: true,
+      enableSorting: false,
     },
     {
       accessorKey: 'sizeBytes',
       header: 'Size',
       cell: ({ row }) => formatBytes(row.original.sizeBytes),
-      enableSorting: true,
+      enableSorting: false,
     },
     {
       id: 'dimensions',
@@ -213,7 +199,7 @@ export function useImagesTable(options: UseImagesTableOptions) {
       accessorKey: 'createdAt',
       header: 'Uploaded',
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
-      enableSorting: true,
+      enableSorting: false,
     },
     {
       id: 'actions',
@@ -237,29 +223,21 @@ export function useImagesTable(options: UseImagesTableOptions) {
     pageSize,
   }), [pageIndex, pageSize])
 
-  const onSortingChange = useCallback((updater: Updater<SortingState>) => {
-    setSorting(previous => functionalUpdate(updater, previous))
-    onPageIndexChange(0)
-  }, [onPageIndexChange])
-
   const table = useReactTable({
     data: images,
     columns,
     state: {
       rowSelection,
-      sorting,
       pagination,
     },
     onRowSelectionChange: setRowSelection,
-    onSortingChange,
     meta: {
       onRenameImage,
       onMoveImage,
       onDeleteImage,
     },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
     getRowId: row => row.objectKey,
   })
 

@@ -53,11 +53,8 @@ export function DashboardFeature() {
     deleteAlbum,
     bulkDeleteImages,
     bulkMoveImages,
-    goFirstPage,
-    goLastPage,
     goNextPage,
     onPageSizeChange,
-    onTablePageIndexChange,
     goPrevPage,
     hasNextPage,
     hasPreviousPage,
@@ -109,7 +106,6 @@ export function DashboardFeature() {
     images,
     pageIndex: pageIndexZeroBased,
     pageSize,
-    onPageIndexChange: onTablePageIndexChange,
     onRenameImage: (objectKey) => {
       setRenameImageObjectKey(objectKey)
     },
@@ -252,8 +248,6 @@ export function DashboardFeature() {
               onPageSizeChange={onPageSizeChange}
               onPreviousPage={goPrevPage}
               onNextPage={goNextPage}
-              onFirstPage={goFirstPage}
-              onLastPage={goLastPage}
             />
           </div>
         </CardContent>
