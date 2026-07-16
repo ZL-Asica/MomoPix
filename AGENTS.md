@@ -282,6 +282,8 @@ Usage/accounting:
 - `storage_quota` is maintained only by D1 triggers. Reserve capacity before
   uploading to R2, and retain that reservation until metadata is committed or
   every orphaned asset has been deleted; never update the counter directly.
+- Thumbnail backfills reserve capacity under the derived thumbnail object key;
+  the image UPDATE trigger consumes that reservation atomically with metadata.
 
 UI invariants:
 

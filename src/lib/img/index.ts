@@ -1,2 +1,2 @@
 export { checkImage } from './checker'
-export { normalizeTransformError, transformImageFile } from './transform-client'
+export { generateImageThumbnail, normalizeTransformError, transformImageFile } from './transform-client'

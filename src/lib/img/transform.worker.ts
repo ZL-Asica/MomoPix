@@ -28,12 +28,21 @@ const RAW_EXTENSIONS = new Set([
   'srf',
 ])
 
-interface TransformRequest {
+interface FullTransformRequest {
   id: number
+  mode: 'full'
   file: File
   format: SupportedFormat
   quality?: number
 }
+
+interface ThumbnailTransformRequest {
+  id: number
+  mode: 'thumbnail'
+  file: File
+}
+
+type TransformRequest = FullTransformRequest | ThumbnailTransformRequest
 
 interface DecodedSource {
   canvas: OffscreenCanvas
@@ -253,7 +262,10 @@ async function encodeCanvas(
   return new Blob([bytes], { type: mimeType })
 }
 
-async function transform(request: TransformRequest): Promise<Omit<TransformImageResult, 'blob'> & { blob: Blob | null }> {
+async function transform(request: TransformRequest): Promise<
+  | (Omit<TransformImageResult, 'blob'> & { mode: 'full', blob: Blob | null })
+  | { mode: 'thumbnail', blob: Blob, width: number, height: number }
+> {
   const decoded = await decodeSource(request.file)
   const thumbnailDimensions = outputDimensions(decoded.width, decoded.height, THUMBNAIL_MAX_EDGE)
   const thumbnailCanvas = new OffscreenCanvas(thumbnailDimensions.width, thumbnailDimensions.height)
@@ -265,11 +277,21 @@ async function transform(request: TransformRequest): Promise<Omit<TransformImage
     thumbnailContext.drawImage(decoded.canvas, 0, 0, thumbnailDimensions.width, thumbnailDimensions.height)
     const thumbnailBlob = await encodeCanvas(thumbnailCanvas, 'webp', 72)
 
+    if (request.mode === 'thumbnail') {
+      return {
+        mode: 'thumbnail',
+        blob: thumbnailBlob,
+        width: thumbnailDimensions.width,
+        height: thumbnailDimensions.height,
+      }
+    }
+
     const hostedBlob = decoded.preservedOriginal
       ? null
       : await encodeCanvas(decoded.canvas, request.format, request.quality)
 
     return {
+      mode: 'full',
       blob: hostedBlob,
       mimeType: decoded.preservedOriginal
         ? request.file.type

@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 interface WorkerRequest {
   id: number
+  mode: 'full' | 'thumbnail'
   file: File
-  format: SupportedFormat
+  format?: SupportedFormat
   quality?: number
 }
 
@@ -40,6 +41,7 @@ function workerResult(request: WorkerRequest, overrides: Record<string, unknown>
   return {
     id: request.id,
     result: {
+      mode: 'full',
       blob: new Blob(['hosted'], { type: 'image/webp' }),
       mimeType: 'image/webp',
       width: 640,
@@ -78,7 +80,7 @@ describe('transformImageFile', () => {
 
     const result = await transformImageFile(source, 'webp', 80)
 
-    expect(FakeWorker.lastRequest).toMatchObject({ file: source, format: 'webp', quality: 80 })
+    expect(FakeWorker.lastRequest).toMatchObject({ mode: 'full', file: source, format: 'webp', quality: 80 })
     expect(result).toMatchObject({
       mimeType: 'image/webp',
       width: 640,
@@ -112,6 +114,27 @@ describe('transformImageFile', () => {
     const source = new File(['source'], 'input.raw', { type: 'application/octet-stream' })
 
     await expect(transformImageFile(source, 'webp')).rejects.toThrow('Unsupported RAW camera')
+  })
+
+  it('requests only a WebP thumbnail for maintenance work', async () => {
+    FakeWorker.response = request => ({
+      id: request.id,
+      result: {
+        mode: 'thumbnail',
+        blob: new Blob(['thumbnail'], { type: 'image/webp' }),
+        width: 512,
+        height: 384,
+      },
+    })
+    const { generateImageThumbnail } = await loadTransformModule()
+    const source = new File(['source'], 'legacy.jpg', { type: 'image/jpeg' })
+
+    const result = await generateImageThumbnail(source)
+
+    expect(FakeWorker.lastRequest).toMatchObject({ mode: 'thumbnail', file: source })
+    expect(FakeWorker.lastRequest).not.toHaveProperty('format')
+    expect(result).toMatchObject({ width: 512, height: 384 })
+    expect(result.blob.type).toBe('image/webp')
   })
 
   it('terminates a stalled worker and rejects queued transforms', async () => {
