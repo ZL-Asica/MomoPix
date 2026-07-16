@@ -150,6 +150,8 @@ Image URL invariants:
 
 - Build public URLs through shared helpers (single source of truth).
 - Never hardcode public domains in components.
+- Keep the public R2 bucket CORS policy compatible with browser-side legacy
+  thumbnail generation (GET/HEAD from the app origin).
 
 ## 7) Comments, TSDoc, and Readability
 

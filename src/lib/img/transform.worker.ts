@@ -306,6 +306,9 @@ async function transformThumbnailOnly(file: File): Promise<{
 
   const probe = new Uint8Array(await file.slice(0, NATIVE_METADATA_PROBE_BYTES).arrayBuffer())
   const metadata = parseUploadImage(probe)
+    ?? (file.size > probe.byteLength
+      ? parseUploadImage(new Uint8Array(await file.arrayBuffer()))
+      : null)
   if (metadata === null) {
     throw new Error('Unable to read image dimensions for thumbnail generation')
   }

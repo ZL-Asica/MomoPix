@@ -65,6 +65,7 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState<ThumbnailMaintenanceProgress | null>(null)
   const runningRef = useRef(false)
+  const generationRef = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
 
@@ -94,23 +95,30 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
     return () => {
       mountedRef.current = false
       runningRef.current = false
+      generationRef.current += 1
       abortRef.current?.abort()
     }
   }, [refresh])
 
   const cancel = useCallback(() => {
     runningRef.current = false
+    generationRef.current += 1
     abortRef.current?.abort()
     abortRef.current = null
     setState('idle')
     setProgress(previous => previous === null ? null : { ...previous, currentName: null })
-  }, [])
+    onUpdated()
+    void refresh()
+  }, [onUpdated, refresh])
 
   const start = useCallback(async () => {
     if (runningRef.current) {
       return
     }
     runningRef.current = true
+    const generation = generationRef.current + 1
+    generationRef.current = generation
+    const isCurrentRun = () => runningRef.current && generationRef.current === generation
     setState('running')
     setError(null)
     const controller = new AbortController()
@@ -129,7 +137,7 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
         setProgress({ total, processed, succeeded, failed, currentName: null })
 
         for (const candidate of page.items) {
-          if (!runningRef.current) {
+          if (!isCurrentRun()) {
             break
           }
           let didFinishCandidate = false
@@ -151,7 +159,7 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
               type: sourceBlob.type || candidate.mime,
             })
             const thumbnail = await generateImageThumbnail(sourceFile)
-            if (!runningRef.current) {
+            if (!isCurrentRun()) {
               break
             }
 
@@ -175,7 +183,7 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
             console.error(`[thumbnail-maintenance] Failed ${candidate.objectKey}:`, cause)
           }
           finally {
-            if (didFinishCandidate) {
+            if (didFinishCandidate && generationRef.current === generation) {
               processed += 1
               setProgress({ total, processed, succeeded, failed, currentName: null })
             }
@@ -183,34 +191,38 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
         }
 
         cursor = page.nextCursor
-      } while (runningRef.current && cursor !== null)
+      } while (isCurrentRun() && cursor !== null)
     }
     catch (cause) {
-      if (!controller.signal.aborted) {
+      if (!controller.signal.aborted && generationRef.current === generation) {
         setError(errorMessage(cause))
       }
     }
     finally {
-      runningRef.current = false
-      abortRef.current = null
-      if (mountedRef.current) {
-        if (succeeded > 0) {
-          onUpdated()
-        }
-        try {
-          const summary = await loadMaintenancePage({ pageSize: 1 })
-          if (mountedRef.current) {
-            setMissingCount(summary.missingCount)
-          }
-        }
-        catch (cause) {
-          if (mountedRef.current) {
-            setError(errorMessage(cause))
-          }
+      if (generationRef.current === generation) {
+        runningRef.current = false
+        if (abortRef.current === controller) {
+          abortRef.current = null
         }
         if (mountedRef.current) {
-          setProgress(previous => previous === null ? null : { ...previous, currentName: null })
-          setState('idle')
+          if (succeeded > 0) {
+            onUpdated()
+          }
+          try {
+            const summary = await loadMaintenancePage({ pageSize: 1 })
+            if (mountedRef.current) {
+              setMissingCount(summary.missingCount)
+            }
+          }
+          catch (cause) {
+            if (mountedRef.current) {
+              setError(errorMessage(cause))
+            }
+          }
+          if (mountedRef.current) {
+            setProgress(previous => previous === null ? null : { ...previous, currentName: null })
+            setState('idle')
+          }
         }
       }
     }
