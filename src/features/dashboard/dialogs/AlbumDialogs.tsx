@@ -202,13 +202,13 @@ export function AlbumDialogs({
             <createAlbumForm.Field name="parentId">
               {field => (
                 <div className="space-y-2">
-                  <Label>Parent Album</Label>
+                  <Label htmlFor="create-album-parent">Parent Album</Label>
                   <Select
                     value={field.state.value}
                     onValueChange={value => field.handleChange(value)}
                     disabled={isCreatingPending}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="create-album-parent" className="w-full" aria-label="Parent album">
                       <SelectValue placeholder="Select parent" />
                     </SelectTrigger>
                     <SelectContent>
@@ -329,13 +329,13 @@ export function AlbumDialogs({
             <moveAlbumForm.Field name="parentId">
               {field => (
                 <div className="space-y-2">
-                  <Label>New Parent</Label>
+                  <Label htmlFor="move-album-parent">New Parent</Label>
                   <Select
                     value={field.state.value}
                     onValueChange={value => field.handleChange(value)}
                     disabled={isMovingPending}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="move-album-parent" className="w-full" aria-label="New parent album">
                       <SelectValue placeholder="Select parent" />
                     </SelectTrigger>
                     <SelectContent>

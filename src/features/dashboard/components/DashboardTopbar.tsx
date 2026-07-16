@@ -40,6 +40,7 @@ export function DashboardTopbar({
           <Search className="pointer-events-none absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-8"
+            aria-label="Search images"
             placeholder="Search images..."
             value={search}
             onChange={event_ => onSearchChange(event_.target.value)}
@@ -59,6 +60,7 @@ export function DashboardTopbar({
           type="file"
           multiple
           accept="image/*"
+          aria-label="Upload image files"
           className="hidden"
           onChange={event_ => onUploadChange(event_.target.files)}
         />

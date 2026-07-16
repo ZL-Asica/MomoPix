@@ -89,7 +89,7 @@ export function AlbumImagePagination({
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Page size</span>
           <Select value={String(pageSize)} onValueChange={value => onPageSizeChange(Number(value))}>
-            <SelectTrigger size="sm" className="w-20">
+            <SelectTrigger size="sm" className="w-20" aria-label="Images per page">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

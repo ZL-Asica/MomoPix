@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -97,12 +98,13 @@ export function BulkMoveImagesDialog({
               const error = field.state.meta.errors.find(item => typeof item === 'string')
               return (
                 <div className="space-y-1">
+                  <Label htmlFor="bulk-move-target-album">Destination album</Label>
                   <Select
                     value={field.state.value}
                     onValueChange={value => field.handleChange(value)}
                     disabled={isPending}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="bulk-move-target-album" className="w-full" aria-label="Destination album">
                       <SelectValue placeholder="Target album" />
                     </SelectTrigger>
                     <SelectContent>

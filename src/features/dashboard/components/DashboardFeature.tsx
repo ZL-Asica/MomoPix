@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { ImageIcon } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { AlbumImagePagination } from '@/features/dashboard/components/AlbumImagePagination'
@@ -91,6 +92,9 @@ export function DashboardFeature() {
     selectAlbum,
     uploadFiles,
     retryFailedUploads,
+    reloadAlbums,
+    retryImages,
+    albumsStatus,
   } = useDashboardData({
     urlState,
     onUrlStateChange,
@@ -135,6 +139,30 @@ export function DashboardFeature() {
       <UsageSummary meta={meta} totalSpaceBytes={STORAGE_QUOTA_BYTES} />
     </div>
   ), [albums, meta, selectedAlbumId, selectAlbum, setDefaultAlbum, setMobileSidebarOpen, setPendingDeleteAlbumId])
+
+  if (albumsStatus.state === 'error') {
+    return (
+      <DashboardLayout
+        title="Dashboard"
+        description="Manage uploaded images and albums."
+        sidebar={sidebar}
+        mobileSidebarOpen={mobileSidebarOpen}
+        onMobileSidebarOpenChange={setMobileSidebarOpen}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Dashboard unavailable</CardTitle>
+            <CardDescription>We could not load your albums. Check your connection and try again.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button type="button" onClick={() => void reloadAlbums()} disabled={albumsStatus.isLoading}>
+              {albumsStatus.isLoading ? 'Retrying...' : 'Retry'}
+            </Button>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout
@@ -216,39 +244,45 @@ export function DashboardFeature() {
           />
         </CardHeader>
         <CardContent>
-          {imagesStatus.state === 'error' && imagesStatus.error !== null && (
-            <p role="alert" className="mb-3 text-sm text-destructive">
-              Failed to load images:
-              {' '}
-              {imagesStatus.error}
-            </p>
-          )}
-          {imageUrlError !== null && (
-            <p role="alert" className="mb-3 text-sm text-destructive">
-              Image preview URL error:
-              {' '}
-              {imageUrlError}
-            </p>
-          )}
-          <ImagesTable
-            table={table}
-            isInitialLoading={imagesStatus.isInitialLoading}
-            hasLoadedOnce={imagesStatus.hasLoadedOnce}
-          />
-          <div className="mt-4">
-            <AlbumImagePagination
-              pageIndex={pageIndex}
-              totalPages={totalPages}
-              totalCount={totalCount}
-              pageSize={pageSize}
-              hasPreviousPage={hasPreviousPage}
-              hasNextPage={hasNextPage}
-              isLoading={imagesStatus.isFetching}
-              onPageSizeChange={onPageSizeChange}
-              onPreviousPage={goPrevPage}
-              onNextPage={goNextPage}
-            />
-          </div>
+          {imagesStatus.state === 'error'
+            ? (
+                <div role="alert" className="space-y-3 rounded-md border border-destructive/30 p-4 text-sm">
+                  <p>We could not load these images. Check your connection and try again.</p>
+                  <Button type="button" variant="outline" onClick={retryImages} disabled={imagesStatus.isFetching}>
+                    Retry
+                  </Button>
+                </div>
+              )
+            : (
+                <>
+                  {imageUrlError !== null && (
+                    <p role="alert" className="mb-3 text-sm text-destructive">
+                      Image preview URL error:
+                      {' '}
+                      {imageUrlError}
+                    </p>
+                  )}
+                  <ImagesTable
+                    table={table}
+                    isInitialLoading={imagesStatus.isInitialLoading}
+                    hasLoadedOnce={imagesStatus.hasLoadedOnce}
+                  />
+                  <div className="mt-4">
+                    <AlbumImagePagination
+                      pageIndex={pageIndex}
+                      totalPages={totalPages}
+                      totalCount={totalCount}
+                      pageSize={pageSize}
+                      hasPreviousPage={hasPreviousPage}
+                      hasNextPage={hasNextPage}
+                      isLoading={imagesStatus.isFetching}
+                      onPageSizeChange={onPageSizeChange}
+                      onPreviousPage={goPrevPage}
+                      onNextPage={goNextPage}
+                    />
+                  </div>
+                </>
+              )}
         </CardContent>
       </Card>
 

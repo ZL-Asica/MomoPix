@@ -51,7 +51,7 @@ export function UploadSelectedDialog({
         <div className="space-y-2">
           <Label htmlFor="upload-selected-album">Upload to album</Label>
           <Select value={selectedAlbumId} onValueChange={onSelectAlbum} disabled={isPending}>
-            <SelectTrigger id="upload-selected-album" className="w-full">
+            <SelectTrigger id="upload-selected-album" className="w-full" aria-label="Upload to album">
               <SelectValue placeholder="Choose album" />
             </SelectTrigger>
             <SelectContent>

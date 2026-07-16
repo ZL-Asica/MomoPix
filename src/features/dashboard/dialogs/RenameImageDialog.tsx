@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { LoadingButton } from '@/components/ui/loading-button'
 
 interface RenameImageDialogProps {
@@ -77,14 +78,18 @@ export function RenameImageDialog({
         >
           <renameImageForm.Field name="name">
             {field => (
-              <Input
-                value={field.state.value}
-                onChange={event_ => field.handleChange(event_.target.value)}
-                placeholder="Image name"
-                maxLength={120}
-                autoFocus
-                disabled={isPending}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="rename-image-name">Image name</Label>
+                <Input
+                  id="rename-image-name"
+                  value={field.state.value}
+                  onChange={event_ => field.handleChange(event_.target.value)}
+                  placeholder="Image name"
+                  maxLength={120}
+                  autoFocus
+                  disabled={isPending}
+                />
+              </div>
             )}
           </renameImageForm.Field>
         </form>

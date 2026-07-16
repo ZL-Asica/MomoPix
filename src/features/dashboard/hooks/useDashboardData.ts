@@ -31,7 +31,7 @@ const SEARCH_DEBOUNCE_MS = 250
  */
 const MAX_SEARCH_DEEP_LINK_PAGE_INDEX = 20
 
-type ImagesState = 'idle' | 'loading' | 'success' | 'error'
+type LoadState = 'idle' | 'loading' | 'success' | 'error'
 
 interface UseDashboardDataOptions {
   urlState: DashboardUrlState
@@ -54,8 +54,8 @@ export function useDashboardData(options: UseDashboardDataOptions) {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>(urlAlbumId)
   const [images, setImages] = useState<AlbumImageListItem[]>([])
   const [imageUrlError, setImageUrlError] = useState<string | null>(null)
-  const [imagesState, setImagesState] = useState<ImagesState>('idle')
-  const [imagesError, setImagesError] = useState<string | null>(null)
+  const [imagesState, setImagesState] = useState<LoadState>('idle')
+  const [albumsState, setAlbumsState] = useState<LoadState>('idle')
   const [isImagesFetching, setIsImagesFetching] = useState(false)
   const [hasNextPage, setHasNextPage] = useState(false)
   const [pageIndex, setPageIndex] = useState(urlPageIndex)
@@ -87,7 +87,10 @@ export function useDashboardData(options: UseDashboardDataOptions) {
   const totalPages = totalCount === null ? null : Math.max(1, Math.ceil(totalCount / pageSize))
   const hasPreviousPage = pageIndex > 0
   const isFetching = isImagesFetching || isViewTransitionPending
-  const isInitialLoading = !hasLoadedCurrentPage && images.length === 0 && (!hasLoadedAnyPage || imagesState === 'loading' || isImagesFetching)
+  const isInitialLoading = imagesState !== 'error'
+    && !hasLoadedCurrentPage
+    && images.length === 0
+    && (!hasLoadedAnyPage || imagesState === 'loading' || isImagesFetching)
   const isPaginationBusy = isFetching
 
   useLayoutEffect(() => {
@@ -159,7 +162,6 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     imageRequestIdRef.current = requestId
 
     setIsImagesFetching(true)
-    setImagesError(null)
     setImages([])
     setImagesState('loading')
 
@@ -228,13 +230,11 @@ export function useDashboardData(options: UseDashboardDataOptions) {
       setImagesState('success')
       setLoadedPageKey(`${input.viewKey}|${input.pageIndex}`)
     }
-    catch (error) {
+    catch {
       if (requestId !== imageRequestIdRef.current) {
         return
       }
       setImagesState('error')
-      setImagesError(error instanceof Error ? error.message : String(error))
-      throw error
     }
     finally {
       if (requestId === imageRequestIdRef.current) {
@@ -250,6 +250,19 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     setHasNextPage(false)
     setImagesRevision(previous => previous + 1)
   }, [])
+
+  const reloadAlbums = useCallback(async () => {
+    setAlbumsState('loading')
+    setIsAlbumsLoaded(false)
+    try {
+      await loadAlbums()
+      setAlbumsState('success')
+      setIsAlbumsLoaded(true)
+    }
+    catch {
+      setAlbumsState('error')
+    }
+  }, [loadAlbums])
 
   const updateAlbumUsage = useCallback((changes: Map<string, { imageCount: number, bytesUsed: number }>) => {
     setAlbums(previous => previous.map((album) => {
@@ -306,26 +319,8 @@ export function useDashboardData(options: UseDashboardDataOptions) {
   }, [searchQuery])
 
   useEffect(() => {
-    let cancelled = false
-
-    void (async () => {
-      try {
-        await loadAlbums()
-        if (!cancelled) {
-          setIsAlbumsLoaded(true)
-        }
-      }
-      catch (error) {
-        toast.error('Failed to load dashboard', {
-          description: error instanceof Error ? error.message : String(error),
-        })
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [loadAlbums])
+    void reloadAlbums()
+  }, [reloadAlbums])
 
   useEffect(() => {
     if (!isAlbumsLoaded || !selectedAlbumId) {
@@ -340,10 +335,6 @@ export function useDashboardData(options: UseDashboardDataOptions) {
       query: debouncedSearchQuery,
       viewKey: currentViewKey,
       pageIndex,
-    }).catch((error) => {
-      toast.error('Failed to load images', {
-        description: error instanceof Error ? error.message : String(error),
-      })
     })
   }, [currentPageKey, currentViewKey, debouncedSearchQuery, isAlbumsLoaded, loadedPageKey, loadImages, pageIndex, selectedAlbumId])
 
@@ -606,6 +597,8 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     failedUploadCount,
     uploadFiles,
     retryFailedUploads,
+    reloadAlbums,
+    retryImages: refreshImages,
     createAlbum,
     renameAlbum,
     moveAlbum,
@@ -634,7 +627,10 @@ export function useDashboardData(options: UseDashboardDataOptions) {
       isFetching,
       isInitialLoading,
       hasLoadedOnce: hasLoadedCurrentPage,
-      error: imagesError,
+    },
+    albumsStatus: {
+      state: albumsState,
+      isLoading: albumsState === 'loading',
     },
   }
 }
