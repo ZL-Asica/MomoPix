@@ -1,6 +1,7 @@
 import type { AlbumRecord } from '@/lib/storage/types'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -48,8 +49,9 @@ export function UploadSelectedDialog({
         </DialogHeader>
 
         <div className="space-y-2">
+          <Label htmlFor="upload-selected-album">Upload to album</Label>
           <Select value={selectedAlbumId} onValueChange={onSelectAlbum} disabled={isPending}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger id="upload-selected-album" className="w-full">
               <SelectValue placeholder="Choose album" />
             </SelectTrigger>
             <SelectContent>

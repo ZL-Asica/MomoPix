@@ -22,6 +22,7 @@ interface ResultsListProps {
   isAllSelected: boolean
   isIndeterminate: boolean
   selectionDisabled: boolean
+  uploadDisabled: boolean
   actionDisabled: boolean
   downloadingAll: boolean
   onToggleSelected: (id: string, selected: boolean) => void
@@ -51,6 +52,7 @@ export function ResultsList({
   isAllSelected,
   isIndeterminate,
   selectionDisabled,
+  uploadDisabled,
   actionDisabled,
   downloadingAll,
   onToggleSelected,
@@ -146,7 +148,7 @@ export function ResultsList({
                 size="sm"
                 loading={isUploading}
                 loadingText="Uploading..."
-                disabled={selectionDisabled || selectedCount === 0}
+                disabled={selectionDisabled || uploadDisabled || selectedCount === 0}
                 onClick={onUploadSelectedClick}
               >
                 Upload selected (

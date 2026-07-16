@@ -22,7 +22,6 @@ import { uploadImageFn } from '@/functions/images'
 import { runBulkOperation } from '@/lib/bulk'
 
 const UPLOAD_CONCURRENCY = 3
-const UPLOAD_TIMEOUT_MS = 45_000
 
 const EMPTY_ALBUMS: AlbumRecord[] = []
 
@@ -337,8 +336,10 @@ export function useUploadSelected(
           }
         },
         {
+          // A client-side timeout only rejects the wrapper; it cannot cancel
+          // the server write. Waiting for the actual request outcome avoids
+          // unlocking a retry that could create a duplicate upload.
           concurrency: UPLOAD_CONCURRENCY,
-          timeoutMs: UPLOAD_TIMEOUT_MS,
         },
       )
 
