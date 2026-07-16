@@ -1,10 +1,18 @@
-import { MAX_SIZE_LIMIT, SUPPORTED_FORMAT_MIME_TYPES } from './constants'
+import { extractExtension } from '@/lib/storage/format'
+import { MAX_SIZE_LIMIT, SUPPORTED_FORMAT_MIME_TYPES, SUPPORTED_INPUT_EXTENSIONS } from './constants'
 
 export const checkImageFormat = (file: File): string => {
-  if (!SUPPORTED_FORMAT_MIME_TYPES.includes(file.type)) {
+  const extension = extractExtension(file.name)
+  if (
+    extension === null
+    || !SUPPORTED_INPUT_EXTENSIONS.has(extension)
+    || (file.type.length > 0
+      && file.type !== 'application/octet-stream'
+      && !SUPPORTED_FORMAT_MIME_TYPES.includes(file.type.toLowerCase()))
+  ) {
     throw new Error('Unsupported image format')
   }
-  return file.type
+  return extension === 'jpg' ? 'jpeg' : extension
 }
 
 export const checkImage = (

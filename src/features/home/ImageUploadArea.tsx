@@ -10,6 +10,29 @@ interface ImageUploadAreaProps {
 
 const IMAGE_DROPZONE_ACCEPT = {
   'image/*': [],
+  'image/heic': ['.heic'],
+  'image/heif': ['.heif'],
+  'image/tiff': ['.tif', '.tiff'],
+  'application/octet-stream': [
+    '.3fr',
+    '.arw',
+    '.cr2',
+    '.cr3',
+    '.dng',
+    '.erf',
+    '.iiq',
+    '.kdc',
+    '.mos',
+    '.nef',
+    '.nrw',
+    '.orf',
+    '.pef',
+    '.raf',
+    '.raw',
+    '.rw2',
+    '.sr2',
+    '.srf',
+  ],
 } as const
 
 const ImageUploadArea = ({ onDrop, disabled = false }: ImageUploadAreaProps) => {

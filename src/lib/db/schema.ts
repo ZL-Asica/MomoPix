@@ -44,12 +44,18 @@ export const imagesTable = sqliteTable('images', {
   originalMime: text('original_mime'),
   originalWidth: integer('original_width'),
   originalHeight: integer('original_height'),
+  thumbnailObjectKey: text('thumbnail_object_key'),
+  thumbnailBytes: integer('thumbnail_bytes'),
+  thumbnailMime: text('thumbnail_mime'),
+  thumbnailWidth: integer('thumbnail_width'),
+  thumbnailHeight: integer('thumbnail_height'),
 }, table => [
   index('idx_images_album_created_desc').on(table.albumId, table.createdAt, table.id),
   index('idx_images_album_name_lower').on(table.albumId, table.nameLower),
   index('idx_images_created_desc').on(table.createdAt, table.id),
   index('idx_images_pending_cleanup').on(table.deletedAt, table.id),
   uniqueIndex('ux_images_original_object_key').on(table.originalObjectKey),
+  uniqueIndex('ux_images_thumbnail_object_key').on(table.thumbnailObjectKey),
 ])
 
 export const storageQuotaTable = sqliteTable('storage_quota', {
@@ -67,6 +73,7 @@ export const orphanImageCleanupTable = sqliteTable('orphan_image_cleanup', {
 export const storageReservationsTable = sqliteTable('storage_reservations', {
   objectKey: text('object_key').primaryKey(),
   bytesReserved: integer('bytes_reserved').notNull(),
+  assetKeysJson: text('asset_keys_json').notNull().default('[]'),
   createdAt: integer('created_at').notNull(),
 })
 

@@ -67,10 +67,15 @@ interface ImageRow {
   originalMime?: string | null
   originalWidth?: number | null
   originalHeight?: number | null
+  thumbnailObjectKey?: string | null
+  thumbnailBytes?: number | null
+  thumbnailMime?: string | null
+  thumbnailWidth?: number | null
+  thumbnailHeight?: number | null
 }
 
 function toImageRecord(row: ImageRow): ImageRecord {
-  const originalValues = [row.originalBytes, row.originalExt, row.originalMime, row.originalWidth, row.originalHeight]
+  const originalValues = [row.originalBytes, row.originalExt, row.originalMime]
   const hasOriginalMetadata = originalValues.some(value => value !== null && value !== undefined)
   if (row.originalObjectKey === null || row.originalObjectKey === undefined) {
     if (hasOriginalMetadata) {
@@ -81,8 +86,10 @@ function toImageRecord(row: ImageRow): ImageRecord {
     !row.originalObjectKey.startsWith('originals/')
     || originalValues.some(value => value === null || value === undefined)
     || (row.originalBytes ?? 0) < 1
-    || (row.originalWidth ?? 0) < 1
-    || (row.originalHeight ?? 0) < 1
+    || (row.originalWidth !== null && row.originalWidth !== undefined && row.originalWidth < 1)
+    || (row.originalHeight !== null && row.originalHeight !== undefined && row.originalHeight < 1)
+    || ((row.originalWidth === null || row.originalWidth === undefined)
+      !== (row.originalHeight === null || row.originalHeight === undefined))
     || row.originalExt === null
     || row.originalExt === undefined
     || row.originalExt.length === 0
@@ -92,6 +99,25 @@ function toImageRecord(row: ImageRow): ImageRecord {
   ) {
     throw new Error('Image original metadata is invalid')
   }
+
+  const thumbnailValues = [row.thumbnailBytes, row.thumbnailMime, row.thumbnailWidth, row.thumbnailHeight]
+  const hasThumbnailMetadata = thumbnailValues.some(value => value !== null && value !== undefined)
+  if (row.thumbnailObjectKey === null || row.thumbnailObjectKey === undefined) {
+    if (hasThumbnailMetadata) {
+      throw new Error('Image thumbnail metadata is incomplete')
+    }
+  }
+  else if (
+    !row.thumbnailObjectKey.startsWith('thumbnails/')
+    || thumbnailValues.some(value => value === null || value === undefined)
+    || (row.thumbnailBytes ?? 0) < 1
+    || row.thumbnailMime !== 'image/webp'
+    || (row.thumbnailWidth ?? 0) < 1
+    || (row.thumbnailHeight ?? 0) < 1
+  ) {
+    throw new Error('Image thumbnail metadata is invalid')
+  }
+
   return {
     objectKey: row.id,
     albumId: row.albumId,
@@ -106,6 +132,15 @@ function toImageRecord(row: ImageRow): ImageRecord {
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt),
     source: row.source,
+    thumbnail: row.thumbnailObjectKey === null || row.thumbnailObjectKey === undefined
+      ? null
+      : {
+          objectKey: row.thumbnailObjectKey,
+          sizeBytes: row.thumbnailBytes ?? 0,
+          mime: 'image/webp',
+          width: row.thumbnailWidth ?? 0,
+          height: row.thumbnailHeight ?? 0,
+        },
     original: row.originalObjectKey === null || row.originalObjectKey === undefined
       ? null
       : {
@@ -113,8 +148,8 @@ function toImageRecord(row: ImageRow): ImageRecord {
           sizeBytes: row.originalBytes ?? 0,
           ext: row.originalExt ?? '',
           mime: row.originalMime ?? '',
-          width: row.originalWidth ?? 0,
-          height: row.originalHeight ?? 0,
+          width: row.originalWidth ?? null,
+          height: row.originalHeight ?? null,
         },
   }
 }
@@ -128,8 +163,9 @@ function validateOriginalAsset(image: ImageRecord): void {
     original.objectKey === image.objectKey
     || !original.objectKey.startsWith('originals/')
     || original.sizeBytes < 1
-    || original.width < 1
-    || original.height < 1
+    || (original.width !== null && original.width < 1)
+    || (original.height !== null && original.height < 1)
+    || ((original.width === null) !== (original.height === null))
     || !original.ext
     || !original.mime
   ) {
@@ -137,18 +173,35 @@ function validateOriginalAsset(image: ImageRecord): void {
   }
 }
 
+function validateThumbnailAsset(image: ImageRecord): void {
+  const thumbnail = image.thumbnail
+  if (
+    !thumbnail
+    || thumbnail.objectKey === image.objectKey
+    || !thumbnail.objectKey.startsWith('thumbnails/')
+    || thumbnail.sizeBytes < 1
+    || thumbnail.width < 1
+    || thumbnail.height < 1
+    || thumbnail.mime !== 'image/webp'
+  ) {
+    throw new Error('Invalid thumbnail image asset')
+  }
+}
+
 function toAlbumImageRecord(row: ImageRow): AlbumImageRecord {
+  const image = toImageRecord(row)
   return {
     objectKey: row.id,
     albumId: row.albumId,
     name: row.name,
     nameLower: row.nameLower,
-    storageBytes: row.bytes + (row.originalBytes ?? 0),
+    storageBytes: row.bytes + (row.thumbnailBytes ?? 0) + (row.originalBytes ?? 0),
     sizeBytes: row.bytes,
     mime: row.mime,
     width: row.width,
     height: row.height,
     createdAt: toIsoString(row.createdAt),
+    thumbnail: image.thumbnail ?? null,
   }
 }
 
@@ -179,6 +232,11 @@ export async function getImageRecord(_db: D1Database, objectKey: string): Promis
       originalMime: imagesTable.originalMime,
       originalWidth: imagesTable.originalWidth,
       originalHeight: imagesTable.originalHeight,
+      thumbnailObjectKey: imagesTable.thumbnailObjectKey,
+      thumbnailBytes: imagesTable.thumbnailBytes,
+      thumbnailMime: imagesTable.thumbnailMime,
+      thumbnailWidth: imagesTable.thumbnailWidth,
+      thumbnailHeight: imagesTable.thumbnailHeight,
     })
     .from(imagesTable)
     .where(and(eq(imagesTable.id, objectKey), isNull(imagesTable.deletedAt)))
@@ -196,6 +254,7 @@ export async function putImageRecords(
   albumImage: AlbumImageRecord,
 ): Promise<void> {
   validateOriginalAsset(image)
+  validateThumbnailAsset(image)
   const db = getDb()
   const createdAt = fromIsoString(image.createdAt)
   const updatedAt = fromIsoString(image.updatedAt)
@@ -223,6 +282,11 @@ export async function putImageRecords(
       originalMime: image.original?.mime ?? null,
       originalWidth: image.original?.width ?? null,
       originalHeight: image.original?.height ?? null,
+      thumbnailObjectKey: image.thumbnail?.objectKey ?? null,
+      thumbnailBytes: image.thumbnail?.sizeBytes ?? null,
+      thumbnailMime: image.thumbnail?.mime ?? null,
+      thumbnailWidth: image.thumbnail?.width ?? null,
+      thumbnailHeight: image.thumbnail?.height ?? null,
     })
 }
 
@@ -273,6 +337,16 @@ export async function listAlbumImages(
       mime: imagesTable.mime,
       source: imagesTable.source,
       originalBytes: imagesTable.originalBytes,
+      originalObjectKey: imagesTable.originalObjectKey,
+      originalExt: imagesTable.originalExt,
+      originalMime: imagesTable.originalMime,
+      originalWidth: imagesTable.originalWidth,
+      originalHeight: imagesTable.originalHeight,
+      thumbnailObjectKey: imagesTable.thumbnailObjectKey,
+      thumbnailBytes: imagesTable.thumbnailBytes,
+      thumbnailMime: imagesTable.thumbnailMime,
+      thumbnailWidth: imagesTable.thumbnailWidth,
+      thumbnailHeight: imagesTable.thumbnailHeight,
     })
     .from(imagesTable)
     .where(conditions.length > 1 ? and(...conditions) : conditions[0])
@@ -382,6 +456,11 @@ export async function listImagesPendingDeletion(
       originalMime: imagesTable.originalMime,
       originalWidth: imagesTable.originalWidth,
       originalHeight: imagesTable.originalHeight,
+      thumbnailObjectKey: imagesTable.thumbnailObjectKey,
+      thumbnailBytes: imagesTable.thumbnailBytes,
+      thumbnailMime: imagesTable.thumbnailMime,
+      thumbnailWidth: imagesTable.thumbnailWidth,
+      thumbnailHeight: imagesTable.thumbnailHeight,
     })
     .from(imagesTable)
     .where(isNotNull(imagesTable.deletedAt))

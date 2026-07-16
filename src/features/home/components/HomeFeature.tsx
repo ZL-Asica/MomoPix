@@ -27,6 +27,8 @@ export function HomeFeature() {
     setQuality,
     useManualQuality,
     setUseManualQuality,
+    retainOriginal,
+    setRetainOriginal,
     compressionState,
     compressedCount,
     isTransforming,
@@ -105,6 +107,8 @@ export function HomeFeature() {
             hasImages={items.length > 0}
             useManualQuality={useManualQuality}
             setUseManualQuality={setUseManualQuality}
+            retainOriginal={retainOriginal}
+            setRetainOriginal={setRetainOriginal}
             actionLabel="Compress"
           />
 

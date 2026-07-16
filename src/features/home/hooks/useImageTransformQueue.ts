@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { checkImage, normalizeTransformError, transformImageFile } from '@/lib/img'
-import { shouldKeepOriginalImage } from '@/lib/img/output'
 import { normalizeImageMime } from '@/lib/storage/format'
 
 function fileBaseName(name: string): string {
@@ -21,6 +20,14 @@ function toCompressedFile(input: {
   return new File([input.blob], fileName, { type: mime })
 }
 
+function toThumbnailFile(input: { blob: Blob, originalName: string }): File {
+  return new File(
+    [input.blob],
+    `${fileBaseName(input.originalName)}.thumbnail.webp`,
+    { type: 'image/webp' },
+  )
+}
+
 /**
  * Owns home page image queue, per-item compression states, and transform settings.
  *
@@ -35,6 +42,7 @@ export function useImageTransformQueue() {
   const [targetFormat, setTargetFormat] = useState<SupportedFormat>('webp')
   const [quality, setQuality] = useState<number>(80)
   const [useManualQuality, setUseManualQuality] = useState(false)
+  const [retainOriginal, setRetainOriginal] = useState(false)
   const [compressionState, setCompressionState] = useState<CompressionState>('idle')
   const [compressedCount, setCompressedCount] = useState(0)
   const [isTransforming, setIsTransforming] = useState(false)
@@ -49,6 +57,9 @@ export function useImageTransformQueue() {
     return () => {
       for (const item of itemsRef.current) {
         URL.revokeObjectURL(item.originalPreviewUrl)
+        if (item.thumbnailPreviewUrl !== null) {
+          URL.revokeObjectURL(item.thumbnailPreviewUrl)
+        }
       }
     }
   }, [])
@@ -62,23 +73,32 @@ export function useImageTransformQueue() {
 
     for (const file of files) {
       try {
-        const { name, originalSize } = checkImage(file)
-        const extension = name.split('.').slice(-1)[0]
+        const { format, name, originalSize } = checkImage(file)
         accepted.push({
           id: nanoid(8),
           originalFile: file,
           originalName: name,
           originalSize,
           originalPreviewUrl: URL.createObjectURL(file),
-          originalFormat: normalizeImageMime(extension, file.type).replace('image/', ''),
+          thumbnailPreviewUrl: null,
+          originalFormat: format,
           targetFormat,
           outputBlob: null,
           outputFile: null,
           outputSize: null,
           width: null,
           height: null,
+          sourceWidth: null,
+          sourceHeight: null,
+          thumbnailBlob: null,
+          thumbnailFile: null,
+          thumbnailSize: null,
+          thumbnailWidth: null,
+          thumbnailHeight: null,
+          retainOriginal,
           status: 'idle',
           transformError: null,
+          transformNotice: null,
           uploadStatus: 'idle',
           uploadError: null,
           uploadedUrl: null,
@@ -98,13 +118,16 @@ export function useImageTransformQueue() {
       setItems(prev => [...prev, ...accepted])
       setCompressionState('idle')
     }
-  }, [targetFormat])
+  }, [retainOriginal, targetFormat])
 
   const removeItem = useCallback((id: string) => {
     setItems((prev) => {
       const target = prev.find(item => item.id === id)
       if (target) {
         URL.revokeObjectURL(target.originalPreviewUrl)
+        if (target.thumbnailPreviewUrl !== null) {
+          URL.revokeObjectURL(target.thumbnailPreviewUrl)
+        }
       }
       return prev.filter(item => item.id !== id)
     })
@@ -116,10 +139,40 @@ export function useImageTransformQueue() {
       targetFormat,
       useManualQuality ? quality : undefined,
     )
-    const { blob, width, height } = transformed
+    const {
+      blob,
+      width,
+      height,
+      sourceWidth,
+      sourceHeight,
+      thumbnailBlob,
+      thumbnailWidth,
+      thumbnailHeight,
+    } = transformed
+    const thumbnailFile = toThumbnailFile({
+      blob: thumbnailBlob,
+      originalName: item.originalName,
+    })
+    const thumbnailPreviewUrl = URL.createObjectURL(thumbnailBlob)
+    if (item.thumbnailPreviewUrl !== null) {
+      URL.revokeObjectURL(item.thumbnailPreviewUrl)
+    }
+    const derivativePatch = {
+      sourceWidth,
+      sourceHeight,
+      thumbnailBlob,
+      thumbnailFile,
+      thumbnailSize: thumbnailBlob.size,
+      thumbnailWidth,
+      thumbnailHeight,
+      thumbnailPreviewUrl,
+      retainOriginal,
+      transformNotice: transformed.sourceNotice,
+    }
     if (transformed.preservedOriginal) {
       return {
         ...item,
+        ...derivativePatch,
         targetFormat,
         outputBlob: item.originalFile,
         outputFile: item.originalFile,
@@ -135,28 +188,6 @@ export function useImageTransformQueue() {
         uploadedAlbumId: null,
       }
     }
-    if (shouldKeepOriginalImage({
-      originalSize: item.originalSize,
-      outputSize: blob.size,
-    })) {
-      return {
-        ...item,
-        targetFormat,
-        outputBlob: item.originalFile,
-        outputFile: item.originalFile,
-        outputSize: item.originalSize,
-        width,
-        height,
-        status: 'original',
-        transformError: 'The original file was kept.',
-        uploadStatus: 'idle',
-        uploadError: null,
-        uploadedUrl: null,
-        uploadedObjectKey: null,
-        uploadedAlbumId: null,
-      }
-    }
-
     const compressedFile = toCompressedFile({
       blob,
       originalName: item.originalName,
@@ -165,6 +196,7 @@ export function useImageTransformQueue() {
 
     return {
       ...item,
+      ...derivativePatch,
       targetFormat,
       outputBlob: blob,
       outputFile: compressedFile,
@@ -179,7 +211,7 @@ export function useImageTransformQueue() {
       uploadedObjectKey: null,
       uploadedAlbumId: null,
     }
-  }, [quality, targetFormat, useManualQuality])
+  }, [quality, retainOriginal, targetFormat, useManualQuality])
 
   const transformAll = useCallback(async () => {
     if (isTransformingRef.current || itemsRef.current.length === 0) {
@@ -222,6 +254,9 @@ export function useImageTransformQueue() {
         }
         catch (error) {
           const normalized = normalizeTransformError(error)
+          if (current.thumbnailPreviewUrl !== null) {
+            URL.revokeObjectURL(current.thumbnailPreviewUrl)
+          }
           patchItem(current.id, {
             status: 'error',
             transformError: normalized.message,
@@ -230,11 +265,20 @@ export function useImageTransformQueue() {
             outputSize: null,
             width: null,
             height: null,
+            sourceWidth: null,
+            sourceHeight: null,
+            thumbnailBlob: null,
+            thumbnailFile: null,
+            thumbnailSize: null,
+            thumbnailWidth: null,
+            thumbnailHeight: null,
+            thumbnailPreviewUrl: null,
             uploadStatus: 'idle',
             uploadError: null,
             uploadedUrl: null,
             uploadedObjectKey: null,
             uploadedAlbumId: null,
+            transformNotice: null,
           })
           failed += 1
         }
@@ -246,7 +290,7 @@ export function useImageTransformQueue() {
       if (succeeded > 0 && failed === 0) {
         if (retainedOriginals > 0) {
           toast.warning('Some original files were kept', {
-            description: `${retainedOriginals} conversion(s) would have increased file size.`,
+            description: `${retainedOriginals} animated image(s) were preserved to avoid flattening frames.`,
           })
         }
         else {
@@ -299,6 +343,9 @@ export function useImageTransformQueue() {
     }
     catch (error) {
       const normalized = normalizeTransformError(error)
+      if (target.thumbnailPreviewUrl !== null) {
+        URL.revokeObjectURL(target.thumbnailPreviewUrl)
+      }
       patchItem(id, {
         status: 'error',
         transformError: normalized.message,
@@ -307,11 +354,20 @@ export function useImageTransformQueue() {
         outputSize: null,
         width: null,
         height: null,
+        sourceWidth: null,
+        sourceHeight: null,
+        thumbnailBlob: null,
+        thumbnailFile: null,
+        thumbnailSize: null,
+        thumbnailWidth: null,
+        thumbnailHeight: null,
+        thumbnailPreviewUrl: null,
         uploadStatus: 'idle',
         uploadError: null,
         uploadedUrl: null,
         uploadedObjectKey: null,
         uploadedAlbumId: null,
+        transformNotice: null,
       })
       toast.error(`Failed to recompress ${target.originalName}`, {
         description: normalized.message,
@@ -332,6 +388,8 @@ export function useImageTransformQueue() {
     setQuality,
     useManualQuality,
     setUseManualQuality,
+    retainOriginal,
+    setRetainOriginal,
     compressionState,
     compressedCount,
     isTransforming,

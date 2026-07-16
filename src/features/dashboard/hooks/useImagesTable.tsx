@@ -144,10 +144,10 @@ export function useImagesTable(options: UseImagesTableOptions) {
       id: 'preview',
       header: 'Preview',
       cell: ({ row }) => (
-        row.original.publicUrl !== null
+        row.original.thumbnailUrl !== null
           ? (
               <LazyImage
-                src={row.original.publicUrl}
+                src={row.original.thumbnailUrl}
                 alt={row.original.name}
                 className="h-12 w-12 rounded-md border object-cover"
               />

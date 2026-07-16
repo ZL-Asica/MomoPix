@@ -27,16 +27,26 @@ export interface HomeProcessedItem {
   originalName: string
   originalSize: number
   originalPreviewUrl: string
+  thumbnailPreviewUrl: string | null
   originalFormat: string
   targetFormat: SupportedFormat
-  /** Final file to download or upload. It can be the source file when conversion is larger. */
+  /** Final file to download or upload. Animated sources remain unchanged. */
   outputBlob: Blob | null
   outputFile: File | null
   outputSize: number | null
   width: number | null
   height: number | null
+  sourceWidth: number | null
+  sourceHeight: number | null
+  thumbnailBlob: Blob | null
+  thumbnailFile: File | null
+  thumbnailSize: number | null
+  thumbnailWidth: number | null
+  thumbnailHeight: number | null
+  retainOriginal: boolean
   status: TransformStatus
   transformError: string | null
+  transformNotice: string | null
   uploadStatus: UploadStatus
   uploadError: string | null
   uploadedUrl: string | null

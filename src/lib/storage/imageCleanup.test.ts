@@ -34,6 +34,13 @@ const image = {
   createdAt: '2026-07-15T00:00:00.000Z',
   updatedAt: '2026-07-15T00:00:00.000Z',
   source: 'dashboard-upload' as const,
+  thumbnail: {
+    objectKey: 'thumbnails/2026/07/15/image.webp',
+    sizeBytes: 20,
+    mime: 'image/webp' as const,
+    width: 10,
+    height: 10,
+  },
 }
 
 const bindings = {
@@ -54,6 +61,7 @@ describe('imageCleanup', () => {
 
     expect(mocks.markImageForDeletion).toHaveBeenCalledWith(bindings.db, image.objectKey)
     expect(mocks.deleteImageObject).toHaveBeenCalledWith(bindings.r2, image.objectKey)
+    expect(mocks.deleteImageObject).toHaveBeenCalledWith(bindings.r2, image.thumbnail.objectKey)
     expect(mocks.deleteImageRecords).toHaveBeenCalledWith(bindings.db, image)
     expect(mocks.recordImageCleanupFailure).not.toHaveBeenCalled()
   })
@@ -89,13 +97,15 @@ describe('imageCleanup', () => {
     await deleteImageSafely({ ...bindings, image: imageWithOriginal })
 
     expect(mocks.deleteImageObject).toHaveBeenNthCalledWith(1, bindings.r2, image.objectKey)
-    expect(mocks.deleteImageObject).toHaveBeenNthCalledWith(2, bindings.r2, imageWithOriginal.original.objectKey)
+    expect(mocks.deleteImageObject).toHaveBeenNthCalledWith(2, bindings.r2, image.thumbnail.objectKey)
+    expect(mocks.deleteImageObject).toHaveBeenNthCalledWith(3, bindings.r2, imageWithOriginal.original.objectKey)
   })
 
   it('retries each pending tombstone and leaves failed ones for later', async () => {
     const failedImage = { ...image, objectKey: '2026/07/15/failed.webp' }
     mocks.listImagesPendingDeletion.mockResolvedValueOnce([image, failedImage])
     mocks.deleteImageObject
+      .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('transient failure'))
 

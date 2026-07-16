@@ -440,9 +440,18 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     refreshImages()
     updateAlbumUsage(new Map([[
       payload.image.albumId,
-      { imageCount: -1, bytesUsed: -(payload.image.sizeBytes + (payload.image.original?.sizeBytes ?? 0)) },
+      {
+        imageCount: -1,
+        bytesUsed: -(
+          payload.image.sizeBytes
+          + (payload.image.thumbnail?.sizeBytes ?? 0)
+          + (payload.image.original?.sizeBytes ?? 0)
+        ),
+      },
     ]]))
-    const storageBytes = payload.image.sizeBytes + (payload.image.original?.sizeBytes ?? 0)
+    const storageBytes = payload.image.sizeBytes
+      + (payload.image.thumbnail?.sizeBytes ?? 0)
+      + (payload.image.original?.sizeBytes ?? 0)
     setMeta(previous => previous === null
       ? previous
       : {

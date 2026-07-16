@@ -1,5 +1,10 @@
 type SupportedFormat = 'avif' | 'webp' | 'jpeg' | 'png'
 
+declare module 'libheif-js/wasm-bundle' {
+  const module: unknown
+  export default module
+}
+
 interface ImageFile {
   id: string
   file: File

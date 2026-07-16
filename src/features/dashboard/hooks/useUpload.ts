@@ -2,8 +2,11 @@ import type { AlbumImageRecord, ImageRecord } from '@/lib/storage/types'
 import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { uploadImageFn } from '@/functions/images'
+import { transformImageFile } from '@/lib/img'
+import { withoutExtension } from '@/lib/storage/format'
 
-const UPLOAD_CONCURRENCY = 3
+// Image transforms are intentionally serialized to bound decoded bitmap memory.
+const UPLOAD_CONCURRENCY = 1
 
 interface UseUploadOptions {
   selectedAlbumId: string
@@ -87,10 +90,25 @@ export function useUpload(options: UseUploadOptions) {
         nextIndex += 1
 
         try {
+          const transformed = await transformImageFile(file, 'webp')
+          const hostedFile = transformed.preservedOriginal
+            ? file
+            : new File(
+                [transformed.blob],
+                `${withoutExtension(file.name) || 'image'}.webp`,
+                { type: transformed.mimeType },
+              )
+          const thumbnailFile = new File(
+            [transformed.thumbnailBlob],
+            `${withoutExtension(file.name) || 'image'}.thumbnail.webp`,
+            { type: 'image/webp' },
+          )
           const formData = new FormData()
-          formData.set('file', file)
+          formData.set('file', hostedFile)
+          formData.set('thumbnail', thumbnailFile)
           formData.set('albumId', targetAlbumId)
           formData.set('source', 'dashboard-upload')
+          formData.set('originalName', file.name)
           uploaded.push(await uploadImageFn({ data: formData }))
         }
         catch (error) {

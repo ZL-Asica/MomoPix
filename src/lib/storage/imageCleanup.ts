@@ -13,6 +13,9 @@ function errorMessage(error: unknown): string {
 
 async function deleteImageObjects(r2: R2Bucket, image: ImageRecord): Promise<void> {
   await deleteImageObject(r2, image.objectKey)
+  if (image.thumbnail?.objectKey !== undefined) {
+    await deleteImageObject(r2, image.thumbnail.objectKey)
+  }
   if (image.original?.objectKey !== undefined) {
     await deleteImageObject(r2, image.original.objectKey)
   }
