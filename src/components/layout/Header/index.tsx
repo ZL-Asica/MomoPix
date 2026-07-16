@@ -1,16 +1,59 @@
 import { Link } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { useHideOnScrollDown } from '@zl-asica/react'
 import { Menu, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { getCurrentUserFn } from '@/functions/auth'
 import HeaderMenu from './HeaderMenu'
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [isAuthed, setIsAuthed] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const headerRef = useRef<HTMLElement>(null)
   const isHeaderVisible = useHideOnScrollDown(headerRef)
+  const getCurrentUser = useServerFn(getCurrentUserFn)
+
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const user = await getCurrentUser()
+        if (!cancelled) {
+          setIsAuthed(Boolean(user))
+        }
+      }
+      catch (error) {
+        console.error('Failed to load the current user:', error)
+      }
+      finally {
+        if (!cancelled) {
+          setIsLoadingUser(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [getCurrentUser])
+
+  useEffect(() => {
+    const desktopBreakpoint = window.matchMedia('(min-width: 768px)')
+    const closeForDesktop = (event_: MediaQueryListEvent) => {
+      if (event_.matches) {
+        setIsOpen(false)
+      }
+    }
+    desktopBreakpoint.addEventListener('change', closeForDesktop)
+    return () => {
+      desktopBreakpoint.removeEventListener('change', closeForDesktop)
+    }
+  }, [])
 
   const closeMenu = useCallback(() => {
     setIsOpen(false)
@@ -119,8 +162,11 @@ const Header = () => {
           >
             <HeaderMenu
               isMobile
+              isLoadingUser={isLoadingUser}
+              isAuthed={isAuthed}
               ulClassName="flex flex-col items-start gap-4 p-6"
               onClickHandler={closeMenu}
+              onSignedOut={() => setIsAuthed(false)}
             />
           </div>
         )}
@@ -141,7 +187,10 @@ const Header = () => {
         {/* Desktop Menu */}
         <HeaderMenu
           isMobile={false}
+          isLoadingUser={isLoadingUser}
+          isAuthed={isAuthed}
           ulClassName="hidden md:flex md:gap-6"
+          onSignedOut={() => setIsAuthed(false)}
         />
       </nav>
     </header>
