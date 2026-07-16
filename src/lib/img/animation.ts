@@ -5,6 +5,13 @@ function readU32BE(bytes: Uint8Array, offset: number): number | null {
   return ((bytes[offset] * 2 ** 24) + (bytes[offset + 1] << 16) + (bytes[offset + 2] << 8) | bytes[offset + 3]) >>> 0
 }
 
+function readU32LE(bytes: Uint8Array, offset: number): number | null {
+  if (offset < 0 || offset + 4 > bytes.length) {
+    return null
+  }
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)
+}
+
 function hasAscii(bytes: Uint8Array, offset: number, value: string): boolean {
   return offset >= 0
     && offset + value.length <= bytes.length
@@ -106,10 +113,33 @@ function isAnimatedPng(bytes: Uint8Array): boolean {
   return false
 }
 
+function isAnimatedWebp(bytes: Uint8Array): boolean {
+  if (!hasAscii(bytes, 0, 'RIFF') || !hasAscii(bytes, 8, 'WEBP')) {
+    return false
+  }
+
+  let offset = 12
+  while (offset + 8 <= bytes.length) {
+    const chunkLength = readU32LE(bytes, offset + 4)
+    if (chunkLength === null || chunkLength < 0 || offset + 8 + chunkLength > bytes.length) {
+      return false
+    }
+    if (hasAscii(bytes, offset, 'ANIM')) {
+      return true
+    }
+    if (hasAscii(bytes, offset, 'VP8X') && (bytes[offset + 8] & 0x02) !== 0) {
+      return true
+    }
+    offset += 8 + chunkLength + (chunkLength % 2)
+  }
+
+  return false
+}
+
 /**
  * Detects supported animated raster formats before the canvas path decodes a
  * single frame and would silently flatten the animation.
  */
 export function isAnimatedRaster(bytes: Uint8Array): boolean {
-  return isAnimatedGif(bytes) || isAnimatedPng(bytes)
+  return isAnimatedGif(bytes) || isAnimatedPng(bytes) || isAnimatedWebp(bytes)
 }
