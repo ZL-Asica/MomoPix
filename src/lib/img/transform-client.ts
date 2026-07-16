@@ -1,8 +1,26 @@
+import { parseUploadImage } from '@/lib/images/uploadValidation'
+import { isAnimatedRaster } from './animation'
 import { OUTPUT_MIME_TYPE_BY_FORMAT } from './constants'
+
+/**
+ * Largest image the browser transform path will decode and paint.
+ *
+ * A canvas needs at least four bytes per pixel, so this keeps the working
+ * bitmap below roughly 96 MiB before encoder overhead on mobile devices.
+ */
+export const MAX_TRANSFORM_PIXELS = 24_000_000
 
 /** Normalized image transform error returned to UI. */
 export interface TransformError {
   message: string
+}
+
+interface TransformImageResult {
+  blob: Blob
+  mimeType: string
+  width: number
+  height: number
+  preservedOriginal: boolean
 }
 
 /**
@@ -12,7 +30,25 @@ export async function transformImageFile(
   file: File,
   format: SupportedFormat,
   quality?: number,
-): Promise<{ blob: Blob, mimeType: string, width: number, height: number }> {
+): Promise<TransformImageResult> {
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const inputMetadata = parseUploadImage(bytes)
+  if (!inputMetadata) {
+    throw new Error('Unable to read image dimensions')
+  }
+  if (inputMetadata.width * inputMetadata.height > MAX_TRANSFORM_PIXELS) {
+    throw new Error(`Image dimensions exceed the ${MAX_TRANSFORM_PIXELS / 1_000_000} megapixel transform limit`)
+  }
+  if (isAnimatedRaster(bytes)) {
+    return {
+      blob: file,
+      mimeType: inputMetadata.mime,
+      width: inputMetadata.width,
+      height: inputMetadata.height,
+      preservedOriginal: true,
+    }
+  }
+
   const bitmap = await createImageBitmap(file)
 
   try {
@@ -41,7 +77,13 @@ export async function transformImageFile(
       throw new Error(`This browser cannot encode images as ${format.toUpperCase()}`)
     }
 
-    return { blob, mimeType, width: bitmap.width, height: bitmap.height }
+    return {
+      blob,
+      mimeType,
+      width: bitmap.width,
+      height: bitmap.height,
+      preservedOriginal: false,
+    }
   }
   finally {
     bitmap.close()
