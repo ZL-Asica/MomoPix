@@ -2,34 +2,33 @@ import { AlertCircle, RefreshCw } from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useIntersectionObserver } from '@/features/dashboard/hooks/useIntersectionObserver'
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver'
 import { cn } from '@/lib/utils'
-
-const THUMBNAIL_SIZE = 48
 
 interface LazyImageProps {
   src: string
   alt: string
   className?: string
   rootMargin?: string
+  width?: number
+  height?: number
 }
 
-/**
- * Renders a lazy thumbnail with near-viewport eager loading, skeleton, and retry fallback.
- */
+/** Mounts image bytes only near the viewport and unloads them after exit. */
 export const LazyImage = memo(({
   src,
   alt,
   className,
   rootMargin = '0px',
+  width = 48,
+  height = 48,
 }: LazyImageProps) => {
   const [retryToken, setRetryToken] = useState(0)
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const { setNode, isIntersecting } = useIntersectionObserver<HTMLDivElement>({
     rootMargin,
-    // Thumbnails must be removed after leaving the viewport. Keeping every
-    // decoded source image mounted grows memory with each row the user sees.
+    // Unmount decoded pixels when a row leaves the viewport.
     freezeOnceVisible: false,
   })
 
@@ -56,9 +55,7 @@ export const LazyImage = memo(({
           size="icon"
           variant="ghost"
           className="absolute right-0.5 bottom-0.5 h-5 w-5"
-          onClick={() => {
-            setRetryToken(previous => previous + 1)
-          }}
+          onClick={() => setRetryToken(previous => previous + 1)}
           aria-label={`Retry loading ${alt}`}
         >
           <RefreshCw className="h-3 w-3" />
@@ -73,19 +70,15 @@ export const LazyImage = memo(({
         <img
           src={resolvedSrc}
           alt={alt}
-          width={THUMBNAIL_SIZE}
-          height={THUMBNAIL_SIZE}
+          width={width}
+          height={height}
           className={cn(
             'h-full w-full object-cover transition-opacity duration-150',
             isLoaded ? 'opacity-100' : 'opacity-0',
           )}
           decoding="async"
-          onLoad={() => {
-            setLoadedSrc(resolvedSrc)
-          }}
-          onError={() => {
-            setFailedSrc(resolvedSrc)
-          }}
+          onLoad={() => setLoadedSrc(resolvedSrc)}
+          onError={() => setFailedSrc(resolvedSrc)}
         />
       )}
       {!isLoaded && (

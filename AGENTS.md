@@ -150,6 +150,8 @@ Image URL invariants:
 
 - Build public URLs through shared helpers (single source of truth).
 - Never hardcode public domains in components.
+- Keep the public R2 bucket CORS policy compatible with browser-side legacy
+  thumbnail generation (GET/HEAD from the app origin).
 
 ## 7) Comments, TSDoc, and Readability
 
@@ -282,6 +284,8 @@ Usage/accounting:
 - `storage_quota` is maintained only by D1 triggers. Reserve capacity before
   uploading to R2, and retain that reservation until metadata is committed or
   every orphaned asset has been deleted; never update the counter directly.
+- Thumbnail backfills reserve capacity under the derived thumbnail object key;
+  the image UPDATE trigger consumes that reservation atomically with metadata.
 
 UI invariants:
 

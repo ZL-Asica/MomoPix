@@ -1,5 +1,6 @@
 import type { HomeProcessedItem } from '@/features/home/types'
 import { AlertCircle, ArrowRight, Download, RotateCcw, Trash2 } from 'lucide-react'
+import { LazyImage } from '@/components/LazyImage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -95,13 +96,14 @@ export function ResultRow({
           </div>
         )}
 
-        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg sm:h-20 sm:w-20">
-          <img
-            src={item.thumbnailPreviewUrl ?? item.originalPreviewUrl}
-            alt={`Preview of ${item.originalName}`}
-            className="h-full w-full object-cover"
-          />
-        </div>
+        <LazyImage
+          src={item.thumbnailPreviewUrl ?? item.originalPreviewUrl}
+          alt={`Preview of ${item.originalName}`}
+          className="h-16 w-16 shrink-0 rounded-lg sm:h-20 sm:w-20"
+          rootMargin="200px 0px"
+          width={80}
+          height={80}
+        />
 
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 sm:flex-nowrap">

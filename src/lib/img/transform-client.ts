@@ -19,9 +19,25 @@ export interface TransformImageResult {
   sourceNotice: string | null
 }
 
-interface WorkerTransformResult extends Omit<TransformImageResult, 'blob'> {
+export interface TransformThumbnailResult {
+  blob: Blob
+  width: number
+  height: number
+}
+
+interface WorkerFullTransformResult extends Omit<TransformImageResult, 'blob'> {
+  mode: 'full'
   blob: Blob | null
 }
+
+interface WorkerThumbnailTransformResult {
+  mode: 'thumbnail'
+  blob: Blob
+  width: number
+  height: number
+}
+
+type WorkerTransformResult = WorkerFullTransformResult | WorkerThumbnailTransformResult
 
 interface TransformWorkerResponse {
   id: number
@@ -29,12 +45,22 @@ interface TransformWorkerResponse {
   error?: string
 }
 
-interface PendingTransform {
+interface PendingFullTransform {
+  mode: 'full'
   file: File
   resolve: (result: TransformImageResult) => void
   reject: (error: Error) => void
   timeoutId: ReturnType<typeof setTimeout>
 }
+
+interface PendingThumbnailTransform {
+  mode: 'thumbnail'
+  resolve: (result: TransformThumbnailResult) => void
+  reject: (error: Error) => void
+  timeoutId: ReturnType<typeof setTimeout>
+}
+
+type PendingTransform = PendingFullTransform | PendingThumbnailTransform
 
 let transformWorker: Worker | null = null
 let nextTransformId = 0
@@ -103,12 +129,23 @@ function getTransformWorker(): Worker {
       return
     }
 
-    pending.resolve({
-      ...event.data.result,
-      blob: event.data.result.preservedOriginal
-        ? pending.file
-        : (event.data.result.blob ?? pending.file),
-    })
+    const result = event.data.result
+    if (pending.mode === 'thumbnail' && result.mode === 'thumbnail') {
+      pending.resolve({ blob: result.blob, width: result.width, height: result.height })
+      scheduleWorkerTermination()
+      return
+    }
+    if (pending.mode === 'full' && result.mode === 'full') {
+      pending.resolve({
+        ...result,
+        blob: result.preservedOriginal
+          ? pending.file
+          : (result.blob ?? pending.file),
+      })
+      scheduleWorkerTermination()
+      return
+    }
+    pending.reject(new Error('Image worker returned a mismatched result'))
     scheduleWorkerTermination()
   })
 
@@ -144,15 +181,43 @@ export async function transformImageFile(
       transformWorker = null
       rejectPendingTransforms('Image transform timed out. Try a smaller or different source file.')
     }, TRANSFORM_TIMEOUT_MS)
-    pendingTransforms.set(id, { file, resolve, reject, timeoutId })
+    pendingTransforms.set(id, { mode: 'full', file, resolve, reject, timeoutId })
 
     try {
       getTransformWorker().postMessage({
         id,
+        mode: 'full',
         file,
         format,
         quality,
       })
+    }
+    catch (error) {
+      const pending = pendingTransforms.get(id)
+      if (pending !== undefined) {
+        clearTimeout(pending.timeoutId)
+        pendingTransforms.delete(id)
+      }
+      reject(error instanceof Error ? error : new Error(String(error)))
+    }
+  })
+}
+
+/** Generates only the album WebP thumbnail, skipping the full-size encode. */
+export async function generateImageThumbnail(file: File): Promise<TransformThumbnailResult> {
+  return new Promise((resolve, reject) => {
+    const id = nextTransformId
+    nextTransformId += 1
+    const timeoutId = setTimeout(() => {
+      clearWorkerIdleTimer()
+      transformWorker?.terminate()
+      transformWorker = null
+      rejectPendingTransforms('Image transform timed out. Try a smaller or different source file.')
+    }, TRANSFORM_TIMEOUT_MS)
+    pendingTransforms.set(id, { mode: 'thumbnail', resolve, reject, timeoutId })
+
+    try {
+      getTransformWorker().postMessage({ id, mode: 'thumbnail', file })
     }
     catch (error) {
       const pending = pendingTransforms.get(id)

@@ -2,8 +2,14 @@ import type { CompressionState, HomeProcessedItem } from '@/features/home/types'
 import { nanoid } from 'nanoid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import {
+  MAX_QUEUE_ITEMS,
+  MAX_QUEUE_SOURCE_BYTES,
+  selectWithinQueueBudget,
+} from '@/features/home/lib/memoryBudget'
 import { checkImage, normalizeTransformError, transformImageFile } from '@/lib/img'
 import { normalizeImageMime } from '@/lib/storage/format'
+import { getHumanReadableFileSize } from '@/utils/converter'
 
 function fileBaseName(name: string): string {
   const value = name.split('.').slice(0, -1).join('.').trim()
@@ -48,6 +54,7 @@ export function useImageTransformQueue() {
   const [isTransforming, setIsTransforming] = useState(false)
   const itemsRef = useRef<HomeProcessedItem[]>([])
   const isTransformingRef = useRef(false)
+  const queueSourceBytesRef = useRef(0)
 
   useEffect(() => {
     itemsRef.current = items
@@ -69,43 +76,12 @@ export function useImageTransformQueue() {
   }, [])
 
   const addImages = useCallback((files: File[]) => {
-    const accepted: HomeProcessedItem[] = []
+    const validFiles: Array<{ file: File, format: SupportedFormat, name: string, originalSize: number, size: number }> = []
 
     for (const file of files) {
       try {
         const { format, name, originalSize } = checkImage(file)
-        accepted.push({
-          id: nanoid(8),
-          originalFile: file,
-          originalName: name,
-          originalSize,
-          originalPreviewUrl: URL.createObjectURL(file),
-          thumbnailPreviewUrl: null,
-          originalFormat: format,
-          targetFormat,
-          outputBlob: null,
-          outputFile: null,
-          outputSize: null,
-          width: null,
-          height: null,
-          sourceWidth: null,
-          sourceHeight: null,
-          thumbnailBlob: null,
-          thumbnailFile: null,
-          thumbnailSize: null,
-          thumbnailWidth: null,
-          thumbnailHeight: null,
-          retainOriginal,
-          status: 'idle',
-          transformError: null,
-          transformNotice: null,
-          uploadStatus: 'idle',
-          uploadError: null,
-          uploadedUrl: null,
-          uploadedObjectKey: null,
-          uploadedAlbumId: null,
-          selected: false,
-        })
+        validFiles.push({ file, format, name, originalSize, size: file.size })
       }
       catch (error) {
         toast.error('Skipped invalid image', {
@@ -114,23 +90,71 @@ export function useImageTransformQueue() {
       }
     }
 
+    const budget = selectWithinQueueBudget({
+      currentBytes: queueSourceBytesRef.current,
+      currentItems: itemsRef.current.length,
+      candidates: validFiles,
+    })
+    const accepted: HomeProcessedItem[] = budget.accepted.map(({ file, format, name, originalSize }) => ({
+      id: nanoid(8),
+      originalFile: file,
+      originalName: name,
+      originalSize,
+      originalPreviewUrl: URL.createObjectURL(file),
+      thumbnailPreviewUrl: null,
+      originalFormat: format,
+      targetFormat,
+      outputBlob: null,
+      outputFile: null,
+      outputSize: null,
+      width: null,
+      height: null,
+      sourceWidth: null,
+      sourceHeight: null,
+      thumbnailBlob: null,
+      thumbnailFile: null,
+      thumbnailSize: null,
+      thumbnailWidth: null,
+      thumbnailHeight: null,
+      retainOriginal,
+      status: 'idle',
+      transformError: null,
+      transformNotice: null,
+      uploadStatus: 'idle',
+      uploadError: null,
+      uploadedUrl: null,
+      uploadedObjectKey: null,
+      uploadedAlbumId: null,
+      selected: false,
+    }))
+
+    if (budget.rejected.length > 0) {
+      toast.warning(`${budget.rejected.length} image(s) were not added`, {
+        description: `One queue can hold up to ${MAX_QUEUE_ITEMS} images or ${getHumanReadableFileSize(MAX_QUEUE_SOURCE_BYTES)} of source files.`,
+      })
+    }
+
     if (accepted.length > 0) {
-      setItems(prev => [...prev, ...accepted])
+      queueSourceBytesRef.current = budget.totalBytes
+      const nextItems = [...itemsRef.current, ...accepted]
+      itemsRef.current = nextItems
+      setItems(nextItems)
       setCompressionState('idle')
     }
   }, [retainOriginal, targetFormat])
 
   const removeItem = useCallback((id: string) => {
-    setItems((prev) => {
-      const target = prev.find(item => item.id === id)
-      if (target) {
-        URL.revokeObjectURL(target.originalPreviewUrl)
-        if (target.thumbnailPreviewUrl !== null) {
-          URL.revokeObjectURL(target.thumbnailPreviewUrl)
-        }
+    const target = itemsRef.current.find(item => item.id === id)
+    if (target) {
+      queueSourceBytesRef.current = Math.max(0, queueSourceBytesRef.current - target.originalSize)
+      URL.revokeObjectURL(target.originalPreviewUrl)
+      if (target.thumbnailPreviewUrl !== null) {
+        URL.revokeObjectURL(target.thumbnailPreviewUrl)
       }
-      return prev.filter(item => item.id !== id)
-    })
+    }
+    const nextItems = itemsRef.current.filter(item => item.id !== id)
+    itemsRef.current = nextItems
+    setItems(nextItems)
   }, [])
 
   const transformOne = useCallback(async (item: HomeProcessedItem): Promise<HomeProcessedItem> => {

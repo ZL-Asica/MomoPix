@@ -12,6 +12,7 @@ import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout
 import { DashboardTopbar } from '@/features/dashboard/components/DashboardTopbar'
 import { ImagesTable } from '@/features/dashboard/components/ImagesTable'
 import { SidebarAlbums } from '@/features/dashboard/components/SidebarAlbums'
+import { ThumbnailMaintenance } from '@/features/dashboard/components/ThumbnailMaintenance'
 import { UsageSummary } from '@/features/dashboard/components/UsageSummary'
 import { AlbumDialogs } from '@/features/dashboard/dialogs/AlbumDialogs'
 import { BulkMoveImagesDialog } from '@/features/dashboard/dialogs/BulkMoveImagesDialog'
@@ -176,6 +177,12 @@ export function DashboardFeature() {
       mobileSidebarOpen={mobileSidebarOpen}
       onMobileSidebarOpenChange={setMobileSidebarOpen}
     >
+      <ThumbnailMaintenance
+        onUpdated={() => {
+          retryImages()
+          void reloadAlbums()
+        }}
+      />
       <Card>
         <CardHeader className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
