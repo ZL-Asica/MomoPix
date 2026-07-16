@@ -31,7 +31,7 @@ function pngHeader(width: number, height: number): Uint8Array {
 }
 
 function pngFile(width = 640, height = 480): File {
-  return new File([pngHeader(width, height)], 'input.png', { type: 'image/png' })
+  return new File([pngHeader(width, height).buffer as ArrayBuffer], 'input.png', { type: 'image/png' })
 }
 
 function stubCanvas(outputType: string) {
@@ -117,7 +117,7 @@ describe('transformImageFile', () => {
       0,
       0x3B,
     ])
-    const source = new File([animatedGif], 'animated.gif', { type: 'image/gif' })
+    const source = new File([animatedGif.buffer], 'animated.gif', { type: 'image/gif' })
     const createImageBitmap = vi.fn()
     vi.stubGlobal('createImageBitmap', createImageBitmap)
 
@@ -158,7 +158,7 @@ describe('transformImageFile', () => {
       0,
       0,
     ])
-    const source = new File([animatedPng], 'animated.png', { type: 'image/apng' })
+    const source = new File([animatedPng.buffer], 'animated.png', { type: 'image/apng' })
     const createImageBitmap = vi.fn()
     vi.stubGlobal('createImageBitmap', createImageBitmap)
 
