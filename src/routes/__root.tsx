@@ -35,12 +35,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans flex min-h-dvh flex-col antialiased">
+        <a
+          href="#main-content"
+          className="sr-only fixed left-4 top-4 z-100 rounded bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only"
+        >
+          Skip to main content
+        </a>
         <QueryClientProvider client={queryClient}>
           <Toaster position="top-center" richColors />
           <ScrollPositionBar />
           <Header />
           <main
             id="main-content"
+            tabIndex={-1}
             className="grow mt-24 px-4 sm:px-6 motion-safe:animate-mask-reveal"
           >
             {children}
