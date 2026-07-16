@@ -13,21 +13,27 @@ interface MenuItem {
 
 interface HeaderMenuProps {
   isMobile: boolean
+  isLoadingUser: boolean
+  isAuthed: boolean
   ulClassName?: string
   onClickHandler?: () => void
+  onSignedOut: () => void
 }
 
 const HeaderMenu = ({
   isMobile,
+  isLoadingUser,
+  isAuthed,
   ulClassName,
   onClickHandler,
+  onSignedOut,
 }: HeaderMenuProps) => {
   const currentPath = useLocation().pathname
   const { isDarkTheme, toggleTheme } = useTheme('momo-pix-theme-color', 7)
 
   const menuItems: MenuItem[] = [
     { href: '/', label: 'Home', icon: <House /> },
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
+    ...(isAuthed ? [{ href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> }] : []),
   ]
 
   return (
@@ -40,13 +46,17 @@ const HeaderMenu = ({
           href={item.href}
           label={item.label}
           icon={item.icon}
+          onClickHandler={onClickHandler}
         />
       ))}
 
       {/* User Menu */}
       <UserMenu
         isMobile={isMobile}
+        isLoadingUser={isLoadingUser}
+        isAuthed={isAuthed}
         onClickHandler={onClickHandler}
+        onSignedOut={onSignedOut}
       />
 
       {/* Theme Switch */}

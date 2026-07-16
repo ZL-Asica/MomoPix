@@ -1,52 +1,33 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { LogIn, LogOut, User } from 'lucide-react'
-import { useEffect, useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
-import { getCurrentUserFn, logoutFn } from '@/functions/auth'
+import { logoutFn } from '@/functions/auth'
 import HeaderMenuButton from './HeaderMenuButton'
 
 interface UserMenuProps {
   isMobile: boolean
+  isLoadingUser: boolean
+  isAuthed: boolean
   onClickHandler?: () => void
+  onSignedOut: () => void
 }
 
 const UserMenu = ({
   isMobile,
+  isLoadingUser,
+  isAuthed,
   onClickHandler,
+  onSignedOut,
 }: UserMenuProps) => {
   const logout = useServerFn(logoutFn)
-  const getCurrentUser = useServerFn(getCurrentUserFn)
   const navigate = useNavigate()
   const [isSigningOut, startSignout] = useTransition()
-  const [isLoadingUser, setIsLoadingUser] = useState(true)
-  const [isAuthed, setIsAuthed] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-
-    void (async () => {
-      try {
-        const user = await getCurrentUser()
-        if (!cancelled) {
-          setIsAuthed(Boolean(user))
-        }
-      }
-      finally {
-        if (!cancelled) {
-          setIsLoadingUser(false)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [getCurrentUser])
 
   const handleSignout = () => {
     startSignout(async () => {
@@ -57,7 +38,7 @@ const UserMenu = ({
           return
         }
 
-        setIsAuthed(false)
+        onSignedOut()
         toast.success('Signed out successfully.')
         await navigate({ to: '/login' })
       }
@@ -88,8 +69,39 @@ const UserMenu = ({
     )
   }
 
+  if (isMobile) {
+    return (
+      <>
+        <li className="flex w-full">
+          <Link
+            to="/dashboard"
+            className="flex w-full items-center gap-4 rounded-lg px-4 py-3 text-lg font-medium no-underline hover:bg-gray-light"
+            onClick={onClickHandler}
+          >
+            <User className="h-5 w-5" aria-hidden />
+            Account
+          </Link>
+        </li>
+        <li className="flex w-full">
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex w-full justify-start gap-4 px-4 py-3 text-lg font-medium"
+            onClick={() => {
+              handleSignout()
+              onClickHandler?.()
+            }}
+          >
+            {isSigningOut ? <Spinner className="h-5 w-5" /> : <LogOut className="h-5 w-5" aria-hidden />}
+            Sign out
+          </Button>
+        </li>
+      </>
+    )
+  }
+
   return (
-    <li className={`${isMobile ? 'mt-4 flex w-full justify-around' : 'flex justify-center gap-4'}`}>
+    <li className="flex justify-center gap-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -98,7 +110,6 @@ const UserMenu = ({
             size="icon"
             className="text-hover-primary transition-all-300 group h-12 w-12 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             aria-label="User menu"
-            onClick={onClickHandler}
           >
             <Avatar className="h-8 w-8">
               <AvatarFallback
