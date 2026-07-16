@@ -172,6 +172,45 @@ describe('transformImageFile', () => {
     expect(createImageBitmap).not.toHaveBeenCalled()
   })
 
+  it('keeps animated WebP images unchanged instead of flattening them to one frame', async () => {
+    const animatedWebp = new Uint8Array([
+      ...new TextEncoder().encode('RIFF'),
+      22,
+      0,
+      0,
+      0,
+      ...new TextEncoder().encode('WEBPVP8X'),
+      10,
+      0,
+      0,
+      0,
+      0x02,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+    ])
+    const source = new File([animatedWebp.buffer], 'animated.webp', { type: 'image/webp' })
+    const createImageBitmap = vi.fn()
+    vi.stubGlobal('createImageBitmap', createImageBitmap)
+
+    const result = await transformImageFile(source, 'webp')
+
+    expect(result).toMatchObject({
+      blob: source,
+      mimeType: 'image/webp',
+      width: 1,
+      height: 1,
+      preservedOriginal: true,
+    })
+    expect(createImageBitmap).not.toHaveBeenCalled()
+  })
+
   it('rejects oversized images before creating a canvas bitmap', async () => {
     const source = pngFile(8192, 8192)
     const createImageBitmap = vi.fn()
