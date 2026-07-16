@@ -20,9 +20,8 @@ import { RenameImageDialog } from '@/features/dashboard/dialogs/RenameImageDialo
 import { useDashboardData } from '@/features/dashboard/hooks/useDashboardData'
 import { useImagesTable } from '@/features/dashboard/hooks/useImagesTable'
 import { formatBytes } from '@/lib/storage/format'
+import { STORAGE_QUOTA_BYTES } from '@/lib/storage/quota'
 import { Route } from '@/routes/dashboard'
-
-const DEFAULT_TOTAL_SPACE_BYTES = 5 * 1024 * 1024 * 1024
 
 /**
  * Stateful dashboard feature that wires albums, images, and mutation dialogs.
@@ -133,7 +132,7 @@ export function DashboardFeature() {
         onRequestDelete={setPendingDeleteAlbumId}
         onSetDefault={setDefaultAlbum}
       />
-      <UsageSummary meta={meta} totalSpaceBytes={DEFAULT_TOTAL_SPACE_BYTES} />
+      <UsageSummary meta={meta} totalSpaceBytes={STORAGE_QUOTA_BYTES} />
     </div>
   ), [albums, meta, selectedAlbumId, selectAlbum, setDefaultAlbum, setMobileSidebarOpen, setPendingDeleteAlbumId])
 

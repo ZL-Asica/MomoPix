@@ -52,5 +52,24 @@ export const imagesTable = sqliteTable('images', {
   uniqueIndex('ux_images_original_object_key').on(table.originalObjectKey),
 ])
 
+export const storageQuotaTable = sqliteTable('storage_quota', {
+  id: integer('id').primaryKey(),
+  bytesUsed: integer('bytes_used').notNull(),
+})
+
+export const orphanImageCleanupTable = sqliteTable('orphan_image_cleanup', {
+  objectKey: text('object_key').primaryKey(),
+  cleanupAttempts: integer('cleanup_attempts').notNull().default(0),
+  cleanupError: text('cleanup_error'),
+  createdAt: integer('created_at').notNull(),
+})
+
+export const storageReservationsTable = sqliteTable('storage_reservations', {
+  objectKey: text('object_key').primaryKey(),
+  bytesReserved: integer('bytes_reserved').notNull(),
+  createdAt: integer('created_at').notNull(),
+})
+
 export type AlbumRow = typeof albumsTable.$inferSelect
 export type ImageRow = typeof imagesTable.$inferSelect
+export type StorageQuotaRow = typeof storageQuotaTable.$inferSelect

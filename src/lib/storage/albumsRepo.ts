@@ -2,7 +2,7 @@ import type { AlbumRecord, StorageBootstrapResult, StorageMeta } from '@/lib/sto
 import { eq, isNull, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { getDb } from '@/lib/db/client'
-import { albumsTable, imagesTable } from '@/lib/db/schema'
+import { albumsTable, imagesTable, storageQuotaTable } from '@/lib/db/schema'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
 
 function nowMs(): number {
@@ -154,6 +154,12 @@ async function buildStorageMetaInternal(): Promise<StorageMeta> {
     .from(imagesTable)
     .where(isNull(imagesTable.deletedAt))
 
+  const [quota] = await db
+    .select({ bytesUsed: storageQuotaTable.bytesUsed })
+    .from(storageQuotaTable)
+    .where(eq(storageQuotaTable.id, 1))
+    .limit(1)
+
   const updatedAtMs = Math.max(
     albumTotals?.maxUpdatedAt ?? 0,
     imageTotals?.maxUpdatedAt ?? 0,
@@ -163,7 +169,7 @@ async function buildStorageMetaInternal(): Promise<StorageMeta> {
   return {
     rootAlbumId: ROOT_ALBUM_ID,
     defaultAlbumId: defaultAlbum?.id ?? ROOT_ALBUM_ID,
-    totalBytesUsed: imageTotals?.totalBytesUsed ?? 0,
+    totalBytesUsed: quota?.bytesUsed ?? imageTotals?.totalBytesUsed ?? 0,
     totalImageCount: imageTotals?.totalImageCount ?? 0,
     totalAlbumCount: albumTotals?.totalAlbumCount ?? 0,
     updatedAt: toIsoString(updatedAtMs > 0 ? updatedAtMs : nowMs()),

@@ -68,6 +68,8 @@ export interface AlbumImageRecord {
   albumId: string
   name: string
   nameLower: string
+  /** Bytes occupied by the derived image and any retained original asset. */
+  storageBytes: number
   sizeBytes: number
   mime: string
   width: number | null
