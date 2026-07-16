@@ -280,7 +280,7 @@ export function useDashboardData(options: UseDashboardDataOptions) {
       for (const { albumImage } of uploaded) {
         const current = usage.get(albumImage.albumId) ?? { imageCount: 0, bytesUsed: 0 }
         current.imageCount += 1
-        current.bytesUsed += albumImage.sizeBytes
+        current.bytesUsed += albumImage.storageBytes
         usage.set(albumImage.albumId, current)
       }
       updateAlbumUsage(usage)
@@ -289,7 +289,7 @@ export function useDashboardData(options: UseDashboardDataOptions) {
         : {
             ...previous,
             totalImageCount: previous.totalImageCount + uploaded.length,
-            totalBytesUsed: previous.totalBytesUsed + uploaded.reduce((total, { albumImage }) => total + albumImage.sizeBytes, 0),
+            totalBytesUsed: previous.totalBytesUsed + uploaded.reduce((total, { albumImage }) => total + albumImage.storageBytes, 0),
             updatedAt: new Date().toISOString(),
           })
     },
@@ -424,8 +424,8 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     refreshImages()
     if (sourceImage !== undefined && sourceImage.albumId !== targetAlbumId) {
       updateAlbumUsage(new Map([
-        [sourceImage.albumId, { imageCount: -1, bytesUsed: -sourceImage.sizeBytes }],
-        [targetAlbumId, { imageCount: 1, bytesUsed: sourceImage.sizeBytes }],
+        [sourceImage.albumId, { imageCount: -1, bytesUsed: -sourceImage.storageBytes }],
+        [targetAlbumId, { imageCount: 1, bytesUsed: sourceImage.storageBytes }],
       ]))
     }
     setMoveImageObjectKey(null)
@@ -449,14 +449,17 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     refreshImages()
     updateAlbumUsage(new Map([[
       payload.image.albumId,
-      { imageCount: -1, bytesUsed: -payload.image.sizeBytes },
+      { imageCount: -1, bytesUsed: -(payload.image.sizeBytes + (payload.image.original?.sizeBytes ?? 0)) },
     ]]))
+    const storageBytes = payload.image.sizeBytes + (payload.image.original?.sizeBytes ?? 0)
     setMeta(previous => previous === null
       ? previous
       : {
           ...previous,
           totalImageCount: Math.max(0, previous.totalImageCount - 1),
-          totalBytesUsed: Math.max(0, previous.totalBytesUsed - payload.image.sizeBytes),
+          totalBytesUsed: payload.cleanupPending
+            ? previous.totalBytesUsed
+            : Math.max(0, previous.totalBytesUsed - storageBytes),
           updatedAt: new Date().toISOString(),
         })
     setPendingDeleteObjectKey(null)
@@ -480,7 +483,7 @@ export function useDashboardData(options: UseDashboardDataOptions) {
       refreshImages()
     }
     if (targetAlbumId !== selectedAlbumId && sourceImages.length > 0) {
-      const bytesUsed = sourceImages.reduce((total, image) => total + image.sizeBytes, 0)
+      const bytesUsed = sourceImages.reduce((total, image) => total + image.storageBytes, 0)
       updateAlbumUsage(new Map([
         [selectedAlbumId, { imageCount: -sourceImages.length, bytesUsed: -bytesUsed }],
         [targetAlbumId, { imageCount: sourceImages.length, bytesUsed }],
@@ -500,18 +503,20 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     if (result.succeededObjectKeys.length > 0) {
       refreshImages()
     }
+    const cleanedImages = deletedImages.filter(image => !result.cleanupPendingObjectKeys.includes(image.objectKey))
     if (deletedImages.length > 0) {
-      const bytesUsed = deletedImages.reduce((total, image) => total + image.sizeBytes, 0)
+      const albumBytesUsed = deletedImages.reduce((total, image) => total + image.storageBytes, 0)
+      const releasedBytes = cleanedImages.reduce((total, image) => total + image.storageBytes, 0)
       updateAlbumUsage(new Map([[
         selectedAlbumId,
-        { imageCount: -deletedImages.length, bytesUsed: -bytesUsed },
+        { imageCount: -deletedImages.length, bytesUsed: -albumBytesUsed },
       ]]))
       setMeta(previous => previous === null
         ? previous
         : {
             ...previous,
             totalImageCount: Math.max(0, previous.totalImageCount - deletedImages.length),
-            totalBytesUsed: Math.max(0, previous.totalBytesUsed - bytesUsed),
+            totalBytesUsed: Math.max(0, previous.totalBytesUsed - releasedBytes),
             updatedAt: new Date().toISOString(),
           })
     }

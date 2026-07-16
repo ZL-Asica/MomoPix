@@ -143,6 +143,7 @@ function toAlbumImageRecord(row: ImageRow): AlbumImageRecord {
     albumId: row.albumId,
     name: row.name,
     nameLower: row.nameLower,
+    storageBytes: row.bytes + (row.originalBytes ?? 0),
     sizeBytes: row.bytes,
     mime: row.mime,
     width: row.width,
@@ -223,33 +224,6 @@ export async function putImageRecords(
       originalWidth: image.original?.width ?? null,
       originalHeight: image.original?.height ?? null,
     })
-    .onConflictDoUpdate({
-      target: imagesTable.id,
-      set: {
-        albumId: image.albumId,
-        name: albumImage.name,
-        nameLower: albumImage.nameLower,
-        ext: image.ext,
-        bytes: image.sizeBytes,
-        width: image.width,
-        height: image.height,
-        createdAt,
-        updatedAt,
-        originalName: image.originalName,
-        storedName: image.storedName,
-        mime: image.mime,
-        source: image.source,
-        originalObjectKey: image.original?.objectKey ?? null,
-        originalBytes: image.original?.sizeBytes ?? null,
-        originalExt: image.original?.ext ?? null,
-        originalMime: image.original?.mime ?? null,
-        originalWidth: image.original?.width ?? null,
-        originalHeight: image.original?.height ?? null,
-        deletedAt: null,
-        cleanupAttempts: 0,
-        cleanupError: null,
-      },
-    })
 }
 
 /**
@@ -298,6 +272,7 @@ export async function listAlbumImages(
       storedName: imagesTable.storedName,
       mime: imagesTable.mime,
       source: imagesTable.source,
+      originalBytes: imagesTable.originalBytes,
     })
     .from(imagesTable)
     .where(conditions.length > 1 ? and(...conditions) : conditions[0])
