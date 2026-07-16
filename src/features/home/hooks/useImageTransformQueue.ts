@@ -2,7 +2,6 @@ import type { CompressionState, HomeProcessedItem } from '@/features/home/types'
 import { nanoid } from 'nanoid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { getImageDimensions } from '@/lib/images/dimensions'
 import { checkImage, normalizeTransformError, transformImageFile } from '@/lib/img'
 import { shouldKeepOriginalImage } from '@/lib/img/output'
 import { normalizeImageMime } from '@/lib/storage/format'
@@ -117,25 +116,18 @@ export function useImageTransformQueue() {
       targetFormat,
       useManualQuality ? quality : undefined,
     )
-    const compressedFile = toCompressedFile({
-      blob,
-      originalName: item.originalName,
-      targetFormat,
-    })
-
     if (shouldKeepOriginalImage({
       originalSize: item.originalSize,
       outputSize: blob.size,
     })) {
-      const dimensions = await getImageDimensions(item.originalFile)
       return {
         ...item,
         targetFormat,
         outputBlob: item.originalFile,
         outputFile: item.originalFile,
         outputSize: item.originalSize,
-        width: dimensions?.width ?? null,
-        height: dimensions?.height ?? null,
+        width,
+        height,
         status: 'original',
         transformError: 'The original file was kept.',
         uploadStatus: 'idle',
@@ -145,6 +137,12 @@ export function useImageTransformQueue() {
         uploadedAlbumId: null,
       }
     }
+
+    const compressedFile = toCompressedFile({
+      blob,
+      originalName: item.originalName,
+      targetFormat,
+    })
 
     return {
       ...item,
