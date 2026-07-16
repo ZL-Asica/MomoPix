@@ -1,3 +1,4 @@
+import type { DashboardUrlState } from '@/features/dashboard/lib/urlState'
 import type {
   BulkMoveImagesInput,
   BulkOperationResult,
@@ -8,9 +9,10 @@ import type {
   RenameImageInput,
 } from '@/features/dashboard/types'
 import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage/types'
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useUpload } from '@/features/dashboard/hooks/useUpload'
+import { normalizeDashboardQuery } from '@/features/dashboard/lib/urlState'
 import { createAlbumFn, deleteAlbumFn, listAlbumsFn, moveAlbumFn, renameAlbumFn, setDefaultAlbumFn } from '@/functions/albums'
 import { deleteImageFn, deleteImagesFn, listImagesFn, moveImageFn, moveImagesFn, renameImageFn } from '@/functions/images'
 import { ROOT_ALBUM_ID } from '@/lib/storage/types'
@@ -35,25 +37,36 @@ interface ImageViewCacheEntry {
   imageUrlError: string | null
 }
 
+interface UseDashboardDataOptions {
+  urlState: DashboardUrlState
+  onUrlStateChange: (next: Partial<DashboardUrlState>, replace?: boolean) => void
+}
+
 /**
  * Central dashboard data orchestration for albums, full image datasets, and mutations.
  *
  * @returns Dashboard datasets, pagination/search state, and mutation handlers.
  */
-export function useDashboardData() {
+export function useDashboardData(options: UseDashboardDataOptions) {
+  const { onUrlStateChange, urlState } = options
+  const urlAlbumId = urlState.album ?? ROOT_ALBUM_ID
+  const urlQuery = normalizeDashboardQuery(urlState.q ?? '') ?? ''
+  const urlPageIndex = urlState.page - 1
+  const urlPageSize = urlState.pageSize
   const [albums, setAlbums] = useState<AlbumRecord[]>([])
   const [meta, setMeta] = useState<StorageMeta | null>(null)
-  const [selectedAlbumId, setSelectedAlbumId] = useState<string>(ROOT_ALBUM_ID)
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string>(urlAlbumId)
   const [images, setImages] = useState<AlbumImageListItem[]>([])
   const [imageUrlError, setImageUrlError] = useState<string | null>(null)
   const [imagesState, setImagesState] = useState<ImagesState>('idle')
   const [imagesError, setImagesError] = useState<string | null>(null)
   const [isImagesFetching, setIsImagesFetching] = useState(false)
-  const [pageIndex, setPageIndex] = useState(0)
+  const [pageIndex, setPageIndex] = useState(urlPageIndex)
+  const pageIndexRef = useRef(pageIndex)
   const [imagesRevision, setImagesRevision] = useState(0)
-  const [pageSize, setPageSize] = useState(DEFAULT_IMAGE_PAGE_SIZE)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [pageSize, setPageSize] = useState(urlPageSize ?? DEFAULT_IMAGE_PAGE_SIZE)
+  const [searchQuery, setSearchQuery] = useState(urlQuery)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(urlQuery)
   const [isAlbumsLoaded, setIsAlbumsLoaded] = useState(false)
   const [loadedViewKeys, setLoadedViewKeys] = useState<Set<string>>(() => new Set())
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -85,7 +98,18 @@ export function useDashboardData() {
   const isInitialLoading = !hasLoadedCurrentView && images.length === 0 && (!hasLoadedAnyView || imagesState === 'loading' || isImagesFetching)
   const isPaginationBusy = isFetching
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Browser history is external state; retain local state for immediate transitions while reconciling Back/Forward navigation.
+    /* eslint-disable react/set-state-in-effect -- synchronizing browser history state */
+    setSelectedAlbumId(current => current === urlAlbumId ? current : urlAlbumId)
+    setSearchQuery(current => current === urlQuery ? current : urlQuery)
+    setPageIndex(current => current === urlPageIndex ? current : urlPageIndex)
+    pageIndexRef.current = urlPageIndex
+    setPageSize(current => current === urlPageSize ? current : urlPageSize)
+    /* eslint-enable react/set-state-in-effect */
+  }, [urlAlbumId, urlPageIndex, urlPageSize, urlQuery])
+
+  useLayoutEffect(() => {
     selectedAlbumIdRef.current = selectedAlbumId
   }, [selectedAlbumId])
 
@@ -97,7 +121,7 @@ export function useDashboardData() {
     loadedViewKeysRef.current = loadedViewKeys
   }, [loadedViewKeys])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     activeViewKeyRef.current = currentViewKey
   }, [currentViewKey])
 
@@ -127,9 +151,12 @@ export function useDashboardData() {
     const fallback = payload.meta.defaultAlbumId || ROOT_ALBUM_ID
     const finalSelected = hasSelected ? selectedCandidate : fallback
     setSelectedAlbumId(finalSelected)
+    if (finalSelected !== selectedCandidate) {
+      onUrlStateChange({ album: finalSelected, page: 1 }, true)
+    }
 
     return finalSelected
-  }, [])
+  }, [onUrlStateChange])
 
   const loadImages = useCallback(async (input: {
     albumId: string
@@ -140,6 +167,13 @@ export function useDashboardData() {
     imageRequestIdRef.current = requestId
     const cached = imageViewsRef.current.get(input.viewKey)
     if (cached !== undefined) {
+      const lastPageIndex = Math.max(0, Math.ceil(cached.items.length / pageSize) - 1)
+      const currentPageIndex = pageIndexRef.current
+      if (currentPageIndex > lastPageIndex) {
+        setPageIndex(lastPageIndex)
+        pageIndexRef.current = lastPageIndex
+        onUrlStateChange({ page: lastPageIndex + 1 }, true)
+      }
       activeImagesRef.current = cached.items
       setImages(cached.items)
       setImageUrlError(cached.imageUrlError)
@@ -189,7 +223,12 @@ export function useDashboardData() {
 
       const nextPageCount = Math.max(1, Math.ceil(items.length / pageSize))
       const nextLastPageIndex = Math.max(0, nextPageCount - 1)
-      setPageIndex(previous => Math.min(previous, nextLastPageIndex))
+      const currentPageIndex = pageIndexRef.current
+      if (currentPageIndex > nextLastPageIndex) {
+        setPageIndex(nextLastPageIndex)
+        pageIndexRef.current = nextLastPageIndex
+        onUrlStateChange({ page: nextLastPageIndex + 1 }, true)
+      }
       activeImagesRef.current = items
       setImages(items)
       setImageUrlError(viewImageUrlError)
@@ -220,7 +259,7 @@ export function useDashboardData() {
         setIsImagesFetching(false)
       }
     }
-  }, [fetchImagesPage, pageSize])
+  }, [fetchImagesPage, onUrlStateChange, pageSize])
 
   const updateImageView = useCallback((input: {
     viewKey: string
@@ -239,12 +278,17 @@ export function useDashboardData() {
       const next = input.updater(activeImagesRef.current)
       activeImagesRef.current = next
       setImages(next)
-      if (input.clampPage) {
+      const currentPageIndex = pageIndexRef.current
+      if (input.clampPage && currentPageIndex > 0) {
         const lastPageIndex = Math.max(0, Math.ceil(next.length / pageSize) - 1)
-        setPageIndex(current => Math.min(current, lastPageIndex))
+        if (currentPageIndex > lastPageIndex) {
+          setPageIndex(lastPageIndex)
+          pageIndexRef.current = lastPageIndex
+          onUrlStateChange({ page: lastPageIndex + 1 }, true)
+        }
       }
     }
-  }, [pageSize])
+  }, [onUrlStateChange, pageSize])
 
   const removeImagesFromCachedViews = useCallback((input: {
     objectKeys: readonly string[]
@@ -389,8 +433,11 @@ export function useDashboardData() {
     setAlbums(payload.albums)
     setMeta(payload.meta)
     setSelectedAlbumId(payload.album.id)
+    setPageIndex(0)
+    pageIndexRef.current = 0
+    onUrlStateChange({ album: payload.album.id, page: 1 })
     toast.success('Album created')
-  }, [])
+  }, [onUrlStateChange])
 
   const renameAlbum = useCallback(async ({ albumId, name }: RenameAlbumInput) => {
     const payload = await renameAlbumFn({
@@ -436,9 +483,11 @@ export function useDashboardData() {
     if (selectedAlbumIdRef.current === payload.deletedAlbumId) {
       setSelectedAlbumId(payload.targetAlbumId)
       setPageIndex(0)
+      pageIndexRef.current = 0
+      onUrlStateChange({ album: payload.targetAlbumId, page: 1 }, true)
     }
     toast.success('Album deleted and contents moved')
-  }, [])
+  }, [onUrlStateChange])
 
   const moveImage = useCallback(async ({ objectKey, targetAlbumId }: MoveImageInput) => {
     const viewKey = currentViewKey
@@ -573,74 +622,93 @@ export function useDashboardData() {
   }, [currentViewKey, images, invalidateInactiveImageViews, removeImagesFromCachedViews, selectedAlbumId, updateAlbumUsage])
 
   const goNextPage = useCallback(() => {
+    const nextIndex = pageIndexRef.current + 1
     if (isPaginationBusy || !hasNextPage) {
       return
     }
 
+    pageIndexRef.current = nextIndex
     startViewTransition(() => {
-      setPageIndex(previous => previous + 1)
+      setPageIndex(nextIndex)
     })
-  }, [hasNextPage, isPaginationBusy, startViewTransition])
+    onUrlStateChange({ page: nextIndex + 1 })
+  }, [hasNextPage, isPaginationBusy, onUrlStateChange, startViewTransition])
 
   const goPrevPage = useCallback(() => {
+    const nextIndex = Math.max(0, pageIndexRef.current - 1)
     if (isPaginationBusy || !hasPreviousPage) {
       return
     }
+    pageIndexRef.current = nextIndex
     startViewTransition(() => {
-      setPageIndex(previous => Math.max(0, previous - 1))
+      setPageIndex(nextIndex)
     })
-  }, [hasPreviousPage, isPaginationBusy, startViewTransition])
+    onUrlStateChange({ page: nextIndex + 1 })
+  }, [hasPreviousPage, isPaginationBusy, onUrlStateChange, startViewTransition])
 
   const goFirstPage = useCallback(() => {
-    if (isPaginationBusy || pageIndex === 0) {
+    if (isPaginationBusy || pageIndexRef.current === 0) {
       return
     }
+    pageIndexRef.current = 0
     startViewTransition(() => {
       setPageIndex(0)
     })
-  }, [isPaginationBusy, pageIndex, startViewTransition])
+    onUrlStateChange({ page: 1 })
+  }, [isPaginationBusy, onUrlStateChange, startViewTransition])
 
   const goLastPage = useCallback(() => {
     if (isPaginationBusy || totalPages === null) {
       return
     }
+    pageIndexRef.current = Math.max(0, totalPages - 1)
     startViewTransition(() => {
       setPageIndex(Math.max(0, totalPages - 1))
     })
-  }, [isPaginationBusy, startViewTransition, totalPages])
+    onUrlStateChange({ page: totalPages })
+  }, [isPaginationBusy, onUrlStateChange, startViewTransition, totalPages])
 
   const onPageSizeChange = useCallback((value: number) => {
     if (!Number.isFinite(value) || value <= 0) {
       return
     }
+    pageIndexRef.current = 0
     startViewTransition(() => {
       setPageSize(Math.trunc(value))
       setPageIndex(0)
     })
-  }, [startViewTransition])
+    onUrlStateChange({ page: 1, pageSize: Math.trunc(value) })
+  }, [onUrlStateChange, startViewTransition])
 
   const onSearchQueryChange = useCallback((value: string) => {
+    pageIndexRef.current = 0
     startViewTransition(() => {
       setSearchQuery(value)
       setPageIndex(0)
     })
-  }, [startViewTransition])
+    onUrlStateChange({ page: 1, q: normalizeDashboardQuery(value) }, true)
+  }, [onUrlStateChange, startViewTransition])
 
   const selectAlbum = useCallback((albumId: string) => {
+    pageIndexRef.current = 0
     startViewTransition(() => {
       setSelectedAlbumId(albumId)
       setPageIndex(0)
     })
-  }, [startViewTransition])
+    onUrlStateChange({ album: albumId, page: 1 })
+  }, [onUrlStateChange, startViewTransition])
 
   const onTablePageIndexChange = useCallback((nextPageIndex: number) => {
     if (!Number.isFinite(nextPageIndex)) {
       return
     }
+    const nextIndex = Math.max(0, Math.trunc(nextPageIndex))
+    pageIndexRef.current = nextIndex
     startViewTransition(() => {
-      setPageIndex(Math.max(0, Math.trunc(nextPageIndex)))
+      setPageIndex(nextIndex)
     })
-  }, [startViewTransition])
+    onUrlStateChange({ page: nextIndex + 1 })
+  }, [onUrlStateChange, startViewTransition])
 
   return {
     albums,

@@ -1,5 +1,7 @@
+import type { DashboardUrlState } from '@/features/dashboard/lib/urlState'
+import { useNavigate } from '@tanstack/react-router'
 import { ImageIcon } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
@@ -18,6 +20,7 @@ import { RenameImageDialog } from '@/features/dashboard/dialogs/RenameImageDialo
 import { useDashboardData } from '@/features/dashboard/hooks/useDashboardData'
 import { useImagesTable } from '@/features/dashboard/hooks/useImagesTable'
 import { formatBytes } from '@/lib/storage/format'
+import { Route } from '@/routes/dashboard'
 
 const DEFAULT_TOTAL_SPACE_BYTES = 5 * 1024 * 1024 * 1024
 
@@ -25,6 +28,19 @@ const DEFAULT_TOTAL_SPACE_BYTES = 5 * 1024 * 1024 * 1024
  * Stateful dashboard feature that wires albums, images, and mutation dialogs.
  */
 export function DashboardFeature() {
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/dashboard' })
+  const urlState = useMemo(() => ({
+    ...search,
+    page: search.page ?? 1,
+    pageSize: typeof search.pageSize === 'number' ? search.pageSize : 50,
+  }), [search])
+  const onUrlStateChange = useCallback((next: Partial<DashboardUrlState>, replace = false) => {
+    void navigate({
+      search: previous => ({ ...previous, ...next }),
+      replace,
+    })
+  }, [navigate])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [renameAlbumId, setRenameAlbumId] = useState<string | null>(null)
@@ -79,7 +95,10 @@ export function DashboardFeature() {
     selectAlbum,
     uploadFiles,
     retryFailedUploads,
-  } = useDashboardData()
+  } = useDashboardData({
+    urlState,
+    onUrlStateChange,
+  })
 
   const selectedAlbum = albumById.get(selectedAlbumId)
   const renameImageTarget = images.find(image => image.objectKey === renameImageObjectKey) ?? null
