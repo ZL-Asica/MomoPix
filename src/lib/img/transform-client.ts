@@ -37,6 +37,9 @@ export async function transformImageFile(
     if (!blob) {
       throw new Error(`Unable to encode image as ${format}`)
     }
+    if (blob.type !== mimeType) {
+      throw new Error(`This browser cannot encode images as ${format.toUpperCase()}`)
+    }
 
     return { blob, mimeType, width: bitmap.width, height: bitmap.height }
   }
