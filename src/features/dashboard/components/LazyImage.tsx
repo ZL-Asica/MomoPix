@@ -5,6 +5,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useIntersectionObserver } from '@/features/dashboard/hooks/useIntersectionObserver'
 import { cn } from '@/lib/utils'
 
+const THUMBNAIL_SIZE = 48
+
 interface LazyImageProps {
   src: string
   alt: string
@@ -19,13 +21,16 @@ export function LazyImage({
   src,
   alt,
   className,
-  rootMargin = '500px 0px',
+  rootMargin = '0px',
 }: LazyImageProps) {
   const [retryToken, setRetryToken] = useState(0)
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const { setNode, isIntersecting } = useIntersectionObserver<HTMLDivElement>({
     rootMargin,
+    // Thumbnails must be removed after leaving the viewport. Keeping every
+    // decoded source image mounted grows memory with each row the user sees.
+    freezeOnceVisible: false,
   })
 
   const resolvedSrc = useMemo(() => {
@@ -64,22 +69,25 @@ export function LazyImage({
 
   return (
     <div ref={setNode} className={cn('relative overflow-hidden', className)}>
-      <img
-        src={resolvedSrc}
-        alt={alt}
-        className={cn(
-          'h-full w-full object-cover transition-opacity duration-150',
-          isLoaded ? 'opacity-100' : 'opacity-0',
-        )}
-        loading={isIntersecting ? 'eager' : 'lazy'}
-        decoding="async"
-        onLoad={() => {
-          setLoadedSrc(resolvedSrc)
-        }}
-        onError={() => {
-          setFailedSrc(resolvedSrc)
-        }}
-      />
+      {isIntersecting && (
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          width={THUMBNAIL_SIZE}
+          height={THUMBNAIL_SIZE}
+          className={cn(
+            'h-full w-full object-cover transition-opacity duration-150',
+            isLoaded ? 'opacity-100' : 'opacity-0',
+          )}
+          decoding="async"
+          onLoad={() => {
+            setLoadedSrc(resolvedSrc)
+          }}
+          onError={() => {
+            setFailedSrc(resolvedSrc)
+          }}
+        />
+      )}
       {!isLoaded && (
         <Skeleton className="pointer-events-none absolute inset-0 h-full w-full rounded-none" />
       )}
