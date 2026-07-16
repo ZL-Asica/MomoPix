@@ -10,9 +10,9 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { LazyImage } from '@/components/LazyImage'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ImageActionsDropdownMenu } from '@/features/dashboard/components/ImageActionsMenu'
-import { LazyImage } from '@/features/dashboard/components/LazyImage'
 import { applyShiftRangeSelection } from '@/features/dashboard/lib/shiftRangeSelection'
 import { formatBytes } from '@/lib/storage/format'
 

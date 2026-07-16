@@ -41,6 +41,23 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+async function fetchThumbnailSource(publicUrl: string, signal: AbortSignal) {
+  try {
+    return await fetch(publicUrl, { mode: 'cors', signal })
+  }
+  catch (cause) {
+    if (signal.aborted) {
+      throw cause
+    }
+
+    // A previously failed cross-origin response can remain in the browser cache.
+    // Retry once with a unique URL so one stale entry cannot block the migration.
+    const retryUrl = new URL(publicUrl)
+    retryUrl.searchParams.set('_thumbnailBackfill', Date.now().toString())
+    return fetch(retryUrl, { cache: 'reload', mode: 'cors', signal })
+  }
+}
+
 /** Runs the resumable, browser-side thumbnail migration one image at a time. */
 export function useThumbnailMaintenance(onUpdated: () => void) {
   const [state, setState] = useState<MaintenanceState>('loading')
@@ -125,10 +142,7 @@ export function useThumbnailMaintenance(onUpdated: () => void) {
           })
 
           try {
-            const response = await fetch(candidate.publicUrl, {
-              mode: 'cors',
-              signal: controller.signal,
-            })
+            const response = await fetchThumbnailSource(candidate.publicUrl, controller.signal)
             if (!response.ok) {
               throw new Error(`Image download failed (${response.status})`)
             }

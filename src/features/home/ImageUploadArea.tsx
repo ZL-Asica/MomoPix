@@ -2,6 +2,8 @@ import { ImageIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Card } from '@/components/ui/card'
+import { MAX_QUEUE_ITEMS, MAX_QUEUE_SOURCE_BYTES } from '@/features/home/lib/memoryBudget'
+import { getHumanReadableFileSize } from '@/utils/converter'
 
 interface ImageUploadAreaProps {
   onDrop: (files: File[]) => void
@@ -70,6 +72,14 @@ const ImageUploadArea = ({ onDrop, disabled = false }: ImageUploadAreaProps) => 
           {isDragActive
             ? 'Drop the images here'
             : 'Drag and drop images here, or click to select files'}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Up to
+          {' '}
+          {MAX_QUEUE_ITEMS}
+          {' images or '}
+          {getHumanReadableFileSize(MAX_QUEUE_SOURCE_BYTES)}
+          {' per queue'}
         </p>
       </div>
     </Card>

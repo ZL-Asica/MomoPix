@@ -28,6 +28,8 @@ const RAW_EXTENSIONS = new Set([
   'srf',
 ])
 
+const NATIVE_METADATA_PROBE_BYTES = 2 * 1024 * 1024
+
 interface FullTransformRequest {
   id: number
   mode: 'full'
@@ -233,6 +235,15 @@ function outputDimensions(width: number, height: number, maxEdge: number): { wid
   }
 }
 
+function requiresDedicatedDecoder(file: File): boolean {
+  const extension = extensionOf(file.name)
+  return extension === 'heic'
+    || extension === 'heif'
+    || extension === 'tif'
+    || extension === 'tiff'
+    || RAW_EXTENSIONS.has(extension)
+}
+
 async function encodeCanvas(
   canvas: OffscreenCanvas,
   format: SupportedFormat,
@@ -262,10 +273,78 @@ async function encodeCanvas(
   return new Blob([bytes], { type: mimeType })
 }
 
+async function transformThumbnailOnly(file: File): Promise<{
+  mode: 'thumbnail'
+  blob: Blob
+  width: number
+  height: number
+}> {
+  if (requiresDedicatedDecoder(file)) {
+    const decoded = await decodeSource(file)
+    const dimensions = outputDimensions(decoded.width, decoded.height, THUMBNAIL_MAX_EDGE)
+    const canvas = new OffscreenCanvas(dimensions.width, dimensions.height)
+    try {
+      const context = canvas.getContext('2d')
+      if (!context) {
+        throw new Error('Failed to initialize thumbnail canvas')
+      }
+      context.drawImage(decoded.canvas, 0, 0, dimensions.width, dimensions.height)
+      return {
+        mode: 'thumbnail',
+        blob: await encodeCanvas(canvas, 'webp', 72),
+        width: dimensions.width,
+        height: dimensions.height,
+      }
+    }
+    finally {
+      decoded.canvas.width = 1
+      decoded.canvas.height = 1
+      canvas.width = 1
+      canvas.height = 1
+    }
+  }
+
+  const probe = new Uint8Array(await file.slice(0, NATIVE_METADATA_PROBE_BYTES).arrayBuffer())
+  const metadata = parseUploadImage(probe)
+  if (metadata === null) {
+    throw new Error('Unable to read image dimensions for thumbnail generation')
+  }
+  const dimensions = outputDimensions(metadata.width, metadata.height, THUMBNAIL_MAX_EDGE)
+  const bitmap = await createImageBitmap(file, {
+    imageOrientation: 'from-image',
+    resizeWidth: dimensions.width,
+    resizeHeight: dimensions.height,
+    resizeQuality: 'high',
+  })
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+  try {
+    const context = canvas.getContext('2d')
+    if (!context) {
+      throw new Error('Failed to initialize thumbnail canvas')
+    }
+    context.drawImage(bitmap, 0, 0)
+    return {
+      mode: 'thumbnail',
+      blob: await encodeCanvas(canvas, 'webp', 72),
+      width: bitmap.width,
+      height: bitmap.height,
+    }
+  }
+  finally {
+    bitmap.close()
+    canvas.width = 1
+    canvas.height = 1
+  }
+}
+
 async function transform(request: TransformRequest): Promise<
   | (Omit<TransformImageResult, 'blob'> & { mode: 'full', blob: Blob | null })
   | { mode: 'thumbnail', blob: Blob, width: number, height: number }
 > {
+  if (request.mode === 'thumbnail') {
+    return transformThumbnailOnly(request.file)
+  }
+
   const decoded = await decodeSource(request.file)
   const thumbnailDimensions = outputDimensions(decoded.width, decoded.height, THUMBNAIL_MAX_EDGE)
   const thumbnailCanvas = new OffscreenCanvas(thumbnailDimensions.width, thumbnailDimensions.height)
@@ -276,15 +355,6 @@ async function transform(request: TransformRequest): Promise<
     }
     thumbnailContext.drawImage(decoded.canvas, 0, 0, thumbnailDimensions.width, thumbnailDimensions.height)
     const thumbnailBlob = await encodeCanvas(thumbnailCanvas, 'webp', 72)
-
-    if (request.mode === 'thumbnail') {
-      return {
-        mode: 'thumbnail',
-        blob: thumbnailBlob,
-        width: thumbnailDimensions.width,
-        height: thumbnailDimensions.height,
-      }
-    }
 
     const hostedBlob = decoded.preservedOriginal
       ? null
