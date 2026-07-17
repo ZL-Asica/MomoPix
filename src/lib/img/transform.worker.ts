@@ -1,12 +1,12 @@
 /// <reference lib="webworker" />
 
 import type { TransformImageResult } from './transform-client'
-import { parseUploadImage } from '@/lib/images/uploadValidation'
+import { MAX_UPLOAD_SIZE_BYTES, parseUploadImage } from '@/lib/images/uploadValidation'
 import { isAnimatedRaster } from './animation'
 import { MAX_TRANSFORM_PIXELS, OUTPUT_MIME_TYPE_BY_FORMAT, THUMBNAIL_MAX_EDGE } from './constants'
 import { encodeImage } from './encoders'
 import { extractRawPreview } from './rawPreview'
-import { fitWithinPixelBudget } from './resize'
+import { fitWithinPixelBudget, shrinkDimensionsForByteBudget } from './resize'
 
 const RAW_EXTENSIONS = new Set([
   '3fr',
@@ -30,6 +30,7 @@ const RAW_EXTENSIONS = new Set([
 ])
 
 const NATIVE_METADATA_PROBE_BYTES = 2 * 1024 * 1024
+const MAX_HOSTING_RESIZE_ATTEMPTS = 4
 
 interface FullTransformRequest {
   id: number
@@ -381,6 +382,50 @@ async function encodeCanvas(
   }
 }
 
+async function encodeWithinHostingLimit(
+  initialCanvas: OffscreenCanvas,
+  format: SupportedFormat,
+  quality?: number,
+): Promise<{ blob: Blob, canvas: OffscreenCanvas, resized: boolean }> {
+  let canvas = initialCanvas
+  try {
+    let blob = await encodeCanvas(canvas, format, quality)
+    let resized = false
+
+    for (let attempt = 0; blob.size > MAX_UPLOAD_SIZE_BYTES && attempt < MAX_HOSTING_RESIZE_ATTEMPTS; attempt += 1) {
+      const dimensions = shrinkDimensionsForByteBudget(
+        canvas.width,
+        canvas.height,
+        blob.size,
+        MAX_UPLOAD_SIZE_BYTES,
+      )
+      const nextCanvas = new OffscreenCanvas(dimensions.width, dimensions.height)
+      const context = nextCanvas.getContext('2d')
+      if (!context) {
+        throw new Error('Failed to initialize hosted image resize canvas')
+      }
+      context.drawImage(canvas, 0, 0, dimensions.width, dimensions.height)
+      canvas.width = 1
+      canvas.height = 1
+      canvas = nextCanvas
+      blob = await encodeCanvas(canvas, format, quality)
+      resized = true
+    }
+
+    if (blob.size > MAX_UPLOAD_SIZE_BYTES) {
+      throw new Error('Unable to fit the converted image within the 10 MiB hosting limit')
+    }
+    return { blob, canvas, resized }
+  }
+  catch (error) {
+    if (canvas !== initialCanvas) {
+      canvas.width = 1
+      canvas.height = 1
+    }
+    throw error
+  }
+}
+
 async function transformThumbnailOnly(file: File): Promise<{
   mode: 'thumbnail'
   blob: Blob
@@ -457,43 +502,52 @@ async function transform(request: TransformRequest): Promise<
   }
 
   const decoded = await decodeSource(request.file)
-  const thumbnailDimensions = outputDimensions(decoded.width, decoded.height, THUMBNAIL_MAX_EDGE)
-  const thumbnailCanvas = new OffscreenCanvas(thumbnailDimensions.width, thumbnailDimensions.height)
+  let hostedCanvas = decoded.canvas
+  let thumbnailCanvas: OffscreenCanvas | null = null
   try {
+    const hosted = await encodeWithinHostingLimit(hostedCanvas, request.format, request.quality)
+    hostedCanvas = hosted.canvas
+    const thumbnailDimensions = outputDimensions(hostedCanvas.width, hostedCanvas.height, THUMBNAIL_MAX_EDGE)
+    thumbnailCanvas = new OffscreenCanvas(thumbnailDimensions.width, thumbnailDimensions.height)
     const thumbnailContext = thumbnailCanvas.getContext('2d')
     if (!thumbnailContext) {
       throw new Error('Failed to initialize thumbnail canvas')
     }
-    thumbnailContext.drawImage(decoded.canvas, 0, 0, thumbnailDimensions.width, thumbnailDimensions.height)
+    thumbnailContext.drawImage(hostedCanvas, 0, 0, thumbnailDimensions.width, thumbnailDimensions.height)
     const thumbnailBlob = await encodeCanvas(thumbnailCanvas, 'webp', 72)
-
-    // Animated sources still need a static derivative when the unchanged file
-    // exceeds hosting or pixel limits. The UI can keep the animation for
-    // download while selecting this derivative only for hosting.
-    const hostedBlob = await encodeCanvas(decoded.canvas, request.format, request.quality)
+    const sourceNotice = [
+      decoded.sourceNotice,
+      hosted.resized ? 'Image was resized further to fit the 10 MiB hosting limit.' : null,
+    ].filter((notice): notice is string => notice !== null).join(' ') || null
 
     return {
       mode: 'full',
-      blob: hostedBlob,
+      blob: hosted.blob,
       mimeType: OUTPUT_MIME_TYPE_BY_FORMAT[request.format],
-      width: decoded.width,
-      height: decoded.height,
+      width: hostedCanvas.width,
+      height: hostedCanvas.height,
       sourceWidth: decoded.sourceWidth,
       sourceHeight: decoded.sourceHeight,
       thumbnailBlob,
       thumbnailWidth: thumbnailDimensions.width,
       thumbnailHeight: thumbnailDimensions.height,
       preservedOriginal: decoded.preservedOriginal,
-      resizedToPixelBudget: decoded.resizedToPixelBudget,
-      sourceNotice: decoded.sourceNotice,
+      resizedToPixelBudget: decoded.resizedToPixelBudget || hosted.resized,
+      sourceNotice,
     }
   }
   finally {
     // Resetting dimensions releases browser/GPU backing stores immediately.
     decoded.canvas.width = 1
     decoded.canvas.height = 1
-    thumbnailCanvas.width = 1
-    thumbnailCanvas.height = 1
+    if (hostedCanvas !== decoded.canvas) {
+      hostedCanvas.width = 1
+      hostedCanvas.height = 1
+    }
+    if (thumbnailCanvas !== null) {
+      thumbnailCanvas.width = 1
+      thumbnailCanvas.height = 1
+    }
   }
 }
 

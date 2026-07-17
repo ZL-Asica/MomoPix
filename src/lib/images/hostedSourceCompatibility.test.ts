@@ -4,6 +4,9 @@ import { isHostedSourceUploadCompatible } from './hostedSourceCompatibility'
 describe('isHostedSourceUploadCompatible', () => {
   it('accepts supported hosted sources and rejects opaque source formats', () => {
     expect(isHostedSourceUploadCompatible(new File(['image'], 'image.png', { type: 'image/png' }))).toBe(true)
+    expect(isHostedSourceUploadCompatible(new File(['image'], 'image.png', { type: 'image/apng' }))).toBe(true)
+    expect(isHostedSourceUploadCompatible(new File(['image'], 'image.jpg', { type: 'image/jpg' }))).toBe(true)
+    expect(isHostedSourceUploadCompatible(new File(['image'], 'image.webp'))).toBe(true)
     expect(isHostedSourceUploadCompatible(new File(['raw'], 'image.raw', { type: 'application/octet-stream' }))).toBe(false)
   })
 })
