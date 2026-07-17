@@ -73,6 +73,7 @@ export function ResultRow({
   const compressedSize = item.outputSize
   const isCompressed = item.status === 'compressed' && compressedSize !== null
   const isOutputAvailable = (item.status === 'compressed' || item.status === 'original') && item.outputFile !== null
+  const isUploadEligible = isOutputAvailable && item.uploadFile !== null && item.thumbnailFile !== null
   const savedPercent = isCompressed && item.originalSize > 0
     ? ((item.originalSize - compressedSize) / item.originalSize) * 100
     : 0
@@ -89,7 +90,7 @@ export function ResultRow({
             <Checkbox
               aria-label={`Select ${item.originalName}`}
               checked={isSelected}
-              disabled={selectionDisabled || !isOutputAvailable}
+              disabled={selectionDisabled || !isUploadEligible}
               onCheckedChange={checked => onToggleSelected(checked === true)}
               className="h-5 w-5 rounded-md"
             />
@@ -177,11 +178,6 @@ export function ResultRow({
 
             {sizeLabel !== null && (
               <span className={`wrap-break-word ${sizeLabelClass}`}>{sizeLabel}</span>
-            )}
-            {item.status === 'original' && (
-              <span className="wrap-break-word text-amber-700 dark:text-amber-400">
-                Animation preserved without flattening frames.
-              </span>
             )}
           </div>
 

@@ -145,6 +145,7 @@ Pagination invariants:
 
 - Use stable, deterministic ordering for listings (keyset pagination preferred).
 - Keep cursor semantics consistent across endpoints (document the ordering key and tie-break).
+- Image listing cursors encode the active sort plus its primary value and image id; changing sort or filters must reset cursor state.
 
 Image URL invariants:
 

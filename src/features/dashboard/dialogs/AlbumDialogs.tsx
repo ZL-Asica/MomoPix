@@ -8,16 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ROOT_ALBUM_ID } from '@/lib/storage/types'
+import { formatAlbumPath } from '@/lib/storage/albumLabel'
 
 const NO_PARENT_VALUE = '__none__'
-
-function displayAlbumName(album: AlbumRecord): string {
-  if (album.id === ROOT_ALBUM_ID) {
-    return 'Default'
-  }
-  return album.name
-}
 
 interface AlbumDialogsProps {
   albums: AlbumRecord[]
@@ -214,7 +207,7 @@ export function AlbumDialogs({
                     <SelectContent>
                       <SelectItem value={NO_PARENT_VALUE}>No parent (top-level)</SelectItem>
                       {albums.map(album => (
-                        <SelectItem key={album.id} value={album.id}>{displayAlbumName(album)}</SelectItem>
+                        <SelectItem key={album.id} value={album.id}>{formatAlbumPath(album, albums)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -341,7 +334,7 @@ export function AlbumDialogs({
                     <SelectContent>
                       <SelectItem value={NO_PARENT_VALUE}>No parent (top-level)</SelectItem>
                       {albums.filter(album => album.id !== moveAlbumId).map(album => (
-                        <SelectItem key={album.id} value={album.id}>{displayAlbumName(album)}</SelectItem>
+                        <SelectItem key={album.id} value={album.id}>{formatAlbumPath(album, albums)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

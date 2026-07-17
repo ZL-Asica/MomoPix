@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { formatAlbumPath } from '@/lib/storage/albumLabel'
 
 interface BulkMoveImagesDialogProps {
   open: boolean
@@ -109,7 +110,7 @@ export function BulkMoveImagesDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {albums.map(album => (
-                        <SelectItem key={album.id} value={album.id}>{album.name}</SelectItem>
+                        <SelectItem key={album.id} value={album.id}>{formatAlbumPath(album, albums)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

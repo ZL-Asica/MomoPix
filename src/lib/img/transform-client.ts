@@ -16,6 +16,7 @@ export interface TransformImageResult {
   thumbnailWidth: number
   thumbnailHeight: number
   preservedOriginal: boolean
+  resizedToPixelBudget: boolean
   sourceNotice: string | null
 }
 
@@ -136,11 +137,14 @@ function getTransformWorker(): Worker {
       return
     }
     if (pending.mode === 'full' && result.mode === 'full') {
+      if (result.blob === null) {
+        pending.reject(new Error('Image worker did not return a hosted derivative'))
+        scheduleWorkerTermination()
+        return
+      }
       pending.resolve({
         ...result,
-        blob: result.preservedOriginal
-          ? pending.file
-          : (result.blob ?? pending.file),
+        blob: result.blob,
       })
       scheduleWorkerTermination()
       return

@@ -1,8 +1,12 @@
 import type { SQL } from 'drizzle-orm'
 import type {
   AlbumImageRecord,
+  ImageDateFilter,
+  ImageFormatFilter,
   ImageListSort,
+  ImageOrientationFilter,
   ImageRecord,
+  ImageResolutionFilter,
   ListAlbumImagesInput,
   ListAlbumImagesResult,
 } from '@/lib/storage/types'
@@ -10,6 +14,7 @@ import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import { getDb } from '@/lib/db/client'
 import { decodeImageListCursor, encodeImageListCursor } from '@/lib/db/cursor'
 import { imagesTable } from '@/lib/db/schema'
+import { IMAGE_LIST_SORTS } from '@/lib/storage/types'
 
 const DEFAULT_IMAGE_PAGE_SIZE = 50
 const IMAGE_PAGE_SIZE_MIN = 10
@@ -24,10 +29,94 @@ function normalizePageSize(value: number | undefined): number {
 }
 
 function normalizeSort(value: ImageListSort | undefined): ImageListSort {
-  if (value === 'createdAt-desc') {
+  if (value !== undefined && IMAGE_LIST_SORTS.includes(value)) {
     return value
   }
   return DEFAULT_IMAGE_LIST_SORT
+}
+
+function normalizeFormat(value: ImageFormatFilter | undefined): ImageFormatFilter {
+  return value ?? 'all'
+}
+
+function normalizeOrientation(value: ImageOrientationFilter | undefined): ImageOrientationFilter {
+  return value ?? 'all'
+}
+
+function normalizeDate(value: ImageDateFilter | undefined): ImageDateFilter {
+  return value ?? 'all'
+}
+
+function normalizeResolution(value: ImageResolutionFilter | undefined): ImageResolutionFilter {
+  return value ?? 'all'
+}
+
+function dateCutoff(value: ImageDateFilter): number | null {
+  const day = 24 * 60 * 60 * 1000
+  switch (value) {
+    case 'all':
+      return null
+    case 'today':
+      return Date.now() - day
+    case '7d':
+      return Date.now() - 7 * day
+    case '30d':
+      return Date.now() - 30 * day
+    case '1y':
+      return Date.now() - 365 * day
+  }
+}
+
+function cursorCondition(sort: ImageListSort, value: number | string, id: string): SQL {
+  const descending = sort.endsWith('-desc')
+  const idComparison = descending
+    ? sql`${imagesTable.id} < ${id}`
+    : sql`${imagesTable.id} > ${id}`
+
+  const expression = (() => {
+    if (sort.startsWith('createdAt-')) {
+      return imagesTable.createdAt
+    }
+    if (sort.startsWith('name-')) {
+      return imagesTable.nameLower
+    }
+    if (sort.startsWith('sizeBytes-')) {
+      return imagesTable.bytes
+    }
+    return imagesTable.ext
+  })()
+  const primaryComparison = descending
+    ? sql`${expression} < ${value}`
+    : sql`${expression} > ${value}`
+  return sql`(${primaryComparison} OR (${expression} = ${value} AND ${idComparison}))`
+}
+
+function imageOrder(sort: ImageListSort): SQL[] {
+  const descending = sort.endsWith('-desc')
+  const order = descending ? desc : asc
+  if (sort.startsWith('createdAt-')) {
+    return [order(imagesTable.createdAt), order(imagesTable.id)]
+  }
+  if (sort.startsWith('name-')) {
+    return [order(imagesTable.nameLower), order(imagesTable.id)]
+  }
+  if (sort.startsWith('sizeBytes-')) {
+    return [order(imagesTable.bytes), order(imagesTable.id)]
+  }
+  return [order(imagesTable.ext), order(imagesTable.id)]
+}
+
+function cursorValue(row: ImageRow, sort: ImageListSort): number | string {
+  if (sort.startsWith('createdAt-')) {
+    return row.createdAt
+  }
+  if (sort.startsWith('name-')) {
+    return row.nameLower
+  }
+  if (sort.startsWith('sizeBytes-')) {
+    return row.bytes
+  }
+  return row.ext
 }
 
 function normalizeQuery(value: string | undefined): string {
@@ -202,6 +291,7 @@ function toAlbumImageRecord(row: ImageRow): AlbumImageRecord {
     height: row.height,
     createdAt: toIsoString(row.createdAt),
     thumbnail: image.thumbnail ?? null,
+    original: image.original ?? null,
   }
 }
 
@@ -301,23 +391,56 @@ export async function listAlbumImages(
   const pageSize = normalizePageSize(input.pageSize)
   const sort = normalizeSort(input.sort)
   const query = normalizeQuery(input.query)
+  const format = normalizeFormat(input.format)
+  const orientation = normalizeOrientation(input.orientation)
+  const date = normalizeDate(input.date)
+  const resolution = normalizeResolution(input.resolution)
   const needle = query.toLowerCase()
   const cursor = input.cursor !== null && input.cursor !== undefined
     ? decodeImageListCursor(input.cursor)
     : null
+  if (cursor !== null && cursor.sort !== sort) {
+    throw new TypeError('Pagination cursor does not match the selected sort')
+  }
 
-  const conditions: SQL[] = [
-    eq(imagesTable.albumId, input.albumId),
-    isNull(imagesTable.deletedAt),
-  ]
+  const conditions: SQL[] = [isNull(imagesTable.deletedAt)]
+  if (!input.allAlbums) {
+    conditions.push(eq(imagesTable.albumId, input.albumId))
+  }
   if (needle.length > 0) {
     conditions.push(sql`instr(${imagesTable.nameLower}, ${needle}) > 0`)
   }
+  if (format !== 'all') {
+    conditions.push(eq(imagesTable.ext, format))
+  }
+  if (orientation === 'landscape') {
+    conditions.push(sql`${imagesTable.width} > ${imagesTable.height}`)
+  }
+  else if (orientation === 'portrait') {
+    conditions.push(sql`${imagesTable.width} < ${imagesTable.height}`)
+  }
+  else if (orientation === 'square') {
+    conditions.push(sql`${imagesTable.width} = ${imagesTable.height}`)
+  }
+  const cutoff = dateCutoff(date)
+  if (cutoff !== null) {
+    conditions.push(sql`${imagesTable.createdAt} >= ${cutoff}`)
+  }
+  const pixelCount = sql`${imagesTable.width} * ${imagesTable.height}`
+  if (resolution === 'under-2mp') {
+    conditions.push(sql`${pixelCount} < 2000000`)
+  }
+  else if (resolution === '2-12mp') {
+    conditions.push(sql`${pixelCount} >= 2000000 AND ${pixelCount} < 12000000`)
+  }
+  else if (resolution === '12-24mp') {
+    conditions.push(sql`${pixelCount} >= 12000000 AND ${pixelCount} <= 24000000`)
+  }
+  else if (resolution === 'over-24mp') {
+    conditions.push(sql`${pixelCount} > 24000000`)
+  }
   if (cursor !== null) {
-    conditions.push(sql`(
-      ${imagesTable.createdAt} < ${cursor.createdAt}
-      OR (${imagesTable.createdAt} = ${cursor.createdAt} AND ${imagesTable.id} < ${cursor.id})
-    )`)
+    conditions.push(cursorCondition(sort, cursor.value, cursor.id))
   }
 
   const rows = await db
@@ -350,7 +473,7 @@ export async function listAlbumImages(
     })
     .from(imagesTable)
     .where(conditions.length > 1 ? and(...conditions) : conditions[0])
-    .orderBy(desc(imagesTable.createdAt), desc(imagesTable.id))
+    .orderBy(...imageOrder(sort))
     .limit(pageSize + 1)
 
   const hasNextPage = rows.length > pageSize
@@ -361,12 +484,16 @@ export async function listAlbumImages(
   return {
     items,
     nextCursor: hasNextPage && lastRow !== undefined
-      ? encodeImageListCursor({ createdAt: lastRow.createdAt, id: lastRow.id })
+      ? encodeImageListCursor({ sort, value: cursorValue(lastRow, sort), id: lastRow.id })
       : null,
     hasNextPage,
     pageSize,
     sort,
     query,
+    format,
+    orientation,
+    date,
+    resolution,
   }
 }
 

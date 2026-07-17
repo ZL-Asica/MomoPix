@@ -1,4 +1,5 @@
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const albumsTable = sqliteTable('albums', {
@@ -13,6 +14,7 @@ export const albumsTable = sqliteTable('albums', {
   updatedAt: integer('updated_at').notNull(),
 }, table => [
   index('idx_albums_parent_id').on(table.parentId),
+  uniqueIndex('ux_albums_single_default').on(table.isDefault).where(sql`${table.isDefault} = 1`),
 ])
 
 export const imagesTable = sqliteTable('images', {
@@ -52,6 +54,12 @@ export const imagesTable = sqliteTable('images', {
 }, table => [
   index('idx_images_album_created_desc').on(table.albumId, table.createdAt, table.id),
   index('idx_images_album_name_lower').on(table.albumId, table.nameLower),
+  index('idx_images_album_name_sort').on(table.albumId, table.nameLower, table.id),
+  index('idx_images_album_bytes_sort').on(table.albumId, table.bytes, table.id),
+  index('idx_images_album_ext_sort').on(table.albumId, table.ext, table.id),
+  index('idx_images_name_sort').on(table.nameLower, table.id),
+  index('idx_images_bytes_sort').on(table.bytes, table.id),
+  index('idx_images_ext_sort').on(table.ext, table.id),
   index('idx_images_created_desc').on(table.createdAt, table.id),
   index('idx_images_pending_cleanup').on(table.deletedAt, table.id),
   uniqueIndex('ux_images_original_object_key').on(table.originalObjectKey),

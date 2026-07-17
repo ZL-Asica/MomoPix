@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
 import type { AlbumImageListItem } from '@/lib/storage/types'
-import { Code2, Link2, MoreHorizontal, MoveRight, Pencil, Trash2, UserRoundSearch } from 'lucide-react'
+import { Code2, Download, Link2, MoreHorizontal, MoveRight, Pencil, Trash2, UserRoundSearch } from 'lucide-react'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -89,6 +89,17 @@ function ImageActionsContent({
       >
         <UserRoundSearch className="mr-2 h-4 w-4" />
         {hasPublicUrl ? 'View' : 'View (Unavailable)'}
+      </Item>
+      <Item
+        disabled={image.originalDownloadUrl === null}
+        onSelect={() => {
+          if (image.originalDownloadUrl !== null) {
+            window.location.assign(image.originalDownloadUrl)
+          }
+        }}
+      >
+        <Download className="mr-2 h-4 w-4" />
+        {image.originalDownloadUrl === null ? 'Download original (Unavailable)' : 'Download original'}
       </Item>
       <Item onSelect={() => onRenameImage(image.objectKey)}>
         <Pencil className="mr-2 h-4 w-4" />

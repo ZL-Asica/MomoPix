@@ -52,6 +52,7 @@ function workerResult(request: WorkerRequest, overrides: Record<string, unknown>
       thumbnailWidth: 512,
       thumbnailHeight: 384,
       preservedOriginal: false,
+      resizedToPixelBudget: false,
       sourceNotice: null,
       ...overrides,
     },
@@ -93,10 +94,10 @@ describe('transformImageFile', () => {
     expect(result.thumbnailBlob.type).toBe('image/webp')
   })
 
-  it('maps an animated worker result back to the original File', async () => {
+  it('keeps an animated flag while returning its hosted derivative', async () => {
+    const hosted = new Blob(['static-frame'], { type: 'image/webp' })
     FakeWorker.response = request => workerResult(request, {
-      blob: null,
-      mimeType: 'image/gif',
+      blob: hosted,
       preservedOriginal: true,
     })
     const { transformImageFile } = await loadTransformModule()
@@ -104,7 +105,8 @@ describe('transformImageFile', () => {
 
     const result = await transformImageFile(source, 'webp')
 
-    expect(result.blob).toBe(source)
+    expect(result.blob).toBe(hosted)
+    expect(result.preservedOriginal).toBe(true)
     expect(result.thumbnailBlob.type).toBe('image/webp')
   })
 

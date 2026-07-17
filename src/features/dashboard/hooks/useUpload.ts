@@ -2,7 +2,9 @@ import type { AlbumImageRecord, ImageRecord } from '@/lib/storage/types'
 import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { uploadImageFn } from '@/functions/images'
+import { isHostedSourceUploadCompatible } from '@/lib/images/hostedSourceCompatibility'
 import { transformImageFile } from '@/lib/img'
+import { shouldKeepOriginalImage } from '@/lib/img/output'
 import { withoutExtension } from '@/lib/storage/format'
 
 // Image transforms are intentionally serialized to bound decoded bitmap memory.
@@ -91,7 +93,14 @@ export function useUpload(options: UseUploadOptions) {
 
         try {
           const transformed = await transformImageFile(file, 'webp')
-          const hostedFile = transformed.preservedOriginal
+          const sourceIsHostCompatible = isHostedSourceUploadCompatible(file)
+          const keepSource = !transformed.resizedToPixelBudget
+            && sourceIsHostCompatible
+            && (
+              transformed.preservedOriginal
+              || shouldKeepOriginalImage({ originalSize: file.size, outputSize: transformed.blob.size })
+            )
+          const hostedFile = keepSource
             ? file
             : new File(
                 [transformed.blob],

@@ -83,3 +83,8 @@ export async function putImageObject(
 export async function deleteImageObject(bucket: R2Bucket, key: string): Promise<void> {
   await deleteObject(bucket, key)
 }
+
+/** Loads one canonical image object from R2 for authenticated streaming. */
+export async function getImageObject(bucket: R2Bucket, key: string): Promise<R2ObjectBody | null> {
+  return bucket.get(key)
+}
