@@ -1,12 +1,16 @@
-import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Toaster } from 'sonner'
 import { Footer, Header, ScrollPositionBar } from '@/components/layout'
 
 import appCss from '../styles.css?url'
+
+const DevelopmentDevtools = import.meta.env.DEV
+  ? lazy(async () => ({
+      default: (await import('@/components/devtools/DevelopmentDevtools')).DevelopmentDevtools,
+    }))
+  : null
 
 export const Route = createRootRoute({
   head: () => ({
@@ -53,15 +57,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             {children}
           </main>
           <Footer />
-          <TanStackDevtools
-            config={{
-              position: 'bottom-right',
-            }}
-            plugins={[{
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            }]}
-          />
+          {DevelopmentDevtools !== null && (
+            <Suspense fallback={null}>
+              <DevelopmentDevtools />
+            </Suspense>
+          )}
           <Scripts />
         </QueryClientProvider>
       </body>

@@ -428,21 +428,22 @@ export async function setDefaultAlbum(
   }
 
   const timestamp = nowMs()
-  await db
-    .update(albumsTable)
-    .set({
-      isDefault: 0,
-      updatedAt: timestamp,
-    })
-    .where(eq(albumsTable.isDefault, 1))
-
-  await db
-    .update(albumsTable)
-    .set({
-      isDefault: 1,
-      updatedAt: timestamp,
-    })
-    .where(eq(albumsTable.id, input.albumId))
+  await db.batch([
+    db
+      .update(albumsTable)
+      .set({
+        isDefault: 0,
+        updatedAt: timestamp,
+      })
+      .where(eq(albumsTable.isDefault, 1)),
+    db
+      .update(albumsTable)
+      .set({
+        isDefault: 1,
+        updatedAt: timestamp,
+      })
+      .where(eq(albumsTable.id, input.albumId)),
+  ])
 
   return buildStorageMetaInternal()
 }

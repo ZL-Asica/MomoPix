@@ -3,6 +3,7 @@ import JSZip from 'jszip'
 import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { getZipInputBytes, MAX_ZIP_INPUT_BYTES } from '@/features/home/lib/memoryBudget'
+import { uniqueDownloadNames } from '@/features/home/lib/uniqueDownloadNames'
 import { getHumanReadableFileSize } from '@/utils/converter'
 
 /**
@@ -57,8 +58,9 @@ export function useCompressedDownloads(items: readonly HomeProcessedItem[]) {
         }
 
         const zip = new JSZip()
-        for (const file of outputFiles) {
-          zip.file(file.name, file)
+        const entryNames = uniqueDownloadNames(outputFiles.map(file => file.name))
+        for (const [index, file] of outputFiles.entries()) {
+          zip.file(entryNames[index] ?? file.name, file)
         }
 
         const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE', streamFiles: true })
