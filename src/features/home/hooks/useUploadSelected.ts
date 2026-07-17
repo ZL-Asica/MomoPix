@@ -248,6 +248,7 @@ export function useUploadSelected(
       selectedIds.has(item.id)
       && (item.status === 'compressed' || item.status === 'original')
       && item.outputFile !== null
+      && item.uploadFile !== null
       && item.thumbnailFile !== null
       && item.uploadStatus !== 'uploaded'
     ))
@@ -280,10 +281,10 @@ export function useUploadSelected(
         candidates,
         async (item) => {
           try {
-            const file = item.outputFile
+            const file = item.uploadFile
 
             if (!file) {
-              throw new Error('Missing processed output file')
+              throw new Error('Missing host-compatible output file')
             }
             if (!item.thumbnailFile) {
               throw new Error('Missing WebP thumbnail file')
@@ -296,13 +297,14 @@ export function useUploadSelected(
             formData.set('source', 'index-compressed')
             formData.set('originalName', item.originalName)
 
-            if (item.retainOriginal && item.status !== 'original') {
+            const retainsSeparateOriginal = item.retainOriginal && file !== item.originalFile
+            if (retainsSeparateOriginal) {
               formData.set('original', item.originalFile)
             }
 
             const uploadAssetBytes = file.size
               + item.thumbnailFile.size
-              + (item.retainOriginal && item.status !== 'original' ? item.originalFile.size : 0)
+              + (retainsSeparateOriginal ? item.originalFile.size : 0)
             if (uploadAssetBytes > MAX_UPLOAD_ASSET_BYTES) {
               throw new Error('Combined hosted image, thumbnail, and original exceed 95 MiB')
             }

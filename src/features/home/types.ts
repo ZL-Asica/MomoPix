@@ -34,6 +34,8 @@ export interface HomeProcessedItem {
   outputBlob: Blob | null
   outputFile: File | null
   outputSize: number | null
+  /** Hosted derivative; may differ from the download output when the source is not host-compatible. */
+  uploadFile: File | null
   width: number | null
   height: number | null
   sourceWidth: number | null

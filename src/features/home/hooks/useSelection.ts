@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 function isSelectable(item: HomeProcessedItem): boolean {
   return (
     (item.status === 'compressed' || item.status === 'original')
-    && item.outputFile !== null
+    && item.uploadFile !== null
+    && item.thumbnailFile !== null
   )
 }
 

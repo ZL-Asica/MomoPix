@@ -7,7 +7,9 @@ import {
   MAX_QUEUE_SOURCE_BYTES,
   selectWithinQueueBudget,
 } from '@/features/home/lib/memoryBudget'
+import { isHostedSourceUploadCompatible } from '@/lib/images/hostedSourceCompatibility'
 import { checkImage, normalizeTransformError, transformImageFile } from '@/lib/img'
+import { shouldKeepOriginalImage } from '@/lib/img/output'
 import { normalizeImageMime } from '@/lib/storage/format'
 import { getHumanReadableFileSize } from '@/utils/converter'
 
@@ -55,20 +57,36 @@ export function useImageTransformQueue() {
   const itemsRef = useRef<HomeProcessedItem[]>([])
   const isTransformingRef = useRef(false)
   const queueSourceBytesRef = useRef(0)
+  const objectUrlsRef = useRef(new Set<string>())
+  const isMountedRef = useRef(true)
 
   useEffect(() => {
     itemsRef.current = items
   }, [items])
 
   useEffect(() => {
+    const objectUrls = objectUrlsRef.current
+    isMountedRef.current = true
     return () => {
-      for (const item of itemsRef.current) {
-        URL.revokeObjectURL(item.originalPreviewUrl)
-        if (item.thumbnailPreviewUrl !== null) {
-          URL.revokeObjectURL(item.thumbnailPreviewUrl)
-        }
+      isMountedRef.current = false
+      for (const url of objectUrls) {
+        URL.revokeObjectURL(url)
       }
+      objectUrls.clear()
     }
+  }, [])
+
+  const createTrackedObjectUrl = useCallback((blob: Blob): string => {
+    const url = URL.createObjectURL(blob)
+    objectUrlsRef.current.add(url)
+    return url
+  }, [])
+
+  const revokeTrackedObjectUrl = useCallback((url: string | null): void => {
+    if (url === null || !objectUrlsRef.current.delete(url)) {
+      return
+    }
+    URL.revokeObjectURL(url)
   }, [])
 
   const patchItem = useCallback((id: string, patch: Partial<HomeProcessedItem>) => {
@@ -76,7 +94,7 @@ export function useImageTransformQueue() {
   }, [])
 
   const addImages = useCallback((files: File[]) => {
-    const validFiles: Array<{ file: File, format: SupportedFormat, name: string, originalSize: number, size: number }> = []
+    const validFiles: Array<{ file: File, format: string, name: string, originalSize: number, size: number }> = []
 
     for (const file of files) {
       try {
@@ -100,13 +118,14 @@ export function useImageTransformQueue() {
       originalFile: file,
       originalName: name,
       originalSize,
-      originalPreviewUrl: URL.createObjectURL(file),
+      originalPreviewUrl: createTrackedObjectUrl(file),
       thumbnailPreviewUrl: null,
       originalFormat: format,
       targetFormat,
       outputBlob: null,
       outputFile: null,
       outputSize: null,
+      uploadFile: null,
       width: null,
       height: null,
       sourceWidth: null,
@@ -141,21 +160,19 @@ export function useImageTransformQueue() {
       setItems(nextItems)
       setCompressionState('idle')
     }
-  }, [retainOriginal, targetFormat])
+  }, [createTrackedObjectUrl, retainOriginal, targetFormat])
 
   const removeItem = useCallback((id: string) => {
     const target = itemsRef.current.find(item => item.id === id)
     if (target) {
       queueSourceBytesRef.current = Math.max(0, queueSourceBytesRef.current - target.originalSize)
-      URL.revokeObjectURL(target.originalPreviewUrl)
-      if (target.thumbnailPreviewUrl !== null) {
-        URL.revokeObjectURL(target.thumbnailPreviewUrl)
-      }
+      revokeTrackedObjectUrl(target.originalPreviewUrl)
+      revokeTrackedObjectUrl(target.thumbnailPreviewUrl)
     }
     const nextItems = itemsRef.current.filter(item => item.id !== id)
     itemsRef.current = nextItems
     setItems(nextItems)
-  }, [])
+  }, [revokeTrackedObjectUrl])
 
   const transformOne = useCallback(async (item: HomeProcessedItem): Promise<HomeProcessedItem> => {
     const transformed = await transformImageFile(
@@ -177,10 +194,10 @@ export function useImageTransformQueue() {
       blob: thumbnailBlob,
       originalName: item.originalName,
     })
-    const thumbnailPreviewUrl = URL.createObjectURL(thumbnailBlob)
-    if (item.thumbnailPreviewUrl !== null) {
-      URL.revokeObjectURL(item.thumbnailPreviewUrl)
-    }
+    const thumbnailPreviewUrl = isMountedRef.current
+      ? createTrackedObjectUrl(thumbnailBlob)
+      : null
+    revokeTrackedObjectUrl(item.thumbnailPreviewUrl)
     const derivativePatch = {
       sourceWidth,
       sourceHeight,
@@ -194,6 +211,19 @@ export function useImageTransformQueue() {
       transformNotice: transformed.sourceNotice,
     }
     if (transformed.preservedOriginal) {
+      const compressedFile = toCompressedFile({
+        blob,
+        originalName: item.originalName,
+        targetFormat,
+      })
+      const canHostOriginal = !transformed.resizedToPixelBudget
+        && isHostedSourceUploadCompatible(item.originalFile)
+      const notices = [
+        transformed.sourceNotice,
+        canHostOriginal
+          ? 'Animation was kept unchanged.'
+          : 'Animation was kept for download; a static converted frame will be used for hosting compatibility.',
+      ].filter((notice): notice is string => notice !== null)
       return {
         ...item,
         ...derivativePatch,
@@ -201,10 +231,48 @@ export function useImageTransformQueue() {
         outputBlob: item.originalFile,
         outputFile: item.originalFile,
         outputSize: item.originalSize,
-        width,
-        height,
+        uploadFile: canHostOriginal ? item.originalFile : compressedFile,
+        width: canHostOriginal ? sourceWidth : width,
+        height: canHostOriginal ? sourceHeight : height,
         status: 'original',
-        transformError: 'Animated images are uploaded unchanged.',
+        transformError: null,
+        transformNotice: notices.join(' '),
+        uploadStatus: 'idle',
+        uploadError: null,
+        uploadedUrl: null,
+        uploadedObjectKey: null,
+        uploadedAlbumId: null,
+      }
+    }
+    if (shouldKeepOriginalImage({
+      originalSize: item.originalSize,
+      outputSize: blob.size,
+    })) {
+      const compressedFile = toCompressedFile({
+        blob,
+        originalName: item.originalName,
+        targetFormat,
+      })
+      const canHostOriginal = !transformed.resizedToPixelBudget
+        && isHostedSourceUploadCompatible(item.originalFile)
+      const uploadFile = canHostOriginal
+        ? item.originalFile
+        : compressedFile
+      return {
+        ...item,
+        ...derivativePatch,
+        targetFormat,
+        outputBlob: item.originalFile,
+        outputFile: item.originalFile,
+        outputSize: item.originalSize,
+        uploadFile,
+        width: canHostOriginal ? sourceWidth : width,
+        height: canHostOriginal ? sourceHeight : height,
+        status: 'original',
+        transformError: null,
+        transformNotice: canHostOriginal
+          ? 'Original kept because conversion did not reduce the file size.'
+          : 'Original kept for download; the resized or converted file will be used for hosting compatibility.',
         uploadStatus: 'idle',
         uploadError: null,
         uploadedUrl: null,
@@ -225,6 +293,7 @@ export function useImageTransformQueue() {
       outputBlob: blob,
       outputFile: compressedFile,
       outputSize: blob.size,
+      uploadFile: compressedFile,
       width,
       height,
       status: 'compressed',
@@ -235,7 +304,7 @@ export function useImageTransformQueue() {
       uploadedObjectKey: null,
       uploadedAlbumId: null,
     }
-  }, [quality, retainOriginal, targetFormat, useManualQuality])
+  }, [createTrackedObjectUrl, quality, retainOriginal, revokeTrackedObjectUrl, targetFormat, useManualQuality])
 
   const transformAll = useCallback(async () => {
     if (isTransformingRef.current || itemsRef.current.length === 0) {
@@ -255,6 +324,9 @@ export function useImageTransformQueue() {
     try {
       setCompressionState('compressing')
       setCompressedCount(0)
+
+      // Let React commit the pending state before cloning a large File into the worker.
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
 
       let succeeded = 0
       let failed = 0
@@ -279,7 +351,7 @@ export function useImageTransformQueue() {
         catch (error) {
           const normalized = normalizeTransformError(error)
           if (current.thumbnailPreviewUrl !== null) {
-            URL.revokeObjectURL(current.thumbnailPreviewUrl)
+            revokeTrackedObjectUrl(current.thumbnailPreviewUrl)
           }
           patchItem(current.id, {
             status: 'error',
@@ -287,6 +359,7 @@ export function useImageTransformQueue() {
             outputBlob: null,
             outputFile: null,
             outputSize: null,
+            uploadFile: null,
             width: null,
             height: null,
             sourceWidth: null,
@@ -314,7 +387,7 @@ export function useImageTransformQueue() {
       if (succeeded > 0 && failed === 0) {
         if (retainedOriginals > 0) {
           toast.warning('Some original files were kept', {
-            description: `${retainedOriginals} animated image(s) were preserved to avoid flattening frames.`,
+            description: `${retainedOriginals} image(s) kept their original file because conversion was not beneficial or would lose animation.`,
           })
         }
         else {
@@ -339,7 +412,7 @@ export function useImageTransformQueue() {
       isTransformingRef.current = false
       setIsTransforming(false)
     }
-  }, [patchItem, transformOne])
+  }, [patchItem, revokeTrackedObjectUrl, transformOne])
 
   const retryTransform = useCallback(async (id: string) => {
     if (isTransformingRef.current) {
@@ -360,6 +433,7 @@ export function useImageTransformQueue() {
     })
 
     try {
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
       const transformed = await transformOne(target)
       patchItem(id, transformed)
       toast.success(`Recompressed ${target.originalName}`)
@@ -368,7 +442,7 @@ export function useImageTransformQueue() {
     catch (error) {
       const normalized = normalizeTransformError(error)
       if (target.thumbnailPreviewUrl !== null) {
-        URL.revokeObjectURL(target.thumbnailPreviewUrl)
+        revokeTrackedObjectUrl(target.thumbnailPreviewUrl)
       }
       patchItem(id, {
         status: 'error',
@@ -376,6 +450,7 @@ export function useImageTransformQueue() {
         outputBlob: null,
         outputFile: null,
         outputSize: null,
+        uploadFile: null,
         width: null,
         height: null,
         sourceWidth: null,
@@ -402,7 +477,7 @@ export function useImageTransformQueue() {
       isTransformingRef.current = false
       setIsTransforming(false)
     }
-  }, [patchItem, transformOne])
+  }, [patchItem, revokeTrackedObjectUrl, transformOne])
 
   return {
     items,
