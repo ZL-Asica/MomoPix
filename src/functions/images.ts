@@ -90,7 +90,7 @@ export const listImagesFn = createServerFn({ method: 'POST' })
     await reconcilePendingUploads(r2).catch((error) => {
       console.error('[listImagesFn] Failed to reconcile pending uploads:', error)
     })
-    if (!(await albumExists(db, data.albumId))) {
+    if (!data.allAlbums && !(await albumExists(db, data.albumId))) {
       throw new Error('Album not found')
     }
 
@@ -100,6 +100,11 @@ export const listImagesFn = createServerFn({ method: 'POST' })
       pageSize: data.pageSize,
       sort: data.sort,
       query: data.query,
+      format: data.format,
+      orientation: data.orientation,
+      date: data.date,
+      resolution: data.resolution,
+      allAlbums: data.allAlbums,
     })
 
     let imageUrlError: string | null = null
@@ -127,6 +132,9 @@ export const listImagesFn = createServerFn({ method: 'POST' })
         thumbnailUrl: publicDomain !== null
           ? buildPublicImageUrl(image.thumbnail?.objectKey ?? image.objectKey, publicDomain)
           : null,
+        originalDownloadUrl: image.original === null
+          ? null
+          : `/api/images/original?objectKey=${encodeURIComponent(image.objectKey)}`,
       }
     })
 
@@ -283,6 +291,7 @@ export const uploadImageFn = createServerFn({ method: 'POST' })
       height: image.height,
       createdAt: image.createdAt,
       thumbnail: image.thumbnail ?? null,
+      original: image.original ?? null,
     }
 
     let metadataCommitted = false

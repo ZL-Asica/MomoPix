@@ -4,7 +4,7 @@ import type {
   RowSelectionState,
   Table as TableInstance,
 } from '@tanstack/react-table'
-import type { AlbumImageListItem } from '@/lib/storage/types'
+import type { AlbumImageListItem, AlbumRecord } from '@/lib/storage/types'
 import {
   getCoreRowModel,
   useReactTable,
@@ -14,12 +14,15 @@ import { LazyImage } from '@/components/LazyImage'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ImageActionsDropdownMenu } from '@/features/dashboard/components/ImageActionsMenu'
 import { applyShiftRangeSelection } from '@/features/dashboard/lib/shiftRangeSelection'
+import { formatAlbumPath } from '@/lib/storage/albumLabel'
 import { formatBytes } from '@/lib/storage/format'
 
 interface UseImagesTableOptions {
   images: AlbumImageListItem[]
   pageIndex: number
   pageSize: number
+  albums: AlbumRecord[]
+  showAlbumColumn: boolean
   onRenameImage: (objectKey: string) => void
   onMoveImage: (objectKey: string) => void
   onDeleteImage: (objectKey: string) => void
@@ -51,6 +54,8 @@ export function useImagesTable(options: UseImagesTableOptions) {
     images,
     pageIndex,
     pageSize,
+    albums,
+    showAlbumColumn,
     onRenameImage,
     onMoveImage,
     onDeleteImage,
@@ -114,109 +119,126 @@ export function useImagesTable(options: UseImagesTableOptions) {
     lastAnchorRowIdRef.current = input.rowId
   }, [])
 
-  const columns = useMemo<ColumnDef<AlbumImageListItem>[]>(() => [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          aria-label="Select all rows"
-          checked={table.getIsSomePageRowsSelected() ? 'indeterminate' : table.getIsAllPageRowsSelected()}
-          onCheckedChange={checked => table.toggleAllPageRowsSelected(checked === true)}
-        />
-      ),
-      cell: ({ row, table }) => (
-        <Checkbox
-          aria-label={`Select ${row.original.name}`}
-          checked={row.getIsSelected()}
-          onClick={(event_) => {
-            event_.preventDefault()
-            toggleRowSelection({
-              rowId: row.id,
-              shiftKey: event_.shiftKey,
-              table,
-            })
-          }}
-        />
-      ),
-      enableSorting: false,
-    },
-    {
-      id: 'preview',
-      header: 'Preview',
-      cell: ({ row }) => (
-        row.original.thumbnailUrl !== null
-          ? (
-              <LazyImage
-                src={row.original.thumbnailUrl}
-                alt={row.original.name}
-                className="h-12 w-12 rounded-md border object-cover"
-              />
-            )
-          : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-md border text-[10px] text-muted-foreground">
-                URL ERR
-              </div>
-            )
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: 'name',
-      header: 'Name',
-      cell: ({ row }) => (
-        <div className="max-w-60 truncate font-medium">{row.original.name}</div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: 'sizeBytes',
-      header: 'Size',
-      cell: ({ row }) => formatBytes(row.original.sizeBytes),
-      enableSorting: false,
-    },
-    {
-      id: 'dimensions',
-      header: 'Dimensions',
-      cell: ({ row }) => {
-        const { width, height } = row.original
-        if (typeof width !== 'number' || typeof height !== 'number') {
-          return <span className="text-muted-foreground">Unknown</span>
-        }
-        return `${width} × ${height}`
-      },
-      enableSorting: false,
-    },
-    {
-      id: 'type',
-      header: 'Type',
-      cell: ({ row }) =>
-        row.original.publicUrl?.split('.').pop()?.toUpperCase()
-        ?? row.original.mime.split('/').pop()?.toUpperCase()
-        ?? 'Unknown',
-      enableSorting: false,
-    },
-    {
-      accessorKey: 'createdAt',
-      header: 'Uploaded',
-      cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
-      enableSorting: false,
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <ImageActionsDropdownMenu
-            image={row.original}
-            onRenameImage={onRenameImage}
-            onMoveImage={onMoveImage}
-            onDeleteImage={onDeleteImage}
+  const columns = useMemo<ColumnDef<AlbumImageListItem>[]>(() => {
+    const albumById = new Map(albums.map(album => [album.id, album]))
+    const imageColumns: ColumnDef<AlbumImageListItem>[] = [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            aria-label="Select all rows"
+            checked={table.getIsSomePageRowsSelected() ? 'indeterminate' : table.getIsAllPageRowsSelected()}
+            onCheckedChange={checked => table.toggleAllPageRowsSelected(checked === true)}
           />
-        </div>
-      ),
-    },
-  ], [onDeleteImage, onMoveImage, onRenameImage, toggleRowSelection])
+        ),
+        cell: ({ row, table }) => (
+          <Checkbox
+            aria-label={`Select ${row.original.name}`}
+            checked={row.getIsSelected()}
+            onClick={(event_) => {
+              event_.preventDefault()
+              toggleRowSelection({
+                rowId: row.id,
+                shiftKey: event_.shiftKey,
+                table,
+              })
+            }}
+          />
+        ),
+        enableSorting: false,
+      },
+      {
+        id: 'preview',
+        header: 'Preview',
+        cell: ({ row }) => (
+          row.original.thumbnailUrl !== null
+            ? (
+                <LazyImage
+                  src={row.original.thumbnailUrl}
+                  alt={row.original.name}
+                  className="h-12 w-12 rounded-md border object-cover"
+                />
+              )
+            : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-md border text-[10px] text-muted-foreground">
+                  URL ERR
+                </div>
+              )
+        ),
+        enableSorting: false,
+      },
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        cell: ({ row }) => (
+          <div className="max-w-60 truncate font-medium">{row.original.name}</div>
+        ),
+        enableSorting: false,
+      },
+      ...(showAlbumColumn
+        ? [{
+          id: 'album',
+          header: 'Album',
+          cell: ({ row }) => {
+            const album = albumById.get(row.original.albumId)
+            return album === undefined
+              ? <span className="text-muted-foreground">Unknown</span>
+              : <div className="max-w-52 truncate">{formatAlbumPath(album, albums)}</div>
+          },
+          enableSorting: false,
+        } satisfies ColumnDef<AlbumImageListItem>]
+        : []),
+      {
+        accessorKey: 'sizeBytes',
+        header: 'Size',
+        cell: ({ row }) => formatBytes(row.original.sizeBytes),
+        enableSorting: false,
+      },
+      {
+        id: 'dimensions',
+        header: 'Dimensions',
+        cell: ({ row }) => {
+          const { width, height } = row.original
+          if (typeof width !== 'number' || typeof height !== 'number') {
+            return <span className="text-muted-foreground">Unknown</span>
+          }
+          return `${width} × ${height}`
+        },
+        enableSorting: false,
+      },
+      {
+        id: 'type',
+        header: 'Type',
+        cell: ({ row }) =>
+          row.original.publicUrl?.split('.').pop()?.toUpperCase()
+          ?? row.original.mime.split('/').pop()?.toUpperCase()
+          ?? 'Unknown',
+        enableSorting: false,
+      },
+      {
+        accessorKey: 'createdAt',
+        header: 'Uploaded',
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+        enableSorting: false,
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <ImageActionsDropdownMenu
+              image={row.original}
+              onRenameImage={onRenameImage}
+              onMoveImage={onMoveImage}
+              onDeleteImage={onDeleteImage}
+            />
+          </div>
+        ),
+      },
+    ]
+    return imageColumns
+  }, [albums, onDeleteImage, onMoveImage, onRenameImage, showAlbumColumn, toggleRowSelection])
 
   const pagination = useMemo<PaginationState>(() => ({
     pageIndex,

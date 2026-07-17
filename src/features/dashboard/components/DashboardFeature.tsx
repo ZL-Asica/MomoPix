@@ -35,6 +35,12 @@ export function DashboardFeature() {
     ...search,
     page: search.page ?? 1,
     pageSize: typeof search.pageSize === 'number' ? search.pageSize : 50,
+    sort: search.sort ?? 'createdAt-desc',
+    format: search.format ?? 'all',
+    orientation: search.orientation ?? 'all',
+    date: search.date ?? 'all',
+    resolution: search.resolution ?? 'all',
+    scope: search.scope ?? 'album',
   }), [search])
   const onUrlStateChange = useCallback((next: Partial<DashboardUrlState>, replace = false) => {
     void navigate({
@@ -84,6 +90,18 @@ export function DashboardFeature() {
     isSearchMode,
     searchQuery,
     onSearchQueryChange,
+    sort,
+    format,
+    orientation,
+    date,
+    resolution,
+    scope,
+    onSortChange,
+    onFormatChange,
+    onOrientationChange,
+    onDateChange,
+    onResolutionChange,
+    onScopeChange,
     setDefaultAlbum,
     setMobileSidebarOpen,
     setRenameImageObjectKey,
@@ -120,6 +138,8 @@ export function DashboardFeature() {
     images,
     pageIndex: pageIndexZeroBased,
     pageSize,
+    albums,
+    showAlbumColumn: scope === 'all',
     onRenameImage: handleRenameImageRequest,
     onMoveImage: handleMoveImageRequest,
     onDeleteImage: handleDeleteImageRequest,
@@ -189,7 +209,7 @@ export function DashboardFeature() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
-                {selectedAlbum?.name ?? 'Images'}
+                {scope === 'all' ? 'All images' : (selectedAlbum?.name ?? 'Images')}
                 {imagesStatus.isFetching && !imagesStatus.isInitialLoading && (
                   <Spinner className="h-4 w-4 text-muted-foreground" />
                 )}
@@ -222,7 +242,9 @@ export function DashboardFeature() {
                     )}
               </CardDescription>
             </div>
-            <Badge variant="secondary">{formatBytes(selectedAlbum?.bytesUsed ?? 0)}</Badge>
+            <Badge variant="secondary">
+              {formatBytes(scope === 'all' ? (meta?.totalBytesUsed ?? 0) : (selectedAlbum?.bytesUsed ?? 0))}
+            </Badge>
           </div>
 
           <DashboardTopbar
@@ -252,6 +274,18 @@ export function DashboardFeature() {
                 setSelectionToObjectKeys={setSelectionToObjectKeys}
               />
             )}
+            sort={sort}
+            format={format}
+            orientation={orientation}
+            date={date}
+            resolution={resolution}
+            scope={scope}
+            onSortChange={onSortChange}
+            onFormatChange={onFormatChange}
+            onOrientationChange={onOrientationChange}
+            onDateChange={onDateChange}
+            onResolutionChange={onResolutionChange}
+            onScopeChange={onScopeChange}
           />
         </CardHeader>
         <CardContent>

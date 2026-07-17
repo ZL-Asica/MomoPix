@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ROOT_ALBUM_ID } from '@/lib/storage/types'
+import { IMAGE_LIST_SORTS, ROOT_ALBUM_ID } from '@/lib/storage/types'
 
 /**
  * Shared validator for album identifiers.
@@ -51,8 +51,13 @@ export const listImagesSchema = z.object({
   albumId: albumIdSchema,
   cursor: z.string().min(1).nullable().optional(),
   pageSize: z.number().int().min(10).max(200).optional(),
-  sort: z.literal('createdAt-desc').optional(),
+  sort: z.enum(IMAGE_LIST_SORTS).optional(),
   query: z.string().trim().max(120).optional(),
+  format: z.enum(['all', 'avif', 'bmp', 'gif', 'jpeg', 'png', 'webp']).optional(),
+  orientation: z.enum(['all', 'landscape', 'portrait', 'square']).optional(),
+  date: z.enum(['all', 'today', '7d', '30d', '1y']).optional(),
+  resolution: z.enum(['all', 'under-2mp', '2-12mp', '12-24mp', 'over-24mp']).optional(),
+  allAlbums: z.boolean().optional(),
 })
 
 /**

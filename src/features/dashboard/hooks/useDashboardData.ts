@@ -1,4 +1,4 @@
-import type { DashboardUrlState } from '@/features/dashboard/lib/urlState'
+import type { DashboardImageScope, DashboardUrlState } from '@/features/dashboard/lib/urlState'
 import type {
   BulkMoveImagesInput,
   BulkOperationResult,
@@ -8,7 +8,7 @@ import type {
   RenameAlbumInput,
   RenameImageInput,
 } from '@/features/dashboard/types'
-import type { AlbumImageListItem, AlbumRecord, StorageMeta } from '@/lib/storage/types'
+import type { AlbumImageListItem, AlbumRecord, ImageDateFilter, ImageFormatFilter, ImageListSort, ImageOrientationFilter, ImageResolutionFilter, StorageMeta } from '@/lib/storage/types'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { useUpload } from '@/features/dashboard/hooks/useUpload'
@@ -26,11 +26,8 @@ const DEFAULT_IMAGE_PAGE_SIZE = 50
  * Delay used before applying search queries to server fetches.
  */
 const SEARCH_DEBOUNCE_MS = 250
-/**
- * Largest page number accepted from a search deep link before requiring normal Next navigation.
- */
-const MAX_SEARCH_DEEP_LINK_PAGE_INDEX = 20
-
+/** Prevent a forged/deep URL from replaying an unbounded cursor chain. */
+const MAX_CURSOR_WARMUP_PAGES = 20
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 
 interface UseDashboardDataOptions {
@@ -49,6 +46,12 @@ export function useDashboardData(options: UseDashboardDataOptions) {
   const urlQuery = normalizeDashboardQuery(urlState.q ?? '') ?? ''
   const urlPageIndex = urlState.page - 1
   const urlPageSize = urlState.pageSize
+  const urlSort = urlState.sort
+  const urlFormat = urlState.format
+  const urlOrientation = urlState.orientation
+  const urlDate = urlState.date
+  const urlResolution = urlState.resolution
+  const urlScope = urlState.scope
   const [albums, setAlbums] = useState<AlbumRecord[]>([])
   const [meta, setMeta] = useState<StorageMeta | null>(null)
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>(urlAlbumId)
@@ -62,6 +65,12 @@ export function useDashboardData(options: UseDashboardDataOptions) {
   const pageIndexRef = useRef(pageIndex)
   const [imagesRevision, setImagesRevision] = useState(0)
   const [pageSize, setPageSize] = useState(urlPageSize ?? DEFAULT_IMAGE_PAGE_SIZE)
+  const [sort, setSort] = useState<ImageListSort>(urlSort)
+  const [format, setFormat] = useState<ImageFormatFilter>(urlFormat)
+  const [orientation, setOrientation] = useState<ImageOrientationFilter>(urlOrientation)
+  const [date, setDate] = useState<ImageDateFilter>(urlDate)
+  const [resolution, setResolution] = useState<ImageResolutionFilter>(urlResolution)
+  const [scope, setScope] = useState<DashboardImageScope>(urlScope)
   const [searchQuery, setSearchQuery] = useState(urlQuery)
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(urlQuery)
   const [isAlbumsLoaded, setIsAlbumsLoaded] = useState(false)
@@ -78,12 +87,18 @@ export function useDashboardData(options: UseDashboardDataOptions) {
 
   const albumById = useMemo(() => new Map(albums.map(album => [album.id, album])), [albums])
   const selectedAlbum = albumById.get(selectedAlbumId) ?? null
-  const currentViewKey = `${selectedAlbumId}|${debouncedSearchQuery}|${pageSize}|${imagesRevision}`
+  const currentViewKey = `${scope}|${selectedAlbumId}|${debouncedSearchQuery}|${sort}|${format}|${orientation}|${resolution}|${date}|${pageSize}|${imagesRevision}`
   const currentPageKey = `${currentViewKey}|${pageIndex}`
   const hasLoadedCurrentPage = loadedPageKey === currentPageKey
   const hasLoadedAnyPage = loadedPageKey !== null
   const isSearchMode = debouncedSearchQuery.length > 0
-  const totalCount = isSearchMode ? null : (selectedAlbum?.imageCount ?? 0)
+    || format !== 'all'
+    || orientation !== 'all'
+    || resolution !== 'all'
+    || date !== 'all'
+  const totalCount = isSearchMode
+    ? null
+    : (scope === 'all' ? (meta?.totalImageCount ?? 0) : (selectedAlbum?.imageCount ?? 0))
   const totalPages = totalCount === null ? null : Math.max(1, Math.ceil(totalCount / pageSize))
   const hasPreviousPage = pageIndex > 0
   const isFetching = isImagesFetching || isViewTransitionPending
@@ -101,8 +116,14 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     setPageIndex(current => current === urlPageIndex ? current : urlPageIndex)
     pageIndexRef.current = urlPageIndex
     setPageSize(current => current === urlPageSize ? current : urlPageSize)
+    setSort(current => current === urlSort ? current : urlSort)
+    setFormat(current => current === urlFormat ? current : urlFormat)
+    setOrientation(current => current === urlOrientation ? current : urlOrientation)
+    setDate(current => current === urlDate ? current : urlDate)
+    setResolution(current => current === urlResolution ? current : urlResolution)
+    setScope(current => current === urlScope ? current : urlScope)
     /* eslint-enable react/set-state-in-effect */
-  }, [urlAlbumId, urlPageIndex, urlPageSize, urlQuery])
+  }, [urlAlbumId, urlDate, urlFormat, urlOrientation, urlPageIndex, urlPageSize, urlQuery, urlResolution, urlScope, urlSort])
 
   useLayoutEffect(() => {
     selectedAlbumIdRef.current = selectedAlbumId
@@ -113,14 +134,25 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     cursor: string | null
     query: string
     pageSize: number
+    sort: ImageListSort
+    format: ImageFormatFilter
+    orientation: ImageOrientationFilter
+    date: ImageDateFilter
+    resolution: ImageResolutionFilter
+    scope: DashboardImageScope
   }) => {
     return listImagesFn({
       data: {
         albumId: input.albumId,
         cursor: input.cursor,
         pageSize: input.pageSize,
-        sort: 'createdAt-desc',
+        sort: input.sort,
         query: input.query,
+        format: input.format,
+        orientation: input.orientation,
+        date: input.date,
+        resolution: input.resolution,
+        allAlbums: input.scope === 'all',
       },
     })
   }, [])
@@ -148,9 +180,7 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     viewKey: string
     pageIndex: number
   }) => {
-    const maximumPageIndex = isSearchMode
-      ? MAX_SEARCH_DEEP_LINK_PAGE_INDEX
-      : (totalPages === null ? null : totalPages - 1)
+    const maximumPageIndex = totalPages === null ? null : totalPages - 1
     if (maximumPageIndex !== null && input.pageIndex > maximumPageIndex) {
       pageIndexRef.current = maximumPageIndex
       setPageIndex(maximumPageIndex)
@@ -169,6 +199,12 @@ export function useDashboardData(options: UseDashboardDataOptions) {
       const cursorByPage = cursorByViewRef.current.get(input.viewKey) ?? new Map([[0, null]])
       cursorByViewRef.current.set(input.viewKey, cursorByPage)
       const cursorStart = getCursorNavigationStart(cursorByPage, input.pageIndex)
+      if (input.pageIndex - cursorStart.pageIndex > MAX_CURSOR_WARMUP_PAGES) {
+        pageIndexRef.current = 0
+        setPageIndex(0)
+        onUrlStateChange({ page: 1 }, true)
+        return
+      }
       let resolvedPageIndex = cursorStart.pageIndex
       let cursor = cursorStart.cursor
 
@@ -179,6 +215,12 @@ export function useDashboardData(options: UseDashboardDataOptions) {
           cursor,
           query: input.query,
           pageSize,
+          sort,
+          format,
+          orientation,
+          date,
+          resolution,
+          scope,
         })
 
         if (requestId !== imageRequestIdRef.current) {
@@ -207,6 +249,12 @@ export function useDashboardData(options: UseDashboardDataOptions) {
         cursor: cursor ?? null,
         query: input.query,
         pageSize,
+        sort,
+        format,
+        orientation,
+        date,
+        resolution,
+        scope,
       })
 
       if (requestId !== imageRequestIdRef.current) {
@@ -241,7 +289,7 @@ export function useDashboardData(options: UseDashboardDataOptions) {
         setIsImagesFetching(false)
       }
     }
-  }, [fetchImagesPage, isSearchMode, onUrlStateChange, pageSize, totalPages])
+  }, [date, fetchImagesPage, format, onUrlStateChange, orientation, pageSize, resolution, scope, sort, totalPages])
 
   const refreshImages = useCallback(() => {
     imageRequestIdRef.current += 1
@@ -482,16 +530,27 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     if (result.succeededObjectKeys.length > 0) {
       refreshImages()
     }
-    if (targetAlbumId !== selectedAlbumId && sourceImages.length > 0) {
-      const bytesUsed = sourceImages.reduce((total, image) => total + image.storageBytes, 0)
-      updateAlbumUsage(new Map([
-        [selectedAlbumId, { imageCount: -sourceImages.length, bytesUsed: -bytesUsed }],
-        [targetAlbumId, { imageCount: sourceImages.length, bytesUsed }],
-      ]))
+    if (sourceImages.length > 0) {
+      const changes = new Map<string, { imageCount: number, bytesUsed: number }>()
+      for (const image of sourceImages) {
+        if (image.albumId === targetAlbumId) {
+          continue
+        }
+        const sourceChange = changes.get(image.albumId) ?? { imageCount: 0, bytesUsed: 0 }
+        sourceChange.imageCount -= 1
+        sourceChange.bytesUsed -= image.storageBytes
+        changes.set(image.albumId, sourceChange)
+
+        const targetChange = changes.get(targetAlbumId) ?? { imageCount: 0, bytesUsed: 0 }
+        targetChange.imageCount += 1
+        targetChange.bytesUsed += image.storageBytes
+        changes.set(targetAlbumId, targetChange)
+      }
+      updateAlbumUsage(changes)
     }
 
     return result
-  }, [images, refreshImages, selectedAlbumId, updateAlbumUsage])
+  }, [images, refreshImages, updateAlbumUsage])
 
   const bulkDeleteImages = useCallback(async (objectKeys: string[]): Promise<BulkOperationResult> => {
     const result = await deleteImagesFn({
@@ -505,12 +564,15 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     }
     const cleanedImages = deletedImages.filter(image => !result.cleanupPendingObjectKeys.includes(image.objectKey))
     if (deletedImages.length > 0) {
-      const albumBytesUsed = deletedImages.reduce((total, image) => total + image.storageBytes, 0)
       const releasedBytes = cleanedImages.reduce((total, image) => total + image.storageBytes, 0)
-      updateAlbumUsage(new Map([[
-        selectedAlbumId,
-        { imageCount: -deletedImages.length, bytesUsed: -albumBytesUsed },
-      ]]))
+      const changes = new Map<string, { imageCount: number, bytesUsed: number }>()
+      for (const image of deletedImages) {
+        const change = changes.get(image.albumId) ?? { imageCount: 0, bytesUsed: 0 }
+        change.imageCount -= 1
+        change.bytesUsed -= image.storageBytes
+        changes.set(image.albumId, change)
+      }
+      updateAlbumUsage(changes)
       setMeta(previous => previous === null
         ? previous
         : {
@@ -526,7 +588,7 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     }
 
     return result
-  }, [images, refreshImages, selectedAlbumId, updateAlbumUsage])
+  }, [images, refreshImages, updateAlbumUsage])
 
   const goNextPage = useCallback(() => {
     const nextIndex = pageIndexRef.current + 1
@@ -574,13 +636,48 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     onUrlStateChange({ page: 1, q: normalizeDashboardQuery(value) }, true)
   }, [onUrlStateChange, startViewTransition])
 
+  const updateImageView = useCallback((next: {
+    sort?: ImageListSort
+    format?: ImageFormatFilter
+    orientation?: ImageOrientationFilter
+    date?: ImageDateFilter
+    resolution?: ImageResolutionFilter
+    scope?: DashboardImageScope
+  }) => {
+    pageIndexRef.current = 0
+    cursorByViewRef.current.clear()
+    startViewTransition(() => {
+      if (next.sort !== undefined) {
+        setSort(next.sort)
+      }
+      if (next.format !== undefined) {
+        setFormat(next.format)
+      }
+      if (next.orientation !== undefined) {
+        setOrientation(next.orientation)
+      }
+      if (next.date !== undefined) {
+        setDate(next.date)
+      }
+      if (next.resolution !== undefined) {
+        setResolution(next.resolution)
+      }
+      if (next.scope !== undefined) {
+        setScope(next.scope)
+      }
+      setPageIndex(0)
+    })
+    onUrlStateChange({ page: 1, ...next })
+  }, [onUrlStateChange, startViewTransition])
+
   const selectAlbum = useCallback((albumId: string) => {
     pageIndexRef.current = 0
     startViewTransition(() => {
       setSelectedAlbumId(albumId)
+      setScope('album')
       setPageIndex(0)
     })
-    onUrlStateChange({ album: albumId, page: 1 })
+    onUrlStateChange({ album: albumId, page: 1, scope: 'album' })
   }, [onUrlStateChange, startViewTransition])
 
   return {
@@ -620,6 +717,18 @@ export function useDashboardData(options: UseDashboardDataOptions) {
     deleteAlbum,
     searchQuery,
     onSearchQueryChange,
+    sort,
+    format,
+    orientation,
+    date,
+    resolution,
+    scope,
+    onSortChange: (value: ImageListSort) => updateImageView({ sort: value }),
+    onFormatChange: (value: ImageFormatFilter) => updateImageView({ format: value }),
+    onOrientationChange: (value: ImageOrientationFilter) => updateImageView({ orientation: value }),
+    onDateChange: (value: ImageDateFilter) => updateImageView({ date: value }),
+    onResolutionChange: (value: ImageResolutionFilter) => updateImageView({ resolution: value }),
+    onScopeChange: (value: DashboardImageScope) => updateImageView({ scope: value }),
     pageIndex: pageIndex + 1,
     pageIndexZeroBased: pageIndex,
     pageSize,

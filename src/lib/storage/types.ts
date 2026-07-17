@@ -6,7 +6,21 @@ export const ROOT_ALBUM_ID = 'alb_root' as const
 export type ISODateString = string
 
 export type ImageSource = 'index-compressed' | 'dashboard-upload'
-export type ImageListSort = 'createdAt-desc'
+export const IMAGE_LIST_SORTS = [
+  'createdAt-desc',
+  'createdAt-asc',
+  'name-asc',
+  'name-desc',
+  'sizeBytes-desc',
+  'sizeBytes-asc',
+  'type-asc',
+  'type-desc',
+] as const
+export type ImageListSort = typeof IMAGE_LIST_SORTS[number]
+export type ImageFormatFilter = 'all' | 'avif' | 'bmp' | 'gif' | 'jpeg' | 'png' | 'webp'
+export type ImageOrientationFilter = 'all' | 'landscape' | 'portrait' | 'square'
+export type ImageDateFilter = 'all' | 'today' | '7d' | '30d' | '1y'
+export type ImageResolutionFilter = 'all' | 'under-2mp' | '2-12mp' | '12-24mp' | 'over-24mp'
 
 /** Global storage counters and defaults derived from D1 tables. */
 export interface StorageMeta {
@@ -86,6 +100,7 @@ export interface AlbumImageRecord {
   height: number | null
   createdAt: ISODateString
   thumbnail: ThumbnailImageAsset | null
+  original: OriginalImageAsset | null
 }
 
 /**
@@ -96,6 +111,8 @@ export interface AlbumImageListItem extends AlbumImageRecord {
   publicUrl: string | null
   /** Small WebP preview URL, falling back to `publicUrl` for legacy rows. */
   thumbnailUrl: string | null
+  /** Authenticated application route for downloading a retained source. */
+  originalDownloadUrl: string | null
 }
 
 /**
@@ -107,6 +124,11 @@ export interface ListAlbumImagesInput {
   pageSize?: number
   sort?: ImageListSort
   query?: string
+  format?: ImageFormatFilter
+  orientation?: ImageOrientationFilter
+  date?: ImageDateFilter
+  resolution?: ImageResolutionFilter
+  allAlbums?: boolean
 }
 
 /**
@@ -119,6 +141,10 @@ export interface ListAlbumImagesResult {
   pageSize: number
   sort: ImageListSort
   query: string
+  format: ImageFormatFilter
+  orientation: ImageOrientationFilter
+  date: ImageDateFilter
+  resolution: ImageResolutionFilter
 }
 
 /**
